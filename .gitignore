@@ -1,0 +1,221 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+Thumbs.db
+
+
+# ============================================================
+# Forecast2Action AI - .gitignore
+# ============================================================
+
+# ----------------------------
+# Python virtual environments
+# ----------------------------
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ----------------------------
+# Python cache and build files
+# ----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ----------------------------
+# Python test / coverage
+# ----------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ----------------------------
+# FastAPI / backend runtime files
+# ----------------------------
+*.log
+logs/
+tmp/
+temp/
+.runtime/
+
+# Keep sample climate/demo data, but ignore local runtime edits if desired.
+# Uncomment these only if you do NOT want submitted reports/statuses pushed.
+# data/sample/community_reports.json
+# data/sample/action_task_status.json
+
+# ----------------------------
+# Environment variables / secrets
+# ----------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+token.json
+
+# ----------------------------
+# Node / React / Vite
+# ----------------------------
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# ----------------------------
+# Package manager lock temp files
+# ----------------------------
+*.lock.tmp
+
+# ----------------------------
+# Jupyter / notebooks
+# ----------------------------
+.ipynb_checkpoints/
+
+# ----------------------------
+# IDE / editor files
+# ----------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ----------------------------
+# Operating system files
+# ----------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+.Trashes
+.Spotlight-V100
+.fseventsd
+
+# ----------------------------
+# Large geospatial / climate data
+# Keep these ignored unless intentionally needed.
+# ----------------------------
+*.nc
+*.nc4
+*.grib
+*.grb
+*.grb2
+*.tif
+*.tiff
+*.hdf
+*.h5
+*.he5
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.gpkg
+*.geojson
+*.vrt
+*.aux.xml
+*.ovr
+
+# ----------------------------
+# Large model / ML artifacts
+# ----------------------------
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.pkl
+*.joblib
+models/
+checkpoints/
+mlruns/
+wandb/
+
+# ----------------------------
+# Local exports / generated downloads
+# Keep screenshots and docs tracked.
+# ----------------------------
+exports/
+downloads/
+*.tmp
+*.bak
+
+# ----------------------------
+# Optional: ignore generated bulletin downloads
+# ----------------------------
+forecast2action_bulletin_*.html
+forecast2action_bulletin_*.md
+forecast2action_action_tracker_*.csv
+
+# ----------------------------
+# Do NOT ignore these important project folders
+# ----------------------------
+!README.md
+!HACKATHON_SUBMISSION.md
+!docs/
+!docs/**
+!screenshots/
+!screenshots/**
+!data/knowledge/
+!data/knowledge/**
+!data/sample/
+!data/sample/*.csv
+!outputs/tables/
+!outputs/tables/*.csv

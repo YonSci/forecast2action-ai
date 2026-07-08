@@ -1,0 +1,5 @@
+country,district,year,season,rainfall_mm,latitude,longitude,baseline_mean_mm,baseline_std_mm,rainfall_anomaly_mm,rainfall_anomaly_pct,spi,exposure,vulnerability
+Ethiopia,Borena,2026,MAM,162.4,4.95,38.15,269.65,49.5,-107.25,-39.8,-2.17,0.82,0.88
+Ethiopia,Afar Zone 1,2026,MAM,72.2,12.15,40.75,91.61,26.07,-19.41,-21.2,-0.74,0.68,0.8
+Kenya,Turkana,2026,MAM,90.75,3.12,35.6,165.58,44.64,-74.83,-45.2,-1.68,0.86,0.84
+Kenya,Garissa,2026,MAM,279.3,-0.45,39.65,189.03,43.62,90.27,47.8,2.07,0.72,0.66

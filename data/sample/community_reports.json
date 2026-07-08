@@ -1,0 +1,16 @@
+[
+  {
+    "country": "Ethiopia",
+    "district": "Borena",
+    "report_type": "crop_wilting",
+    "severity": "medium",
+    "description": "hjh hbjb",
+    "reported_by": "anonymous",
+    "contact": "",
+    "latitude": null,
+    "longitude": null,
+    "id": "a749c36c-4526-4552-a6bd-a37d9ce87330",
+    "created_at": "2026-07-06T22:19:23.047246+00:00",
+    "status": "new"
+  }
+]

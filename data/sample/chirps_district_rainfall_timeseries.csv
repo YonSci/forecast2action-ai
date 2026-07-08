@@ -1,0 +1,125 @@
+country,district,year,season,rainfall_mm,latitude,longitude
+Ethiopia,Borena,1991,MAM,307.32,4.95,38.15
+Ethiopia,Borena,1992,MAM,272.4,4.95,38.15
+Ethiopia,Borena,1993,MAM,315.62,4.95,38.15
+Ethiopia,Borena,1994,MAM,363.77,4.95,38.15
+Ethiopia,Borena,1995,MAM,267.12,4.95,38.15
+Ethiopia,Borena,1996,MAM,267.12,4.95,38.15
+Ethiopia,Borena,1997,MAM,366.86,4.95,38.15
+Ethiopia,Borena,1998,MAM,322.21,4.95,38.15
+Ethiopia,Borena,1999,MAM,254.18,4.95,38.15
+Ethiopia,Borena,2000,MAM,309.84,4.95,38.15
+Ethiopia,Borena,2001,MAM,254.51,4.95,38.15
+Ethiopia,Borena,2002,MAM,254.38,4.95,38.15
+Ethiopia,Borena,2003,MAM,293.31,4.95,38.15
+Ethiopia,Borena,2004,MAM,174.77,4.95,38.15
+Ethiopia,Borena,2005,MAM,185.13,4.95,38.15
+Ethiopia,Borena,2006,MAM,249.07,4.95,38.15
+Ethiopia,Borena,2007,MAM,224.29,4.95,38.15
+Ethiopia,Borena,2008,MAM,297.28,4.95,38.15
+Ethiopia,Borena,2009,MAM,230.06,4.95,38.15
+Ethiopia,Borena,2010,MAM,202.32,4.95,38.15
+Ethiopia,Borena,2011,MAM,360.61,4.95,38.15
+Ethiopia,Borena,2012,MAM,267.58,4.95,38.15
+Ethiopia,Borena,2013,MAM,283.71,4.95,38.15
+Ethiopia,Borena,2014,MAM,201.64,4.95,38.15
+Ethiopia,Borena,2015,MAM,250.06,4.95,38.15
+Ethiopia,Borena,2016,MAM,286.1,4.95,38.15
+Ethiopia,Borena,2017,MAM,216.7,4.95,38.15
+Ethiopia,Borena,2018,MAM,300.66,4.95,38.15
+Ethiopia,Borena,2019,MAM,246.96,4.95,38.15
+Ethiopia,Borena,2020,MAM,263.96,4.95,38.15
+Ethiopia,Borena,2026,MAM,162.4,4.95,38.15
+Ethiopia,Afar Zone 1,1991,MAM,78.15,12.15,40.75
+Ethiopia,Afar Zone 1,1992,MAM,146.86,12.15,40.75
+Ethiopia,Afar Zone 1,1993,MAM,94.62,12.15,40.75
+Ethiopia,Afar Zone 1,1994,MAM,65.38,12.15,40.75
+Ethiopia,Afar Zone 1,1995,MAM,118.03,12.15,40.75
+Ethiopia,Afar Zone 1,1996,MAM,60.82,12.15,40.75
+Ethiopia,Afar Zone 1,1997,MAM,100.85,12.15,40.75
+Ethiopia,Afar Zone 1,1998,MAM,40.13,12.15,40.75
+Ethiopia,Afar Zone 1,1999,MAM,57.81,12.15,40.75
+Ethiopia,Afar Zone 1,2000,MAM,100.51,12.15,40.75
+Ethiopia,Afar Zone 1,2001,MAM,115.68,12.15,40.75
+Ethiopia,Afar Zone 1,2002,MAM,99.8,12.15,40.75
+Ethiopia,Afar Zone 1,2003,MAM,91.76,12.15,40.75
+Ethiopia,Afar Zone 1,2004,MAM,86.57,12.15,40.75
+Ethiopia,Afar Zone 1,2005,MAM,53.6,12.15,40.75
+Ethiopia,Afar Zone 1,2006,MAM,74.84,12.15,40.75
+Ethiopia,Afar Zone 1,2007,MAM,82.1,12.15,40.75
+Ethiopia,Afar Zone 1,2008,MAM,124.6,12.15,40.75
+Ethiopia,Afar Zone 1,2009,MAM,104.62,12.15,40.75
+Ethiopia,Afar Zone 1,2010,MAM,45.63,12.15,40.75
+Ethiopia,Afar Zone 1,2011,MAM,104.07,12.15,40.75
+Ethiopia,Afar Zone 1,2012,MAM,84.22,12.15,40.75
+Ethiopia,Afar Zone 1,2013,MAM,76.05,12.15,40.75
+Ethiopia,Afar Zone 1,2014,MAM,112.13,12.15,40.75
+Ethiopia,Afar Zone 1,2015,MAM,123.87,12.15,40.75
+Ethiopia,Afar Zone 1,2016,MAM,121.08,12.15,40.75
+Ethiopia,Afar Zone 1,2017,MAM,71.5,12.15,40.75
+Ethiopia,Afar Zone 1,2018,MAM,86.34,12.15,40.75
+Ethiopia,Afar Zone 1,2019,MAM,104.28,12.15,40.75
+Ethiopia,Afar Zone 1,2020,MAM,122.32,12.15,40.75
+Ethiopia,Afar Zone 1,2026,MAM,72.2,12.15,40.75
+Kenya,Turkana,1991,MAM,143.44,3.12,35.6
+Kenya,Turkana,1992,MAM,156.65,3.12,35.6
+Kenya,Turkana,1993,MAM,115.21,3.12,35.6
+Kenya,Turkana,1994,MAM,111.17,3.12,35.6
+Kenya,Turkana,1995,MAM,201.56,3.12,35.6
+Kenya,Turkana,1996,MAM,226.03,3.12,35.6
+Kenya,Turkana,1997,MAM,161.76,3.12,35.6
+Kenya,Turkana,1998,MAM,210.16,3.12,35.6
+Kenya,Turkana,1999,MAM,181.27,3.12,35.6
+Kenya,Turkana,2000,MAM,135.97,3.12,35.6
+Kenya,Turkana,2001,MAM,181.26,3.12,35.6
+Kenya,Turkana,2002,MAM,234.21,3.12,35.6
+Kenya,Turkana,2003,MAM,163.39,3.12,35.6
+Kenya,Turkana,2004,MAM,235.41,3.12,35.6
+Kenya,Turkana,2005,MAM,47.11,3.12,35.6
+Kenya,Turkana,2006,MAM,201.99,3.12,35.6
+Kenya,Turkana,2007,MAM,168.92,3.12,35.6
+Kenya,Turkana,2008,MAM,151.54,3.12,35.6
+Kenya,Turkana,2009,MAM,169.13,3.12,35.6
+Kenya,Turkana,2010,MAM,75.56,3.12,35.6
+Kenya,Turkana,2011,MAM,155.11,3.12,35.6
+Kenya,Turkana,2012,MAM,181.07,3.12,35.6
+Kenya,Turkana,2013,MAM,231.51,3.12,35.6
+Kenya,Turkana,2014,MAM,141.68,3.12,35.6
+Kenya,Turkana,2015,MAM,128.62,3.12,35.6
+Kenya,Turkana,2016,MAM,142.42,3.12,35.6
+Kenya,Turkana,2017,MAM,206.19,3.12,35.6
+Kenya,Turkana,2018,MAM,179.79,3.12,35.6
+Kenya,Turkana,2019,MAM,141.16,3.12,35.6
+Kenya,Turkana,2020,MAM,188.1,3.12,35.6
+Kenya,Turkana,2026,MAM,90.75,3.12,35.6
+Kenya,Garissa,1991,MAM,194.66,-0.45,39.65
+Kenya,Garissa,1992,MAM,236.49,-0.45,39.65
+Kenya,Garissa,1993,MAM,156.3,-0.45,39.65
+Kenya,Garissa,1994,MAM,174.27,-0.45,39.65
+Kenya,Garissa,1995,MAM,171.18,-0.45,39.65
+Kenya,Garissa,1996,MAM,119.75,-0.45,39.65
+Kenya,Garissa,1997,MAM,204.21,-0.45,39.65
+Kenya,Garissa,1998,MAM,202.53,-0.45,39.65
+Kenya,Garissa,1999,MAM,190.25,-0.45,39.65
+Kenya,Garissa,2000,MAM,178.74,-0.45,39.65
+Kenya,Garissa,2001,MAM,122.06,-0.45,39.65
+Kenya,Garissa,2002,MAM,169.81,-0.45,39.65
+Kenya,Garissa,2003,MAM,173.55,-0.45,39.65
+Kenya,Garissa,2004,MAM,151.49,-0.45,39.65
+Kenya,Garissa,2005,MAM,182.26,-0.45,39.65
+Kenya,Garissa,2006,MAM,209.39,-0.45,39.65
+Kenya,Garissa,2007,MAM,280.54,-0.45,39.65
+Kenya,Garissa,2008,MAM,198.38,-0.45,39.65
+Kenya,Garissa,2009,MAM,202.36,-0.45,39.65
+Kenya,Garissa,2010,MAM,186.43,-0.45,39.65
+Kenya,Garissa,2011,MAM,97.9,-0.45,39.65
+Kenya,Garissa,2012,MAM,188.73,-0.45,39.65
+Kenya,Garissa,2013,MAM,192.89,-0.45,39.65
+Kenya,Garissa,2014,MAM,308.24,-0.45,39.65
+Kenya,Garissa,2015,MAM,180.77,-0.45,39.65
+Kenya,Garissa,2016,MAM,204.47,-0.45,39.65
+Kenya,Garissa,2017,MAM,188.33,-0.45,39.65
+Kenya,Garissa,2018,MAM,133.9,-0.45,39.65
+Kenya,Garissa,2019,MAM,244.86,-0.45,39.65
+Kenya,Garissa,2020,MAM,226.09,-0.45,39.65
+Kenya,Garissa,2026,MAM,279.3,-0.45,39.65

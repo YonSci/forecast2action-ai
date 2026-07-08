@@ -1,0 +1,164 @@
+[
+  {
+    "id": "drought_trigger_disaster_manager_001",
+    "hazard": "drought",
+    "risk_level": "trigger",
+    "audience": "disaster_manager",
+    "sector": "Disaster Risk Management",
+    "title": "Activate drought anticipatory action coordination",
+    "rationale": "Severe rainfall deficit and high exposure require immediate coordination before impacts worsen.",
+    "actions": [
+      "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+      "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+      "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+      "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+      "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support."
+    ],
+    "source_title": "Forecast2Action drought anticipatory action guidance",
+    "source_note": "Prototype local knowledge item for drought trigger-level early action planning."
+  },
+  {
+    "id": "drought_trigger_extension_001",
+    "hazard": "drought",
+    "risk_level": "trigger",
+    "audience": "extension_officer",
+    "sector": "Agriculture and Livestock Extension",
+    "title": "Provide drought advisory to farmers and pastoralists",
+    "rationale": "Farmers and pastoralists need practical guidance on water, pasture, crops and livestock management.",
+    "actions": [
+      "Advise communities to conserve water and protect remaining water sources.",
+      "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+      "Monitor crop wilting, pasture degradation and livestock body condition during field visits.",
+      "Share drought-tolerant crop, forage and animal health messages through extension channels.",
+      "Report worsening field conditions to district coordination structures."
+    ],
+    "source_title": "Forecast2Action extension drought advisory guide",
+    "source_note": "Prototype local knowledge item for agriculture and livestock extension response."
+  },
+  {
+    "id": "drought_trigger_ngo_001",
+    "hazard": "drought",
+    "risk_level": "trigger",
+    "audience": "ngo_planner",
+    "sector": "Anticipatory Action and Humanitarian Planning",
+    "title": "Prepare anticipatory drought support package",
+    "rationale": "Trigger-level drought risk requires rapid planning for targeted support before losses escalate.",
+    "actions": [
+      "Review beneficiary targeting using exposure, vulnerability and community ground-truth reports.",
+      "Coordinate with local government to avoid duplication of early action support.",
+      "Pre-position or plan support for water access, livestock feed, animal health and household preparedness.",
+      "Use community reports to verify where field stress is already emerging.",
+      "Prepare monitoring indicators to track whether early actions are reducing impacts."
+    ],
+    "source_title": "Forecast2Action NGO drought early action guide",
+    "source_note": "Prototype local knowledge item for NGO anticipatory action planning."
+  },
+  {
+    "id": "drought_warning_any_001",
+    "hazard": "drought",
+    "risk_level": "warning",
+    "audience": "any",
+    "sector": "Preparedness",
+    "title": "Increase drought preparedness and monitoring",
+    "rationale": "Warning-level drought risk requires intensified monitoring and early preparedness before conditions become critical.",
+    "actions": [
+      "Increase monitoring of rainfall performance, water points, pasture condition and crop stress.",
+      "Brief local officers and community focal persons about the current warning level.",
+      "Prepare drought advisory messages for farmers, pastoralists and vulnerable households.",
+      "Collect community observations to confirm whether impacts are already emerging.",
+      "Review preparedness options for water, feed, veterinary and social protection support."
+    ],
+    "source_title": "Forecast2Action drought preparedness guide",
+    "source_note": "Prototype local knowledge item for drought warning-level preparedness."
+  },
+  {
+    "id": "heavy_rainfall_warning_disaster_manager_001",
+    "hazard": "heavy_rainfall",
+    "risk_level": "warning",
+    "audience": "disaster_manager",
+    "sector": "Flood Preparedness",
+    "title": "Prepare for heavy rainfall and localized flooding",
+    "rationale": "Above-normal rainfall signal may increase flood, road access and displacement risks.",
+    "actions": [
+      "Identify flood-prone settlements, roads, river crossings and drainage hotspots.",
+      "Coordinate with local authorities to prepare flood warning and safety messages.",
+      "Advise communities to avoid crossing flooded roads, rivers and seasonal streams.",
+      "Check readiness of evacuation routes, temporary shelters and emergency communication channels.",
+      "Monitor river levels, drainage congestion and community reports of flooded roads."
+    ],
+    "source_title": "Forecast2Action heavy rainfall preparedness guide",
+    "source_note": "Prototype local knowledge item for heavy rainfall and flood preparedness."
+  },
+  {
+    "id": "heavy_rainfall_warning_extension_001",
+    "hazard": "heavy_rainfall",
+    "risk_level": "warning",
+    "audience": "extension_officer",
+    "sector": "Agriculture Extension",
+    "title": "Advise farmers on heavy rainfall risk",
+    "rationale": "Heavy rainfall may damage crops, increase disease pressure and disrupt field access.",
+    "actions": [
+      "Advise farmers to improve drainage around fields where feasible.",
+      "Monitor crop disease, waterlogging and soil erosion risks.",
+      "Warn communities to avoid farming activities in unsafe flood-prone locations during heavy rainfall.",
+      "Report flooded roads, damaged fields and crop disease outbreaks to district offices.",
+      "Share short advisory messages through extension networks and community focal persons."
+    ],
+    "source_title": "Forecast2Action agriculture heavy rainfall guide",
+    "source_note": "Prototype local knowledge item for agricultural extension during heavy rainfall warnings."
+  },
+  {
+    "id": "heavy_rainfall_trigger_any_001",
+    "hazard": "heavy_rainfall",
+    "risk_level": "trigger",
+    "audience": "any",
+    "sector": "Emergency Preparedness",
+    "title": "Activate flood preparedness and public safety actions",
+    "rationale": "Trigger-level heavy rainfall risk requires immediate preparedness and public safety messaging.",
+    "actions": [
+      "Activate local flood preparedness coordination.",
+      "Issue clear public safety messages for flood-prone areas.",
+      "Prioritize monitoring of river crossings, low-lying settlements and roads.",
+      "Prepare evacuation support for highly exposed communities where needed.",
+      "Use community reports to identify flooded roads, river overflow and blocked drainage."
+    ],
+    "source_title": "Forecast2Action flood trigger early action guide",
+    "source_note": "Prototype local knowledge item for trigger-level heavy rainfall and flood preparedness."
+  },
+  {
+    "id": "heat_warning_any_001",
+    "hazard": "heat_stress",
+    "risk_level": "warning",
+    "audience": "any",
+    "sector": "Heat Health and Livelihood Preparedness",
+    "title": "Prepare heat stress advisory",
+    "rationale": "Heat stress may affect outdoor workers, children, elderly people, livestock and water demand.",
+    "actions": [
+      "Advise communities to reduce strenuous outdoor work during peak heat hours.",
+      "Promote drinking water access and shade for people and livestock.",
+      "Prioritize heat safety messages for vulnerable people, schools, health posts and pastoral communities.",
+      "Monitor livestock heat stress, water demand and unusual illness reports.",
+      "Coordinate with health and livestock officers to prepare practical heat stress advisories."
+    ],
+    "source_title": "Forecast2Action heat stress advisory guide",
+    "source_note": "Prototype local knowledge item for heat stress preparedness."
+  },
+  {
+    "id": "rainfall_watch_any_001",
+    "hazard": "rainfall_watch",
+    "risk_level": "watch",
+    "audience": "any",
+    "sector": "Monitoring",
+    "title": "Maintain close monitoring",
+    "rationale": "Watch-level risk does not yet justify activation but requires close monitoring and readiness.",
+    "actions": [
+      "Continue monitoring rainfall, forecast updates and local observations.",
+      "Prepare advisory messages in case the risk level increases.",
+      "Ask local officers and community focal persons to report early signs of impact.",
+      "Review preparedness plans for the most exposed communities.",
+      "Update the dashboard when new climate or community evidence becomes available."
+    ],
+    "source_title": "Forecast2Action watch-level monitoring guide",
+    "source_note": "Prototype local knowledge item for watch-level monitoring."
+  }
+]
