@@ -7,6 +7,7 @@ from html import escape
 from pathlib import Path
 from uuid import uuid4
 
+
 import pandas as pd
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,14 +28,18 @@ app = FastAPI(
     version="1.2.0",
 )
 
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "https://forecast2action-ai.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
