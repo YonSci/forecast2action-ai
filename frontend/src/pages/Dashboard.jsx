@@ -3,48 +3,30 @@ import RiskMap from "../components/RiskMap.jsx";
 import { apiUrl } from "../config.js";
 
 const AUDIENCES = [
-  {
-    value: "disaster_manager",
-    label: "Disaster Risk Manager",
-  },
-  {
-    value: "ngo_planner",
-    label: "NGO / Anticipatory Action Planner",
-  },
+  { value: "disaster_manager", label: "Disaster Risk Manager" },
+  { value: "ngo_planner", label: "NGO / Anticipatory Action Planner" },
   {
     value: "extension_officer",
     label: "Agriculture & Livestock Extension Officer",
   },
-  {
-    value: "community",
-    label: "Community Member",
-  },
+  { value: "community", label: "Community Member" },
 ];
 
 const LANGUAGES = [
-  {
-    value: "en",
-    label: "English",
-  },
-  {
-    value: "am",
-    label: "Amharic",
-  },
-  {
-    value: "sw",
-    label: "Swahili",
-  },
+  { value: "en", label: "English" },
+  { value: "am", label: "Amharic" },
+  { value: "sw", label: "Swahili" },
 ];
 
 const DEFAULT_REPORT_TYPES = [
-  "water_shortage",
-  "crop_wilting",
-  "pasture_stress",
-  "livestock_stress",
-  "flooded_road",
-  "market_disruption",
-  "disease_concern",
-  "other",
+  { value: "water_shortage", label: "Water shortage / water point drying" },
+  { value: "crop_wilting", label: "Crop wilting" },
+  { value: "pasture_stress", label: "Pasture stress" },
+  { value: "livestock_stress", label: "Livestock stress" },
+  { value: "flooded_road", label: "Flooded road" },
+  { value: "market_disruption", label: "Market disruption" },
+  { value: "disease_concern", label: "Disease concern" },
+  { value: "other", label: "Other" },
 ];
 
 const STATUS_OPTIONS = ["Not started", "In progress", "Completed", "Blocked"];
@@ -70,41 +52,58 @@ function displayValue(value, suffix = "") {
 }
 
 function safeArray(response, keys = []) {
-  if (Array.isArray(response)) {
-    return response;
-  }
+  if (Array.isArray(response)) return response;
 
   for (const key of keys) {
-    if (Array.isArray(response?.[key])) {
-      return response[key];
-    }
+    if (Array.isArray(response?.[key])) return response[key];
   }
 
   return [];
 }
 
-function getReportTypes(response) {
-  const values = safeArray(response, ["report_types", "types", "data"]);
-
-  if (values.length > 0) {
-    return values;
+function normalizeReportTypes(values) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return DEFAULT_REPORT_TYPES;
   }
 
-  return DEFAULT_REPORT_TYPES;
+  return values.map((item) => {
+    if (typeof item === "string") {
+      return {
+        value: item,
+        label: titleCase(item),
+      };
+    }
+
+    return {
+      value:
+        item.value ||
+        item.id ||
+        item.report_type ||
+        item.key ||
+        item.name ||
+        "other",
+      label:
+        item.label ||
+        item.name ||
+        item.title ||
+        titleCase(
+          item.value || item.id || item.report_type || item.key || "other",
+        ),
+    };
+  });
+}
+
+function getReportTypes(response) {
+  const values = safeArray(response, ["report_types", "types", "data"]);
+  return normalizeReportTypes(values);
 }
 
 function getFeedbackForDistrict(feedbackSummary, district) {
-  if (!feedbackSummary || !district) {
-    return null;
-  }
+  if (!feedbackSummary || !district) return null;
 
-  if (feedbackSummary[district]) {
-    return feedbackSummary[district];
-  }
-
-  if (feedbackSummary.by_district?.[district]) {
+  if (feedbackSummary[district]) return feedbackSummary[district];
+  if (feedbackSummary.by_district?.[district])
     return feedbackSummary.by_district[district];
-  }
 
   if (Array.isArray(feedbackSummary.summaries)) {
     return (
@@ -119,17 +118,13 @@ function getFeedbackForDistrict(feedbackSummary, district) {
     );
   }
 
-  if (feedbackSummary.district === district) {
-    return feedbackSummary;
-  }
+  if (feedbackSummary.district === district) return feedbackSummary;
 
   return null;
 }
 
 function getAdvisoryPayload(advisory) {
-  if (!advisory) {
-    return {};
-  }
+  if (!advisory) return {};
 
   return (
     advisory.rag_advisory ||
@@ -198,6 +193,21 @@ function Dashboard() {
   const selectedFeedback = useMemo(() => {
     return getFeedbackForDistrict(feedbackSummary, selectedDistrict);
   }, [feedbackSummary, selectedDistrict]);
+
+  const selectedDistrictReports = useMemo(() => {
+    return communityReports.filter(
+      (report) => report.district === selectedDistrict,
+    );
+  }, [communityReports, selectedDistrict]);
+
+  const selectedFeedbackSignal =
+    selectedFeedback?.feedback_signal ||
+    (selectedDistrictReports.length > 0
+      ? "limited_ground_signal"
+      : "no_ground_signal");
+
+  const selectedFeedbackTotalReports =
+    selectedFeedback?.total_reports ?? selectedDistrictReports.length;
 
   const advisoryPayload = useMemo(() => {
     return getAdvisoryPayload(advisory);
@@ -308,9 +318,7 @@ function Dashboard() {
     audience = selectedAudience,
     language = selectedLanguage,
   ) {
-    if (!district) {
-      return;
-    }
+    if (!district) return;
 
     setAdvisoryLoading(true);
 
@@ -335,9 +343,7 @@ function Dashboard() {
     audience = selectedAudience,
     language = selectedLanguage,
   ) {
-    if (!district) {
-      return;
-    }
+    if (!district) return;
 
     try {
       const path = `/api/action-tracker/${encodeURIComponent(
@@ -380,9 +386,7 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!selectedDistrict) {
-      return;
-    }
+    if (!selectedDistrict) return;
 
     loadAdvisory(selectedDistrict, selectedAudience, selectedLanguage);
     loadActionTracker(selectedDistrict, selectedAudience, selectedLanguage);
@@ -395,10 +399,7 @@ function Dashboard() {
 
   function handleMapDistrictSelect(district) {
     setSelectedDistrict(district);
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleAudienceChange(event) {
@@ -499,9 +500,7 @@ function Dashboard() {
   }
 
   async function handleDownloadBulletin(outputFormat) {
-    if (!selectedDistrict) {
-      return;
-    }
+    if (!selectedDistrict) return;
 
     const path = `/api/bulletin/${encodeURIComponent(
       selectedDistrict,
@@ -532,9 +531,7 @@ function Dashboard() {
   }
 
   async function handleDownloadActionTrackerCsv() {
-    if (!selectedDistrict) {
-      return;
-    }
+    if (!selectedDistrict) return;
 
     const path = `/api/action-tracker/${encodeURIComponent(
       selectedDistrict,
@@ -571,10 +568,6 @@ function Dashboard() {
     (item) => item.risk_level === "watch",
   ).length;
 
-  const selectedDistrictReports = communityReports.filter(
-    (report) => report.district === selectedDistrict,
-  );
-
   if (loading) {
     return (
       <main className="app-shell">
@@ -601,48 +594,53 @@ function Dashboard() {
         </div>
 
         <div className="selector-card">
-          <label htmlFor="district-select">Select district</label>
-          <select
-            id="district-select"
-            value={selectedDistrict}
-            onChange={handleDistrictChange}
-          >
-            {riskData.length === 0 && (
-              <option value="">No districts loaded</option>
-            )}
+          <div className="selector-field">
+            <label htmlFor="district-select">Select district</label>
+            <select
+              id="district-select"
+              value={selectedDistrict}
+              onChange={handleDistrictChange}
+            >
+              {riskData.length === 0 && (
+                <option value="">No districts loaded</option>
+              )}
+              {riskData.map((item) => (
+                <option key={item.district} value={item.district}>
+                  {item.district}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            {riskData.map((item) => (
-              <option key={item.district} value={item.district}>
-                {item.district}
-              </option>
-            ))}
-          </select>
+          <div className="selector-field">
+            <label htmlFor="audience-select">Select audience</label>
+            <select
+              id="audience-select"
+              value={selectedAudience}
+              onChange={handleAudienceChange}
+            >
+              {AUDIENCES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <label htmlFor="audience-select">Select audience</label>
-          <select
-            id="audience-select"
-            value={selectedAudience}
-            onChange={handleAudienceChange}
-          >
-            {AUDIENCES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-
-          <label htmlFor="language-select">Community message language</label>
-          <select
-            id="language-select"
-            value={selectedLanguage}
-            onChange={handleLanguageChange}
-          >
-            {LANGUAGES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+          <div className="selector-field">
+            <label htmlFor="language-select">Community message language</label>
+            <select
+              id="language-select"
+              value={selectedLanguage}
+              onChange={handleLanguageChange}
+            >
+              {LANGUAGES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </section>
 
@@ -881,8 +879,7 @@ function Dashboard() {
 
             <p className="evidence-note">
               Prototype climate evidence is based on CHIRPS-style seasonal
-              rainfall anomaly and SPI-like standardized rainfall score. Replace
-              with operational CHIRPS zonal statistics for production.
+              rainfall anomaly and SPI-like standardized rainfall score.
             </p>
 
             {advisoryLoading && <p>Loading advisory...</p>}
@@ -912,15 +909,12 @@ function Dashboard() {
                 </div>
 
                 <div className="advisory-card">
-                  <h3>RAG / Knowledge-guided advisory basis</h3>
+                  <h3>Knowledge-guided advisory basis</h3>
 
                   {retrievalSummary ? (
                     <p>{retrievalSummary}</p>
                   ) : (
-                    <p>
-                      No retrieval summary available. Check whether the backend
-                      Action Knowledge Base is loading correctly.
-                    </p>
+                    <p>No retrieval summary available.</p>
                   )}
 
                   {knowledgeSources.length > 0 && (
@@ -1029,27 +1023,22 @@ function Dashboard() {
               {displayValue(actionSummary.total_tasks || actionTasks.length)}
             </strong>
           </div>
-
           <div>
             <span>Not started</span>
             <strong>{displayValue(actionSummary.not_started || 0)}</strong>
           </div>
-
           <div>
             <span>In progress</span>
             <strong>{displayValue(actionSummary.in_progress || 0)}</strong>
           </div>
-
           <div>
             <span>Completed</span>
             <strong>{displayValue(actionSummary.completed || 0)}</strong>
           </div>
-
           <div>
             <span>Blocked</span>
             <strong>{displayValue(actionSummary.blocked || 0)}</strong>
           </div>
-
           <div>
             <span>District</span>
             <strong>{selectedDistrict || "N/A"}</strong>
@@ -1128,63 +1117,73 @@ function Dashboard() {
           <form className="report-form" onSubmit={handleReportSubmit}>
             <h3>Submit community report</h3>
 
-            <label htmlFor="report-type">Report type</label>
-            <select
-              id="report-type"
-              name="report_type"
-              value={reportForm.report_type}
-              onChange={handleReportInputChange}
-            >
-              {reportTypes.map((type) => (
-                <option key={type} value={type}>
-                  {titleCase(type)}
-                </option>
-              ))}
-            </select>
+            <div className="report-form-grid">
+              <div className="form-field">
+                <label htmlFor="report-type">Report type</label>
+                <select
+                  id="report-type"
+                  name="report_type"
+                  value={reportForm.report_type}
+                  onChange={handleReportInputChange}
+                >
+                  {reportTypes.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <label htmlFor="severity">Severity</label>
-            <select
-              id="severity"
-              name="severity"
-              value={reportForm.severity}
-              onChange={handleReportInputChange}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+              <div className="form-field">
+                <label htmlFor="severity">Severity</label>
+                <select
+                  id="severity"
+                  name="severity"
+                  value={reportForm.severity}
+                  onChange={handleReportInputChange}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
 
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              name="description"
-              value={reportForm.description}
-              onChange={handleReportInputChange}
-              placeholder="Describe what is being observed locally..."
-              rows="4"
-              required
-            />
+              <div className="form-field form-field-full">
+                <label htmlFor="description">Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={reportForm.description}
+                  onChange={handleReportInputChange}
+                  placeholder="Describe what is being observed locally..."
+                  rows="4"
+                  required
+                />
+              </div>
 
-            <label htmlFor="reporter-name">Reporter name</label>
-            <input
-              id="reporter-name"
-              name="reporter_name"
-              value={reportForm.reporter_name}
-              onChange={handleReportInputChange}
-              placeholder="Optional"
-            />
+              <div className="form-field">
+                <label htmlFor="reporter-name">Reporter name</label>
+                <input
+                  id="reporter-name"
+                  name="reporter_name"
+                  value={reportForm.reporter_name}
+                  onChange={handleReportInputChange}
+                  placeholder="Optional"
+                />
+              </div>
 
-            <label htmlFor="contact">Contact</label>
-            <input
-              id="contact"
-              name="contact"
-              value={reportForm.contact}
-              onChange={handleReportInputChange}
-              placeholder="Optional"
-            />
+              <div className="form-field">
+                <label htmlFor="contact">Contact</label>
+                <input
+                  id="contact"
+                  name="contact"
+                  value={reportForm.contact}
+                  onChange={handleReportInputChange}
+                  placeholder="Optional"
+                />
+              </div>
 
-            <div className="form-two-column">
-              <div>
+              <div className="form-field">
                 <label htmlFor="latitude">Latitude</label>
                 <input
                   id="latitude"
@@ -1197,7 +1196,7 @@ function Dashboard() {
                 />
               </div>
 
-              <div>
+              <div className="form-field">
                 <label htmlFor="longitude">Longitude</label>
                 <input
                   id="longitude"
@@ -1219,17 +1218,15 @@ function Dashboard() {
           <div className="community-summary">
             <h3>Ground signal for {selectedDistrict || "selected district"}</h3>
 
-            <div className="climate-evidence-grid">
+            <div className="climate-evidence-grid compact-grid">
               <div className="climate-card">
                 <span>Feedback signal</span>
-                <strong>{titleCase(selectedFeedback?.feedback_signal)}</strong>
+                <strong>{titleCase(selectedFeedbackSignal)}</strong>
               </div>
 
               <div className="climate-card">
                 <span>Total reports</span>
-                <strong>
-                  {displayValue(selectedFeedback?.total_reports || 0)}
-                </strong>
+                <strong>{displayValue(selectedFeedbackTotalReports)}</strong>
               </div>
             </div>
 
