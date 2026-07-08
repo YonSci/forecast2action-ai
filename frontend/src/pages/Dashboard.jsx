@@ -1,133 +1,374 @@
-import { useEffect, useState } from "react";
-import RiskMap from "../components/RiskMap";
+import { useEffect, useMemo, useState } from "react";
+import RiskMap from "../components/RiskMap.jsx";
+import { apiUrl } from "../config.js";
+
+const AUDIENCES = [
+  {
+    value: "disaster_manager",
+    label: "Disaster Risk Manager",
+  },
+  {
+    value: "ngo_planner",
+    label: "NGO / Anticipatory Action Planner",
+  },
+  {
+    value: "extension_officer",
+    label: "Agriculture & Livestock Extension Officer",
+  },
+  {
+    value: "community",
+    label: "Community Member",
+  },
+];
+
+const LANGUAGES = [
+  {
+    value: "en",
+    label: "English",
+  },
+  {
+    value: "am",
+    label: "Amharic",
+  },
+  {
+    value: "sw",
+    label: "Swahili",
+  },
+];
+
+const DEFAULT_REPORT_TYPES = [
+  "water_shortage",
+  "crop_wilting",
+  "pasture_stress",
+  "livestock_stress",
+  "flooded_road",
+  "market_disruption",
+  "disease_concern",
+  "other",
+];
+
+const STATUS_OPTIONS = ["Not started", "In progress", "Completed", "Blocked"];
+
+function titleCase(value) {
+  if (value === null || value === undefined || value === "") {
+    return "N/A";
+  }
+
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\w\S*/g, (text) => {
+      return text.charAt(0).toUpperCase() + text.substring(1).toLowerCase();
+    });
+}
+
+function displayValue(value, suffix = "") {
+  if (value === null || value === undefined || value === "") {
+    return "N/A";
+  }
+
+  return `${value}${suffix}`;
+}
+
+function safeArray(response, keys = []) {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  for (const key of keys) {
+    if (Array.isArray(response?.[key])) {
+      return response[key];
+    }
+  }
+
+  return [];
+}
+
+function getReportTypes(response) {
+  const values = safeArray(response, ["report_types", "types", "data"]);
+
+  if (values.length > 0) {
+    return values;
+  }
+
+  return DEFAULT_REPORT_TYPES;
+}
+
+function getFeedbackForDistrict(feedbackSummary, district) {
+  if (!feedbackSummary || !district) {
+    return null;
+  }
+
+  if (feedbackSummary[district]) {
+    return feedbackSummary[district];
+  }
+
+  if (feedbackSummary.by_district?.[district]) {
+    return feedbackSummary.by_district[district];
+  }
+
+  if (Array.isArray(feedbackSummary.summaries)) {
+    return (
+      feedbackSummary.summaries.find((item) => item.district === district) ||
+      null
+    );
+  }
+
+  if (Array.isArray(feedbackSummary.data)) {
+    return (
+      feedbackSummary.data.find((item) => item.district === district) || null
+    );
+  }
+
+  if (feedbackSummary.district === district) {
+    return feedbackSummary;
+  }
+
+  return null;
+}
+
+function getAdvisoryPayload(advisory) {
+  if (!advisory) {
+    return {};
+  }
+
+  return (
+    advisory.rag_advisory ||
+    advisory.advisory ||
+    advisory.local_rag ||
+    advisory.generated_advisory ||
+    advisory
+  );
+}
+
+function downloadBlob(blob, filename) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function fetchJson(path, options = {}) {
+  const response = await fetch(apiUrl(path), options);
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Request failed ${response.status}: ${text}`);
+  }
+
+  return response.json();
+}
 
 function Dashboard() {
   const [riskData, setRiskData] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedAudience, setSelectedAudience] = useState("disaster_manager");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+
   const [advisory, setAdvisory] = useState(null);
   const [communityReports, setCommunityReports] = useState([]);
   const [feedbackSummary, setFeedbackSummary] = useState(null);
-  const [reportTypes, setReportTypes] = useState([]);
+  const [reportTypes, setReportTypes] = useState(DEFAULT_REPORT_TYPES);
   const [priorityActions, setPriorityActions] = useState([]);
   const [actionTracker, setActionTracker] = useState(null);
-  const [taskStatuses, setTaskStatuses] = useState({});
+
   const [loading, setLoading] = useState(true);
+  const [advisoryLoading, setAdvisoryLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const audiences = [
-    { id: "disaster_manager", label: "Disaster Risk Manager" },
-    { id: "ngo_planner", label: "NGO / Anticipatory Action Planner" },
-    {
-      id: "extension_officer",
-      label: "Agriculture and Livestock Extension Officer",
-    },
-    { id: "community", label: "Community Member" },
-  ];
+  const [reportForm, setReportForm] = useState({
+    report_type: "water_shortage",
+    severity: "medium",
+    description: "",
+    reporter_name: "",
+    contact: "",
+    latitude: "",
+    longitude: "",
+  });
 
-  const languages = [
-    { id: "en", label: "English" },
-    { id: "am", label: "Amharic" },
-    { id: "sw", label: "Swahili" },
-  ];
+  const selectedRisk = useMemo(() => {
+    return riskData.find((item) => item.district === selectedDistrict) || null;
+  }, [riskData, selectedDistrict]);
 
-  function displayValue(value, suffix = "") {
-    if (value === null || value === undefined || Number.isNaN(value)) {
-      return "—";
+  const selectedFeedback = useMemo(() => {
+    return getFeedbackForDistrict(feedbackSummary, selectedDistrict);
+  }, [feedbackSummary, selectedDistrict]);
+
+  const advisoryPayload = useMemo(() => {
+    return getAdvisoryPayload(advisory);
+  }, [advisory]);
+
+  const recommendedActions =
+    advisory?.recommended_actions ||
+    advisoryPayload?.recommended_actions ||
+    advisoryPayload?.actions ||
+    [];
+
+  const knowledgeSources =
+    advisory?.knowledge_sources || advisoryPayload?.knowledge_sources || [];
+
+  const retrievedGuidance =
+    advisory?.retrieved_guidance || advisoryPayload?.retrieved_guidance || [];
+
+  const roleSpecificAdvisory =
+    advisory?.role_specific_advisory ||
+    advisoryPayload?.role_specific_advisory ||
+    advisory?.advisory_text ||
+    advisoryPayload?.advisory_text ||
+    "";
+
+  const retrievalSummary =
+    advisory?.retrieval_summary || advisoryPayload?.retrieval_summary || "";
+
+  const communityMessage =
+    advisory?.community_message ||
+    advisory?.sms_message ||
+    advisoryPayload?.community_message ||
+    advisoryPayload?.sms_message ||
+    "";
+
+  const actionTasks = Array.isArray(actionTracker)
+    ? actionTracker
+    : actionTracker?.tasks || [];
+
+  const actionSummary = actionTracker?.summary || {};
+
+  async function loadRiskData() {
+    const response = await fetchJson("/api/risk");
+    const items = safeArray(response, [
+      "risk_data",
+      "data",
+      "items",
+      "districts",
+    ]);
+
+    setRiskData(items);
+
+    if (!selectedDistrict && items.length > 0) {
+      setSelectedDistrict(items[0].district);
     }
 
-    return `${value}${suffix}`;
+    return items;
   }
 
-  function titleCase(value) {
-    if (!value) {
-      return "";
+  async function loadReportTypes() {
+    try {
+      const response = await fetchJson("/api/report-types");
+      setReportTypes(getReportTypes(response));
+    } catch (error) {
+      console.error(error);
+      setReportTypes(DEFAULT_REPORT_TYPES);
     }
-
-    return String(value)
-      .replaceAll("_", " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
-  async function fetchJson(url, options = {}) {
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      throw new Error(`Request failed: ${response.status}`);
+  async function loadCommunityReports() {
+    try {
+      const response = await fetchJson("/api/community-reports");
+      const reports = safeArray(response, ["reports", "data", "items"]);
+      setCommunityReports(reports);
+    } catch (error) {
+      console.error(error);
+      setCommunityReports([]);
     }
-
-    return response.json();
   }
 
-  async function loadAdvisory(district, audience, language) {
-    const data = await fetchJson(
-      `/api/advisory/${encodeURIComponent(
-        district,
-      )}?audience=${audience}&language=${language}`,
-    );
-
-    setAdvisory(data);
-  }
-
-  async function loadCommunityFeedback(district) {
-    const reports = await fetchJson(
-      `/api/community-reports?district=${encodeURIComponent(
-        district,
-      )}&limit=20`,
-    );
-
-    const summary = await fetchJson(
-      `/api/community-feedback-summary?district=${encodeURIComponent(district)}`,
-    );
-
-    setCommunityReports(reports.reports || []);
-    setFeedbackSummary(summary);
+  async function loadCommunityFeedback() {
+    try {
+      const response = await fetchJson("/api/community-feedback-summary");
+      setFeedbackSummary(response);
+    } catch (error) {
+      console.error(error);
+      setFeedbackSummary(null);
+    }
   }
 
   async function loadPriorityActions() {
-    const data = await fetchJson("/api/priority-actions");
-    setPriorityActions(data);
+    try {
+      const response = await fetchJson("/api/priority-actions");
+      const items = safeArray(response, [
+        "priority_actions",
+        "actions",
+        "data",
+        "items",
+      ]);
+      setPriorityActions(items);
+    } catch (error) {
+      console.error(error);
+      setPriorityActions([]);
+    }
   }
 
-  async function loadActionTracker(district, audience, language) {
-    const data = await fetchJson(
-      `/api/action-tracker/${encodeURIComponent(
+  async function loadAdvisory(
+    district = selectedDistrict,
+    audience = selectedAudience,
+    language = selectedLanguage,
+  ) {
+    if (!district) {
+      return;
+    }
+
+    setAdvisoryLoading(true);
+
+    try {
+      const path = `/api/advisory/${encodeURIComponent(
         district,
-      )}?audience=${audience}&language=${language}`,
-    );
+      )}?audience=${encodeURIComponent(audience)}&language=${encodeURIComponent(language)}`;
 
-    setActionTracker(data);
+      const response = await fetchJson(path);
+      setAdvisory(response);
+    } catch (error) {
+      console.error(error);
+      setAdvisory(null);
+      setErrorMessage("Could not load advisory from the backend API.");
+    } finally {
+      setAdvisoryLoading(false);
+    }
+  }
 
-    const nextStatuses = {};
-    data.tasks?.forEach((task) => {
-      nextStatuses[task.id] = task.status || "Not started";
-    });
+  async function loadActionTracker(
+    district = selectedDistrict,
+    audience = selectedAudience,
+    language = selectedLanguage,
+  ) {
+    if (!district) {
+      return;
+    }
 
-    setTaskStatuses(nextStatuses);
+    try {
+      const path = `/api/action-tracker/${encodeURIComponent(
+        district,
+      )}?audience=${encodeURIComponent(audience)}&language=${encodeURIComponent(language)}`;
+
+      const response = await fetchJson(path);
+      setActionTracker(response);
+    } catch (error) {
+      console.error(error);
+      setActionTracker(null);
+    }
   }
 
   async function loadDashboard() {
+    setLoading(true);
+    setErrorMessage("");
+
     try {
-      const risks = await fetchJson("/api/risk");
-      setRiskData(risks);
-
-      const types = await fetchJson("/api/report-types");
-      setReportTypes(types);
-
-      await loadPriorityActions();
-
-      if (risks.length > 0) {
-        const firstDistrict = risks[0].district;
-        setSelectedDistrict(firstDistrict);
-
-        await Promise.all([
-          loadAdvisory(firstDistrict, selectedAudience, selectedLanguage),
-          loadCommunityFeedback(firstDistrict),
-          loadActionTracker(firstDistrict, selectedAudience, selectedLanguage),
-        ]);
-      }
+      await Promise.all([
+        loadRiskData(),
+        loadReportTypes(),
+        loadCommunityReports(),
+        loadCommunityFeedback(),
+        loadPriorityActions(),
+      ]);
     } catch (error) {
-      console.error("Dashboard loading error:", error);
+      console.error(error);
+      setErrorMessage(
+        "Could not load dashboard data. Check that the deployed backend URL is correct and reachable.",
+      );
     } finally {
       setLoading(false);
     }
@@ -138,80 +379,113 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleDistrictChange(event) {
-    const district = event.target.value;
+  useEffect(() => {
+    if (!selectedDistrict) {
+      return;
+    }
+
+    loadAdvisory(selectedDistrict, selectedAudience, selectedLanguage);
+    loadActionTracker(selectedDistrict, selectedAudience, selectedLanguage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDistrict, selectedAudience, selectedLanguage]);
+
+  function handleDistrictChange(event) {
+    setSelectedDistrict(event.target.value);
+  }
+
+  function handleMapDistrictSelect(district) {
     setSelectedDistrict(district);
-
-    await Promise.all([
-      loadAdvisory(district, selectedAudience, selectedLanguage),
-      loadCommunityFeedback(district),
-      loadActionTracker(district, selectedAudience, selectedLanguage),
-    ]);
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
-  async function handleMapDistrictSelect(district) {
-    setSelectedDistrict(district);
-
-    await Promise.all([
-      loadAdvisory(district, selectedAudience, selectedLanguage),
-      loadCommunityFeedback(district),
-      loadActionTracker(district, selectedAudience, selectedLanguage),
-    ]);
+  function handleAudienceChange(event) {
+    setSelectedAudience(event.target.value);
   }
 
-  async function handleAudienceChange(event) {
-    const audience = event.target.value;
-    setSelectedAudience(audience);
-
-    await Promise.all([
-      loadAdvisory(selectedDistrict, audience, selectedLanguage),
-      loadActionTracker(selectedDistrict, audience, selectedLanguage),
-    ]);
+  function handleLanguageChange(event) {
+    setSelectedLanguage(event.target.value);
   }
 
-  async function handleLanguageChange(event) {
-    const language = event.target.value;
-    setSelectedLanguage(language);
+  function handleReportInputChange(event) {
+    const { name, value } = event.target;
 
-    await Promise.all([
-      loadAdvisory(selectedDistrict, selectedAudience, language),
-      loadActionTracker(selectedDistrict, selectedAudience, language),
-    ]);
-  }
-
-  async function handleTaskStatusChange(task, status) {
-    setTaskStatuses((previousStatuses) => ({
-      ...previousStatuses,
-      [task.id]: status,
+    setReportForm((previous) => ({
+      ...previous,
+      [name]: value,
     }));
+  }
+
+  async function handleReportSubmit(event) {
+    event.preventDefault();
+
+    if (!selectedRisk) {
+      setErrorMessage(
+        "Please select a district before submitting a community report.",
+      );
+      return;
+    }
+
+    const payload = {
+      country: selectedRisk.country,
+      district: selectedRisk.district,
+      report_type: reportForm.report_type,
+      severity: reportForm.severity,
+      description: reportForm.description,
+      reporter_name: reportForm.reporter_name,
+      contact: reportForm.contact,
+      latitude: reportForm.latitude === "" ? null : Number(reportForm.latitude),
+      longitude:
+        reportForm.longitude === "" ? null : Number(reportForm.longitude),
+    };
 
     try {
-      const payload = {
-        task_id: task.id,
-        status,
-        district: task.district,
-        country: task.country,
-        hazard: task.hazard,
-        risk_level: task.risk_level,
-        audience: selectedAudience,
-        action: task.action,
-        responsible_sector: task.responsible_sector,
-        priority: task.priority,
-        suggested_deadline: task.suggested_deadline,
-        updated_by: selectedAudience,
-      };
-
-      const result = await fetchJson("/api/action-tracker/status", {
-        method: "PATCH",
+      await fetchJson("/api/community-reports", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
 
-      if (!result.success) {
-        alert(result.message || "Failed to save task status.");
-      }
+      setReportForm({
+        report_type: "water_shortage",
+        severity: "medium",
+        description: "",
+        reporter_name: "",
+        contact: "",
+        latitude: "",
+        longitude: "",
+      });
+
+      await Promise.all([
+        loadCommunityReports(),
+        loadCommunityFeedback(),
+        loadPriorityActions(),
+        loadAdvisory(selectedDistrict, selectedAudience, selectedLanguage),
+        loadActionTracker(selectedDistrict, selectedAudience, selectedLanguage),
+      ]);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Community report submission failed.");
+    }
+  }
+
+  async function handleTaskStatusChange(task, status) {
+    try {
+      await fetchJson("/api/action-tracker/status", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          task_id: task.task_id,
+          status,
+          updated_by: "dashboard_user",
+        }),
+      });
 
       await loadActionTracker(
         selectedDistrict,
@@ -219,463 +493,492 @@ function Dashboard() {
         selectedLanguage,
       );
     } catch (error) {
-      console.error("Task status update error:", error);
-      alert("Failed to save task status.");
+      console.error(error);
+      setErrorMessage("Could not update task status.");
     }
   }
 
-  async function handleReportSubmit(event) {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-
-    const selectedRisk = riskData.find(
-      (item) => item.district === selectedDistrict,
-    );
-
-    const payload = {
-      country: selectedRisk?.country || "",
-      district: selectedDistrict,
-      report_type: formData.get("report_type"),
-      severity: formData.get("severity"),
-      description: formData.get("description"),
-      reported_by: formData.get("reported_by") || "anonymous",
-      contact: formData.get("contact") || "",
-      latitude: formData.get("latitude")
-        ? Number(formData.get("latitude"))
-        : null,
-      longitude: formData.get("longitude")
-        ? Number(formData.get("longitude"))
-        : null,
-    };
-
-    await fetchJson("/api/community-reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    event.target.reset();
-
-    await Promise.all([
-      loadCommunityFeedback(selectedDistrict),
-      loadAdvisory(selectedDistrict, selectedAudience, selectedLanguage),
-      loadPriorityActions(),
-      loadActionTracker(selectedDistrict, selectedAudience, selectedLanguage),
-    ]);
-  }
-
-  async function handleDownloadBulletin(outputFormat = "html") {
-    const response = await fetch(
-      `/api/bulletin/${encodeURIComponent(
-        selectedDistrict,
-      )}?audience=${selectedAudience}&language=${selectedLanguage}&output_format=${outputFormat}`,
-    );
-
-    if (!response.ok) {
-      alert("Failed to generate bulletin.");
+  async function handleDownloadBulletin(outputFormat) {
+    if (!selectedDistrict) {
       return;
     }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+    const path = `/api/bulletin/${encodeURIComponent(
+      selectedDistrict,
+    )}?audience=${encodeURIComponent(
+      selectedAudience,
+    )}&language=${encodeURIComponent(
+      selectedLanguage,
+    )}&output_format=${encodeURIComponent(outputFormat)}`;
 
-    const safeDistrict = selectedDistrict.replaceAll(" ", "_");
-    const extension = outputFormat === "markdown" ? "md" : "html";
+    try {
+      const response = await fetch(apiUrl(path));
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `forecast2action_bulletin_${safeDistrict}.${extension}`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      if (!response.ok) {
+        throw new Error(`Bulletin export failed: ${response.status}`);
+      }
 
-    window.URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const extension = outputFormat === "markdown" ? "md" : "html";
+      const filename = `forecast2action_bulletin_${selectedDistrict
+        .replaceAll(" ", "_")
+        .toLowerCase()}.${extension}`;
+
+      downloadBlob(blob, filename);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not download bulletin.");
+    }
   }
 
   async function handleDownloadActionTrackerCsv() {
-    const response = await fetch(
-      `/api/action-tracker/${encodeURIComponent(
-        selectedDistrict,
-      )}/csv?audience=${selectedAudience}&language=${selectedLanguage}`,
-    );
-
-    if (!response.ok) {
-      alert("Failed to export action tracker CSV.");
+    if (!selectedDistrict) {
       return;
     }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+    const path = `/api/action-tracker/${encodeURIComponent(
+      selectedDistrict,
+    )}/csv?audience=${encodeURIComponent(
+      selectedAudience,
+    )}&language=${encodeURIComponent(selectedLanguage)}`;
 
-    const safeDistrict = selectedDistrict.replaceAll(" ", "_");
-    const safeAudience = selectedAudience.replaceAll(" ", "_");
+    try {
+      const response = await fetch(apiUrl(path));
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `forecast2action_action_tracker_${safeDistrict}_${safeAudience}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      if (!response.ok) {
+        throw new Error(`CSV export failed: ${response.status}`);
+      }
 
-    window.URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const filename = `forecast2action_action_tracker_${selectedDistrict
+        .replaceAll(" ", "_")
+        .toLowerCase()}.csv`;
+
+      downloadBlob(blob, filename);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not download action tracker CSV.");
+    }
   }
 
-  const triggers = riskData.filter(
+  const triggerCount = riskData.filter(
     (item) => item.risk_level === "trigger",
   ).length;
-
-  const warnings = riskData.filter(
+  const warningCount = riskData.filter(
     (item) => item.risk_level === "warning",
   ).length;
-
-  const hazards = new Set(riskData.map((item) => item.hazard)).size;
-  const countries = new Set(riskData.map((item) => item.country)).size;
-
-  const climateEvidence = advisory?.climate_evidence || {};
-  const inputIndicators = advisory?.input_indicators || {};
-  const knowledgeSources = advisory?.knowledge_sources || [];
-  const trackerTasks = actionTracker?.tasks || [];
-
-  const completedTasks = trackerTasks.filter(
-    (task) => taskStatuses[task.id] === "Completed",
+  const watchCount = riskData.filter(
+    (item) => item.risk_level === "watch",
   ).length;
 
-  const inProgressTasks = trackerTasks.filter(
-    (task) => taskStatuses[task.id] === "In progress",
-  ).length;
-
-  const blockedTasks = trackerTasks.filter(
-    (task) => taskStatuses[task.id] === "Blocked",
-  ).length;
+  const selectedDistrictReports = communityReports.filter(
+    (report) => report.district === selectedDistrict,
+  );
 
   if (loading) {
-    return <div className="loading">Loading Forecast2Action AI...</div>;
+    return (
+      <main className="app-shell">
+        <section className="hero">
+          <p className="eyebrow">IGAD Hackathon 2026 Prototype</p>
+          <h1>Forecast2Action AI</h1>
+          <p className="hero-text">Loading dashboard data...</p>
+        </section>
+      </main>
+    );
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <div>
-          <h2>Forecast2Action AI</h2>
-          <p>Smarter early warning, stronger communities</p>
+    <main className="app-shell">
+      <section className="hero">
+        <div className="hero-content">
+          <p className="eyebrow">IGAD Hackathon 2026 Prototype</p>
+          <h1>Forecast2Action AI</h1>
+          <p className="hero-text">
+            Smarter early warning, stronger communities. Convert climate risk
+            signals into explainable advisories, priority actions, community
+            messages, implementation tasks, and operational exports.
+          </p>
         </div>
-      </header>
 
-      <main className="container">
-        <section className="hero">
-          <div>
-            <p className="eyebrow">IGAD Hackathon 2026 Prototype</p>
+        <div className="selector-card">
+          <label htmlFor="district-select">Select district</label>
+          <select
+            id="district-select"
+            value={selectedDistrict}
+            onChange={handleDistrictChange}
+          >
+            {riskData.length === 0 && (
+              <option value="">No districts loaded</option>
+            )}
 
-            <h1>
-              Forecast2Action
-              <br />
-              AI
-            </h1>
-
-            <p>
-              Explainable AI copilot for impact-based early warning, last-mile
-              anticipatory action and community ground-truth reporting.
-            </p>
-          </div>
-
-          <div className="selector-stack">
-            <label>
-              Select district
-              <select value={selectedDistrict} onChange={handleDistrictChange}>
-                {riskData.map((item) => (
-                  <option key={item.district} value={item.district}>
-                    {item.district}, {item.country}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Select audience
-              <select value={selectedAudience} onChange={handleAudienceChange}>
-                {audiences.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Community message language
-              <select value={selectedLanguage} onChange={handleLanguageChange}>
-                {languages.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section className="metrics-grid">
-          <div className="risk-card">
-            <p>Countries</p>
-            <h3>{countries}</h3>
-          </div>
-
-          <div className="risk-card">
-            <p>Hazards</p>
-            <h3>{hazards}</h3>
-          </div>
-
-          <div className="risk-card">
-            <p>Warnings</p>
-            <h3>{warnings}</h3>
-          </div>
-
-          <div className="risk-card">
-            <p>Triggers</p>
-            <h3>{triggers}</h3>
-          </div>
-        </section>
-
-        <RiskMap
-          riskData={riskData}
-          selectedDistrict={selectedDistrict}
-          onSelectDistrict={handleMapDistrictSelect}
-        />
-
-        <section className="panel priority-section">
-          <div className="priority-header">
-            <div>
-              <h2>Priority Action Queue</h2>
-              <p>
-                Automatically ranks districts by risk score, rainfall evidence,
-                and community ground-truth signal.
-              </p>
-            </div>
-          </div>
-
-          <div className="priority-list">
-            {priorityActions.map((item) => (
-              <div className="priority-item" key={item.district}>
-                <div className="priority-rank">{item.rank}</div>
-
-                <div className="priority-main">
-                  <div className="priority-title-row">
-                    <h3>
-                      {item.district}, {item.country}
-                    </h3>
-
-                    <span className={`badge badge-${item.risk_level}`}>
-                      {item.risk_level}
-                    </span>
-                  </div>
-
-                  <p>
-                    <strong>{item.hazard_label}</strong> · Risk score:{" "}
-                    <strong>{item.risk_score}</strong> · Priority score:{" "}
-                    <strong>{item.priority_score}</strong> · Community reports:{" "}
-                    <strong>{item.community_reports}</strong>
-                  </p>
-
-                  <p>
-                    Rainfall anomaly:{" "}
-                    <strong>
-                      {displayValue(item.rainfall_anomaly_pct, "%")}
-                    </strong>{" "}
-                    · SPI-like score: <strong>{displayValue(item.spi)}</strong>
-                  </p>
-
-                  <p className="priority-label">{item.priority_label}</p>
-
-                  <p className="priority-step">{item.recommended_next_step}</p>
-
-                  <p className="priority-feedback">
-                    Ground signal:{" "}
-                    <strong>{item.feedback_signal.replaceAll("_", " ")}</strong>
-                  </p>
-                </div>
-              </div>
+            {riskData.map((item) => (
+              <option key={item.district} value={item.district}>
+                {item.district}
+              </option>
             ))}
-          </div>
-        </section>
+          </select>
 
-        <section className="content-grid">
-          <div className="panel">
-            <h2>Impact-Based Risk Scores</h2>
+          <label htmlFor="audience-select">Select audience</label>
+          <select
+            id="audience-select"
+            value={selectedAudience}
+            onChange={handleAudienceChange}
+          >
+            {AUDIENCES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
 
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>District</th>
-                    <th>Country</th>
-                    <th>Hazard</th>
-                    <th>Rainfall Anomaly</th>
-                    <th>SPI</th>
-                    <th>Score</th>
-                    <th>Level</th>
-                  </tr>
-                </thead>
+          <label htmlFor="language-select">Community message language</label>
+          <select
+            id="language-select"
+            value={selectedLanguage}
+            onChange={handleLanguageChange}
+          >
+            {LANGUAGES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
 
-                <tbody>
-                  {riskData.map((item) => (
-                    <tr key={item.district}>
-                      <td>{item.district}</td>
-                      <td>{item.country}</td>
-                      <td>{item.hazard?.replaceAll("_", " ")}</td>
-                      <td>{displayValue(item.rainfall_anomaly_pct, "%")}</td>
-                      <td>{displayValue(item.spi)}</td>
-                      <td>{item.risk_score}</td>
-                      <td>
-                        <span className={`badge badge-${item.risk_level}`}>
-                          {item.risk_level}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {errorMessage && <div className="error-banner">{errorMessage}</div>}
+
+      <section className="metrics-grid">
+        <div className="metric-card">
+          <span>Total pilot districts</span>
+          <strong>{riskData.length}</strong>
+        </div>
+
+        <div className="metric-card">
+          <span>Trigger alerts</span>
+          <strong>{triggerCount}</strong>
+        </div>
+
+        <div className="metric-card">
+          <span>Warning alerts</span>
+          <strong>{warningCount}</strong>
+        </div>
+
+        <div className="metric-card">
+          <span>Watch alerts</span>
+          <strong>{watchCount}</strong>
+        </div>
+
+        <div className="metric-card">
+          <span>Community reports</span>
+          <strong>{communityReports.length}</strong>
+        </div>
+      </section>
+
+      <RiskMap
+        riskData={riskData}
+        selectedDistrict={selectedDistrict}
+        onSelectDistrict={handleMapDistrictSelect}
+      />
+
+      <section className="panel priority-section">
+        <div className="section-heading">
+          <h2>Priority Action Queue</h2>
+          <p>
+            Districts are ranked using risk score, alert level, and community
+            ground-truth feedback.
+          </p>
+        </div>
+
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>District</th>
+                <th>Hazard</th>
+                <th>Risk level</th>
+                <th>Risk score</th>
+                <th>Priority score</th>
+                <th>Community signal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {priorityActions.map((item, index) => (
+                <tr key={`${item.district}-${index}`}>
+                  <td>{displayValue(item.rank || index + 1)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="table-link-button"
+                      onClick={() => setSelectedDistrict(item.district)}
+                    >
+                      {item.district}
+                    </button>
+                  </td>
+                  <td>{titleCase(item.hazard)}</td>
+                  <td>
+                    <span className={`risk-pill risk-${item.risk_level}`}>
+                      {titleCase(item.risk_level)}
+                    </span>
+                  </td>
+                  <td>{displayValue(item.risk_score)}</td>
+                  <td>{displayValue(item.priority_score)}</td>
+                  <td>
+                    {titleCase(item.feedback_signal || item.community_signal)}
+                  </td>
+                </tr>
+              ))}
+
+              {priorityActions.length === 0 && (
+                <tr>
+                  <td colSpan="7">No priority actions available.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-heading">
+          <h2>Impact-Based Risk Scores</h2>
+          <p>
+            Risk score combines hazard probability, exposure, vulnerability, and
+            confidence.
+          </p>
+        </div>
+
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>District</th>
+                <th>Country</th>
+                <th>Hazard</th>
+                <th>Risk level</th>
+                <th>Risk score</th>
+                <th>Hazard probability</th>
+                <th>Exposure</th>
+                <th>Vulnerability</th>
+              </tr>
+            </thead>
+            <tbody>
+              {riskData.map((item) => (
+                <tr
+                  key={item.district}
+                  className={
+                    item.district === selectedDistrict ? "selected-row" : ""
+                  }
+                >
+                  <td>
+                    <button
+                      type="button"
+                      className="table-link-button"
+                      onClick={() => setSelectedDistrict(item.district)}
+                    >
+                      {item.district}
+                    </button>
+                  </td>
+                  <td>{item.country}</td>
+                  <td>{titleCase(item.hazard)}</td>
+                  <td>
+                    <span className={`risk-pill risk-${item.risk_level}`}>
+                      {titleCase(item.risk_level)}
+                    </span>
+                  </td>
+                  <td>{displayValue(item.risk_score)}</td>
+                  <td>{displayValue(item.hazard_probability)}</td>
+                  <td>{displayValue(item.exposure)}</td>
+                  <td>{displayValue(item.vulnerability)}</td>
+                </tr>
+              ))}
+
+              {riskData.length === 0 && (
+                <tr>
+                  <td colSpan="8">No risk data loaded from the API.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel advisory-section">
+        <div className="section-heading">
+          <h2>Forecast-to-Action Advisory</h2>
+          <p>
+            Audience-specific advisory generated from climate evidence, risk
+            score, community reports, and local knowledge retrieval.
+          </p>
+        </div>
+
+        {!selectedRisk && <p>No district selected.</p>}
+
+        {selectedRisk && (
+          <>
+            <div className="advisory-header">
+              <div>
+                <h3>{selectedRisk.district}</h3>
+                <p>
+                  {selectedRisk.country} · {titleCase(selectedRisk.hazard)} ·{" "}
+                  {titleCase(selectedRisk.risk_level)}
+                </p>
+              </div>
+
+              <span className={`risk-pill risk-${selectedRisk.risk_level}`}>
+                {titleCase(selectedRisk.risk_level)}
+              </span>
             </div>
-          </div>
 
-          <div className="panel">
-            <h2>Forecast-to-Action Advisory</h2>
+            <div className="climate-evidence-grid">
+              <div className="climate-card">
+                <span>Rainfall anomaly</span>
+                <strong>
+                  {displayValue(selectedRisk.rainfall_anomaly_pct, "%")}
+                </strong>
+              </div>
 
-            {advisory ? (
+              <div className="climate-card">
+                <span>SPI-like score</span>
+                <strong>{displayValue(selectedRisk.spi)}</strong>
+              </div>
+
+              <div className="climate-card">
+                <span>Baseline rainfall</span>
+                <strong>
+                  {displayValue(selectedRisk.baseline_mean_mm, " mm")}
+                </strong>
+              </div>
+
+              <div className="climate-card">
+                <span>Observed / forecast rainfall</span>
+                <strong>{displayValue(selectedRisk.rainfall_mm, " mm")}</strong>
+              </div>
+            </div>
+
+            <div className="climate-evidence-grid compact-grid">
+              <div className="climate-card">
+                <span>Risk score</span>
+                <strong>{displayValue(selectedRisk.risk_score)}</strong>
+              </div>
+
+              <div className="climate-card">
+                <span>Hazard probability</span>
+                <strong>{displayValue(selectedRisk.hazard_probability)}</strong>
+              </div>
+
+              <div className="climate-card">
+                <span>Exposure</span>
+                <strong>{displayValue(selectedRisk.exposure)}</strong>
+              </div>
+
+              <div className="climate-card">
+                <span>Vulnerability</span>
+                <strong>{displayValue(selectedRisk.vulnerability)}</strong>
+              </div>
+            </div>
+
+            <p className="evidence-note">
+              Prototype climate evidence is based on CHIRPS-style seasonal
+              rainfall anomaly and SPI-like standardized rainfall score. Replace
+              with operational CHIRPS zonal statistics for production.
+            </p>
+
+            {advisoryLoading && <p>Loading advisory...</p>}
+
+            {!advisoryLoading && (
               <>
-                <p>
-                  <strong>{advisory.district}</strong>, {advisory.country}
-                </p>
-
-                <p>
-                  <span className={`badge badge-${advisory.risk_level}`}>
-                    {advisory.risk_level}
-                  </span>{" "}
-                  {advisory.hazard_label}
-                </p>
-
-                <h3>Climate evidence</h3>
-                <div className="climate-evidence-grid">
-                  <div className="climate-card">
-                    <span>Season</span>
-                    <strong>
-                      {displayValue(climateEvidence.season)}{" "}
-                      {displayValue(climateEvidence.year)}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Seasonal rainfall</span>
-                    <strong>
-                      {displayValue(climateEvidence.rainfall_mm, " mm")}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Baseline mean</span>
-                    <strong>
-                      {displayValue(climateEvidence.baseline_mean_mm, " mm")}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Rainfall anomaly</span>
-                    <strong>
-                      {displayValue(climateEvidence.rainfall_anomaly_mm, " mm")}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Anomaly percent</span>
-                    <strong>
-                      {displayValue(climateEvidence.rainfall_anomaly_pct, "%")}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>SPI-like score</span>
-                    <strong>{displayValue(climateEvidence.spi)}</strong>
-                  </div>
+                <div className="advisory-card">
+                  <h3>Role-specific advisory</h3>
+                  <p>
+                    {roleSpecificAdvisory ||
+                      "No role-specific advisory returned by the backend."}
+                  </p>
                 </div>
 
-                <p className="evidence-note">
-                  Source:{" "}
-                  {climateEvidence.indicator_source ||
-                    "Prototype rainfall evidence"}
-                </p>
+                <div className="advisory-card">
+                  <h3>Recommended early actions</h3>
 
-                <h3>Impact-risk inputs</h3>
-                <div className="climate-evidence-grid compact-grid">
-                  <div className="climate-card">
-                    <span>Hazard probability</span>
-                    <strong>
-                      {displayValue(inputIndicators.hazard_probability)}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Exposure</span>
-                    <strong>{displayValue(inputIndicators.exposure)}</strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Vulnerability</span>
-                    <strong>
-                      {displayValue(inputIndicators.vulnerability)}
-                    </strong>
-                  </div>
-
-                  <div className="climate-card">
-                    <span>Confidence</span>
-                    <strong>{displayValue(inputIndicators.confidence)}</strong>
-                  </div>
+                  {recommendedActions.length > 0 ? (
+                    <ol>
+                      {recommendedActions.map((action, index) => (
+                        <li key={`${action}-${index}`}>{action}</li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p>No recommended actions available.</p>
+                  )}
                 </div>
 
-                <h3>Why this alert?</h3>
-                <p>{advisory.why_this_alert}</p>
+                <div className="advisory-card">
+                  <h3>RAG / Knowledge-guided advisory basis</h3>
 
-                <h3>Community ground-truth signal</h3>
-                <p>{advisory.ground_truth_note}</p>
+                  {retrievalSummary ? (
+                    <p>{retrievalSummary}</p>
+                  ) : (
+                    <p>
+                      No retrieval summary available. Check whether the backend
+                      Action Knowledge Base is loading correctly.
+                    </p>
+                  )}
 
-                <h3>Recommended early actions</h3>
-                <ul>
-                  {advisory.recommended_actions?.map((action, index) => (
-                    <li key={index}>{action}</li>
-                  ))}
-                </ul>
+                  {knowledgeSources.length > 0 && (
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Sector</th>
+                            <th>Source</th>
+                            <th>Score</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {knowledgeSources.map((source, index) => (
+                            <tr key={`${source.id || source.title}-${index}`}>
+                              <td>{source.title}</td>
+                              <td>{source.sector}</td>
+                              <td>
+                                {source.source_title || source.source_note}
+                              </td>
+                              <td>{displayValue(source.retrieval_score)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
-                <h3>Role-specific advisory</h3>
-                <p>{advisory.role_specific_advisory}</p>
-
-                <h3>Knowledge-guided advisory basis</h3>
-                <p className="evidence-note">
-                  {advisory.retrieval_summary ||
-                    "No knowledge retrieval summary available."}
-                </p>
-
-                {knowledgeSources.length > 0 && (
-                  <div className="report-list">
-                    {knowledgeSources.map((source) => (
-                      <div key={source.id} className="report-item">
-                        <strong>{source.title}</strong>
-                        <p>
-                          Sector: {source.sector} · Retrieval score:{" "}
-                          {source.retrieval_score}
-                        </p>
-                        <small>{source.source_note}</small>
+                  {knowledgeSources.length === 0 &&
+                    retrievedGuidance.length > 0 && (
+                      <div className="table-scroll">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Title</th>
+                              <th>Sector</th>
+                              <th>Score</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {retrievedGuidance.map((item, index) => (
+                              <tr key={`${item.id || item.title}-${index}`}>
+                                <td>{item.title}</td>
+                                <td>{item.sector}</td>
+                                <td>{displayValue(item.retrieval_score)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    )}
+                </div>
 
-                <h3>SMS / WhatsApp message</h3>
-                <p className="sms-box">{advisory.community_message}</p>
-
-                <p className="mode-note">
-                  Advisory mode: <strong>{advisory.mode}</strong>
-                </p>
+                <div className="advisory-card">
+                  <h3>SMS / WhatsApp-ready message</h3>
+                  <p>{communityMessage || "No community message available."}</p>
+                </div>
 
                 <div className="button-row">
                   <button
@@ -695,225 +998,265 @@ function Dashboard() {
                   </button>
                 </div>
               </>
-            ) : (
-              <p>No advisory available.</p>
             )}
-          </div>
-        </section>
+          </>
+        )}
+      </section>
 
-        <section className="panel full-width-section action-tracker-section">
-          <div className="tracker-header">
-            <div>
-              <h2>Action Implementation Tracker</h2>
-              <p>
-                Converts recommended early actions into operational tasks with
-                responsible sectors, priorities, deadlines and saved
-                implementation status.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="secondary-button tracker-export-button"
-              onClick={handleDownloadActionTrackerCsv}
-            >
-              Export Tracker CSV
-            </button>
+      <section className="panel action-tracker-section">
+        <div className="tracker-header">
+          <div>
+            <h2>Action Implementation Tracker</h2>
+            <p>
+              Converts recommendations into practical tasks with responsible
+              sectors, deadlines, priorities, and implementation status.
+            </p>
           </div>
 
-          <div className="tracker-summary">
-            <div>
-              <span>Total tasks</span>
-              <strong>{actionTracker?.summary?.total_tasks ?? 0}</strong>
-            </div>
+          <button
+            type="button"
+            className="secondary-button tracker-export-button"
+            onClick={handleDownloadActionTrackerCsv}
+          >
+            Export Tracker CSV
+          </button>
+        </div>
 
-            <div>
-              <span>Urgent</span>
-              <strong>{actionTracker?.summary?.urgent_tasks ?? 0}</strong>
-            </div>
-
-            <div>
-              <span>High priority</span>
-              <strong>
-                {actionTracker?.summary?.high_priority_tasks ?? 0}
-              </strong>
-            </div>
-
-            <div>
-              <span>In progress</span>
-              <strong>{inProgressTasks}</strong>
-            </div>
-
-            <div>
-              <span>Completed</span>
-              <strong>{completedTasks}</strong>
-            </div>
-
-            <div>
-              <span>Blocked</span>
-              <strong>{blockedTasks}</strong>
-            </div>
+        <div className="tracker-summary">
+          <div>
+            <span>Total tasks</span>
+            <strong>
+              {displayValue(actionSummary.total_tasks || actionTasks.length)}
+            </strong>
           </div>
 
-          <div className="table-scroll">
-            <table className="tracker-table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Action</th>
-                  <th>Responsible sector</th>
-                  <th>Priority</th>
-                  <th>Deadline</th>
-                  <th>Status</th>
+          <div>
+            <span>Not started</span>
+            <strong>{displayValue(actionSummary.not_started || 0)}</strong>
+          </div>
+
+          <div>
+            <span>In progress</span>
+            <strong>{displayValue(actionSummary.in_progress || 0)}</strong>
+          </div>
+
+          <div>
+            <span>Completed</span>
+            <strong>{displayValue(actionSummary.completed || 0)}</strong>
+          </div>
+
+          <div>
+            <span>Blocked</span>
+            <strong>{displayValue(actionSummary.blocked || 0)}</strong>
+          </div>
+
+          <div>
+            <span>District</span>
+            <strong>{selectedDistrict || "N/A"}</strong>
+          </div>
+        </div>
+
+        <div className="table-scroll">
+          <table className="tracker-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Action</th>
+                <th>Responsible sector</th>
+                <th>Priority</th>
+                <th>Deadline</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actionTasks.map((task, index) => (
+                <tr key={task.task_id || index}>
+                  <td>{displayValue(task.rank || index + 1)}</td>
+                  <td>
+                    <strong>{task.action}</strong>
+                    <p className="task-basis">{task.basis}</p>
+                  </td>
+                  <td>{task.responsible_sector}</td>
+                  <td>
+                    <span
+                      className={`priority-pill priority-${String(
+                        task.priority || "routine",
+                      ).toLowerCase()}`}
+                    >
+                      {titleCase(task.priority)}
+                    </span>
+                  </td>
+                  <td>{task.suggested_deadline}</td>
+                  <td>
+                    <select
+                      className="status-select"
+                      value={task.status || "Not started"}
+                      onChange={(event) =>
+                        handleTaskStatusChange(task, event.target.value)
+                      }
+                    >
+                      {STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                 </tr>
-              </thead>
+              ))}
 
-              <tbody>
-                {trackerTasks.map((task) => (
-                  <tr key={task.id}>
-                    <td>{task.rank}</td>
-                    <td>
-                      <strong>{task.action}</strong>
-                      <p className="task-basis">{task.basis}</p>
-                      {task.updated_at && (
-                        <p className="task-basis">
-                          Last updated by {task.updated_by || "dashboard_user"}{" "}
-                          at {task.updated_at}
-                        </p>
-                      )}
-                    </td>
-                    <td>{task.responsible_sector}</td>
-                    <td>
-                      <span
-                        className={`priority-pill priority-${task.priority.toLowerCase()}`}
-                      >
-                        {task.priority}
-                      </span>
-                    </td>
-                    <td>{task.suggested_deadline}</td>
-                    <td>
-                      <select
-                        className="status-select"
-                        value={taskStatuses[task.id] || task.status}
-                        onChange={(event) =>
-                          handleTaskStatusChange(task, event.target.value)
-                        }
-                      >
-                        <option value="Not started">Not started</option>
-                        <option value="In progress">In progress</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Blocked">Blocked</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+              {actionTasks.length === 0 && (
+                <tr>
+                  <td colSpan="6">No action tracker tasks available.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-        <section className="panel full-width-section">
+      <section className="panel community-section">
+        <div className="section-heading">
           <h2>Community Ground-Truth Reports</h2>
+          <p>
+            Community observations help confirm whether forecast impacts are
+            emerging on the ground.
+          </p>
+        </div>
 
-          <div className="feedback-summary">
-            <div>
-              <span>Total reports</span>
-              <strong>{feedbackSummary?.total_reports ?? 0}</strong>
-            </div>
+        <div className="community-grid">
+          <form className="report-form" onSubmit={handleReportSubmit}>
+            <h3>Submit community report</h3>
 
-            <div>
-              <span>Ground signal</span>
-              <strong>
-                {titleCase(
-                  feedbackSummary?.feedback_signal || "no_ground_signal",
-                )}
-              </strong>
-            </div>
-          </div>
+            <label htmlFor="report-type">Report type</label>
+            <select
+              id="report-type"
+              name="report_type"
+              value={reportForm.report_type}
+              onChange={handleReportInputChange}
+            >
+              {reportTypes.map((type) => (
+                <option key={type} value={type}>
+                  {titleCase(type)}
+                </option>
+              ))}
+            </select>
 
-          <form className="feedback-form" onSubmit={handleReportSubmit}>
-            <div className="form-grid">
-              <label>
-                Report type
-                <select name="report_type" defaultValue="water_shortage">
-                  {reportTypes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <label htmlFor="severity">Severity</label>
+            <select
+              id="severity"
+              name="severity"
+              value={reportForm.severity}
+              onChange={handleReportInputChange}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
 
-              <label>
-                Severity
-                <select name="severity" defaultValue="medium">
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-            </div>
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              value={reportForm.description}
+              onChange={handleReportInputChange}
+              placeholder="Describe what is being observed locally..."
+              rows="4"
+              required
+            />
 
-            <label>
-              Field observation
-              <textarea
-                name="description"
-                rows="4"
-                required
-                placeholder="Example: Main water point is drying and livestock movement has increased."
-              />
-            </label>
+            <label htmlFor="reporter-name">Reporter name</label>
+            <input
+              id="reporter-name"
+              name="reporter_name"
+              value={reportForm.reporter_name}
+              onChange={handleReportInputChange}
+              placeholder="Optional"
+            />
 
-            <div className="form-grid">
-              <label>
-                Reported by
-                <input name="reported_by" placeholder="Community volunteer" />
-              </label>
+            <label htmlFor="contact">Contact</label>
+            <input
+              id="contact"
+              name="contact"
+              value={reportForm.contact}
+              onChange={handleReportInputChange}
+              placeholder="Optional"
+            />
 
-              <label>
-                Contact, optional
-                <input name="contact" placeholder="+251..." />
-              </label>
-            </div>
+            <div className="form-two-column">
+              <div>
+                <label htmlFor="latitude">Latitude</label>
+                <input
+                  id="latitude"
+                  name="latitude"
+                  type="number"
+                  step="any"
+                  value={reportForm.latitude}
+                  onChange={handleReportInputChange}
+                  placeholder="Optional"
+                />
+              </div>
 
-            <div className="form-grid">
-              <label>
-                Latitude, optional
-                <input name="latitude" placeholder="4.95" />
-              </label>
-
-              <label>
-                Longitude, optional
-                <input name="longitude" placeholder="38.15" />
-              </label>
+              <div>
+                <label htmlFor="longitude">Longitude</label>
+                <input
+                  id="longitude"
+                  name="longitude"
+                  type="number"
+                  step="any"
+                  value={reportForm.longitude}
+                  onChange={handleReportInputChange}
+                  placeholder="Optional"
+                />
+              </div>
             </div>
 
             <button type="submit" className="primary-button">
-              Submit community report
+              Submit Report
             </button>
           </form>
 
-          <h3>Latest reports</h3>
+          <div className="community-summary">
+            <h3>Ground signal for {selectedDistrict || "selected district"}</h3>
 
-          {communityReports.length === 0 ? (
-            <p>No community reports yet for this district.</p>
-          ) : (
-            <div className="report-list">
-              {communityReports.map((report) => (
-                <div key={report.id} className="report-item">
-                  <strong>{report.report_type?.replaceAll("_", " ")}</strong>
-                  <p>{report.description}</p>
-                  <small>
-                    Severity: {report.severity} · Reported by:{" "}
-                    {report.reported_by} · {report.created_at}
-                  </small>
-                </div>
-              ))}
+            <div className="climate-evidence-grid">
+              <div className="climate-card">
+                <span>Feedback signal</span>
+                <strong>{titleCase(selectedFeedback?.feedback_signal)}</strong>
+              </div>
+
+              <div className="climate-card">
+                <span>Total reports</span>
+                <strong>
+                  {displayValue(selectedFeedback?.total_reports || 0)}
+                </strong>
+              </div>
             </div>
-          )}
-        </section>
-      </main>
-    </div>
+
+            <h3>Latest district reports</h3>
+
+            {selectedDistrictReports.length > 0 ? (
+              <div className="report-list">
+                {selectedDistrictReports.slice(0, 6).map((report, index) => (
+                  <article className="report-card" key={report.id || index}>
+                    <strong>
+                      {titleCase(report.report_type)} ·{" "}
+                      {titleCase(report.severity)}
+                    </strong>
+                    <p>{report.description}</p>
+                    <small>
+                      {report.district} · {report.reporter_name || "Anonymous"}
+                    </small>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p>No community reports yet for this district.</p>
+            )}
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 
