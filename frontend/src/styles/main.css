@@ -12,7 +12,7 @@
   --radius-lg: 24px;
   --radius-md: 18px;
   --radius-sm: 12px;
-
+  
   --trigger-bg: #fdecea;
   --trigger-text: #d92d20;
 
@@ -30,7 +30,6 @@
 
   --high-bg: #fff4e5;
   --high-text: #f79009;
-
   --routine-bg: #e9eff9;
   --routine-text: #375b98;
 }
@@ -701,31 +700,38 @@ tbody td {
   max-width: 720px;
 }
 
+/* ---------- Risk Map Legend Badges ---------- */
 
 .map-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 10px;
   justify-content: flex-end;
-  color: #4e6487;
-  font-weight: 800;
-  font-size: 0.96rem;
+  align-items: center;
 }
 
 .map-legend span {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   white-space: nowrap;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #d9e3f2;
+  color: #344054;
+  font-weight: 900;
+  font-size: 0.92rem;
+  box-shadow: 0 6px 18px rgba(15, 39, 77, 0.06);
 }
 
 .legend-dot {
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border-radius: 999px;
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 4px rgba(15, 39, 77, 0.08);
+  box-shadow: 0 0 0 3px rgba(15, 39, 77, 0.08);
   flex-shrink: 0;
 }
 
