@@ -664,3 +664,198 @@ tbody td {
     height: 420px;
   }
 }
+
+
+/* ============================================================
+   Interactive Risk Map
+   ============================================================ */
+
+.map-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.map-header {
+  padding: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-header h2 {
+  margin: 0 0 8px;
+}
+
+.map-header p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(15, 39, 77, 0.08);
+}
+
+.map-wrapper {
+  width: 100%;
+  height: 540px;
+  background: #dbe7f5;
+}
+
+.risk-map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+.risk-tooltip {
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(15, 39, 77, 0.18) !important;
+  padding: 8px 10px !important;
+  color: var(--text) !important;
+  font-weight: 700 !important;
+}
+
+.risk-popup .leaflet-popup-content-wrapper {
+  border-radius: 18px;
+  box-shadow: 0 18px 44px rgba(15, 39, 77, 0.24);
+}
+
+.risk-popup .leaflet-popup-content {
+  margin: 0;
+  width: 320px !important;
+}
+
+.map-popup {
+  padding: 18px;
+}
+
+.map-popup-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.map-popup h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.map-popup-country {
+  margin: 0 0 14px !important;
+  color: var(--muted) !important;
+}
+
+.map-popup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.map-popup-grid div {
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.map-popup-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 5px;
+}
+
+.map-popup-grid strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.map-popup button {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.map-empty-state {
+  padding: 48px 28px;
+  text-align: center;
+  background: var(--panel-soft);
+}
+
+.map-empty-state h3 {
+  margin: 0 0 8px;
+}
+
+.map-empty-state p {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 980px) {
+  .map-header {
+    flex-direction: column;
+  }
+
+  .map-legend {
+    justify-content: flex-start;
+  }
+
+  .map-wrapper {
+    height: 460px;
+  }
+}
+
+@media (max-width: 640px) {
+  .map-header {
+    padding: 22px 18px;
+  }
+
+  .map-wrapper {
+    height: 400px;
+  }
+
+  .risk-popup .leaflet-popup-content {
+    width: 280px !important;
+  }
+
+  .map-popup-grid {
+    grid-template-columns: 1fr;
+  }
+}

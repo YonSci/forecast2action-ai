@@ -1,174 +1,269 @@
+import { useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
   CircleMarker,
   Popup,
   Tooltip,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-const fallbackCoordinates = {
+const FALLBACK_COORDINATES = {
   Borena: { latitude: 4.95, longitude: 38.15 },
   "Afar Zone 1": { latitude: 12.15, longitude: 40.75 },
   Turkana: { latitude: 3.12, longitude: 35.6 },
   Garissa: { latitude: -0.45, longitude: 39.65 },
 };
 
-function getRiskColor(riskLevel) {
-  if (riskLevel === "trigger") {
-    return "#b42318";
+const RISK_STYLE = {
+  trigger: {
+    color: "#b42318",
+    label: "Trigger",
+    radius: 18,
+  },
+  warning: {
+    color: "#c01048",
+    label: "Warning",
+    radius: 15,
+  },
+  watch: {
+    color: "#b54708",
+    label: "Watch",
+    radius: 12,
+  },
+  no_alert: {
+    color: "#027a48",
+    label: "No alert",
+    radius: 10,
+  },
+};
+
+function safeNumber(value, fallback = null) {
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
   }
 
-  if (riskLevel === "warning") {
-    return "#c01048";
-  }
-
-  if (riskLevel === "watch") {
-    return "#b54708";
-  }
-
-  return "#027a48";
-}
-
-function getRiskRadius(riskLevel) {
-  if (riskLevel === "trigger") {
-    return 18;
-  }
-
-  if (riskLevel === "warning") {
-    return 15;
-  }
-
-  if (riskLevel === "watch") {
-    return 12;
-  }
-
-  return 9;
+  return fallback;
 }
 
 function formatText(value) {
-  if (!value) {
-    return "";
+  if (value === null || value === undefined || value === "") {
+    return "N/A";
   }
 
-  return String(value).replaceAll("_", " ");
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\w\S*/g, (text) => {
+      return text.charAt(0).toUpperCase() + text.substring(1).toLowerCase();
+    });
 }
 
-function RiskMap({ riskData, selectedDistrict, onSelectDistrict }) {
-  const mapCenter = [5.5, 38.5];
+function formatNumber(value, digits = 2) {
+  const numberValue = Number(value);
 
-  const validRiskData = riskData
-    .map((item) => {
-      const fallback = fallbackCoordinates[item.district] || {};
+  if (!Number.isFinite(numberValue)) {
+    return "N/A";
+  }
 
-      return {
-        ...item,
-        latitude: Number(item.latitude ?? fallback.latitude),
-        longitude: Number(item.longitude ?? fallback.longitude),
-      };
-    })
-    .filter(
-      (item) => !Number.isNaN(item.latitude) && !Number.isNaN(item.longitude),
-    );
+  return numberValue.toFixed(digits);
+}
+
+function getRiskStyle(riskLevel) {
+  return RISK_STYLE[riskLevel] || RISK_STYLE.no_alert;
+}
+
+function normalizeRiskItem(item) {
+  const fallback = FALLBACK_COORDINATES[item.district] || {};
+
+  const latitude = safeNumber(item.latitude, fallback.latitude);
+  const longitude = safeNumber(item.longitude, fallback.longitude);
+
+  return {
+    ...item,
+    latitude,
+    longitude,
+  };
+}
+
+function FitMapToRiskData({ riskData }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!riskData || riskData.length === 0) {
+      return;
+    }
+
+    const bounds = riskData.map((item) => [item.latitude, item.longitude]);
+
+    if (bounds.length === 1) {
+      map.setView(bounds[0], 7);
+      return;
+    }
+
+    map.fitBounds(bounds, {
+      padding: [45, 45],
+      maxZoom: 7,
+    });
+  }, [map, riskData]);
+
+  return null;
+}
+
+function RiskMap({ riskData = [], selectedDistrict = "", onSelectDistrict }) {
+  const validRiskData = useMemo(() => {
+    return riskData.map(normalizeRiskItem).filter((item) => {
+      return Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
+    });
+  }, [riskData]);
+
+  const selectedItem = validRiskData.find(
+    (item) => item.district === selectedDistrict,
+  );
+
+  const mapCenter = selectedItem
+    ? [selectedItem.latitude, selectedItem.longitude]
+    : [5.5, 38.5];
+
+  function handleSelectDistrict(district) {
+    if (typeof onSelectDistrict === "function") {
+      onSelectDistrict(district);
+    }
+  }
 
   return (
     <section className="panel map-panel">
       <div className="map-header">
         <div>
-          <h2>Risk Map</h2>
+          <h2>Interactive Risk Map</h2>
           <p>
-            Spatial overview of impact-based early warning levels across the
-            pilot areas.
+            District-level overview of impact-based early warning levels across
+            the pilot areas.
           </p>
         </div>
 
-        <div className="map-legend">
-          <span>
-            <i className="legend-dot legend-trigger"></i> Trigger
-          </span>
-          <span>
-            <i className="legend-dot legend-warning"></i> Warning
-          </span>
-          <span>
-            <i className="legend-dot legend-watch"></i> Watch
-          </span>
-          <span>
-            <i className="legend-dot legend-no-alert"></i> No alert
-          </span>
+        <div className="map-legend" aria-label="Risk legend">
+          {Object.entries(RISK_STYLE).map(([key, item]) => (
+            <span key={key}>
+              <i
+                className="legend-dot"
+                style={{ backgroundColor: item.color }}
+              />
+              {item.label}
+            </span>
+          ))}
         </div>
       </div>
 
-      <div className="map-wrapper">
-        <MapContainer
-          center={mapCenter}
-          zoom={5}
-          scrollWheelZoom={false}
-          className="risk-map"
-        >
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+      {validRiskData.length === 0 ? (
+        <div className="map-empty-state">
+          <h3>No mappable risk data available</h3>
+          <p>
+            The backend did not return valid latitude and longitude values for
+            the selected districts.
+          </p>
+        </div>
+      ) : (
+        <div className="map-wrapper">
+          <MapContainer
+            center={mapCenter}
+            zoom={5}
+            minZoom={4}
+            maxZoom={11}
+            scrollWheelZoom={false}
+            className="risk-map"
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-          {validRiskData.map((item) => {
-            const color = getRiskColor(item.risk_level);
-            const isSelected = item.district === selectedDistrict;
+            <FitMapToRiskData riskData={validRiskData} />
 
-            return (
-              <CircleMarker
-                key={item.district}
-                center={[item.latitude, item.longitude]}
-                radius={
-                  isSelected
-                    ? getRiskRadius(item.risk_level) + 5
-                    : getRiskRadius(item.risk_level)
-                }
-                pathOptions={{
-                  color,
-                  fillColor: color,
-                  fillOpacity: isSelected ? 0.88 : 0.65,
-                  weight: isSelected ? 4 : 2,
-                }}
-                eventHandlers={{
-                  click: () => onSelectDistrict(item.district),
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -6]} opacity={1}>
-                  <strong>{item.district}</strong>
-                  <br />
-                  {formatText(item.risk_level)} · {formatText(item.hazard)}
-                </Tooltip>
+            {validRiskData.map((item) => {
+              const riskStyle = getRiskStyle(item.risk_level);
+              const isSelected = item.district === selectedDistrict;
+              const radius = isSelected
+                ? riskStyle.radius + 5
+                : riskStyle.radius;
 
-                <Popup>
-                  <div className="map-popup">
-                    <h3>{item.district}</h3>
-                    <p>{item.country}</p>
+              return (
+                <CircleMarker
+                  key={`${item.country}-${item.district}`}
+                  center={[item.latitude, item.longitude]}
+                  radius={radius}
+                  pathOptions={{
+                    color: riskStyle.color,
+                    fillColor: riskStyle.color,
+                    fillOpacity: isSelected ? 0.88 : 0.68,
+                    weight: isSelected ? 4 : 2,
+                  }}
+                  eventHandlers={{
+                    click: () => handleSelectDistrict(item.district),
+                  }}
+                >
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -8]}
+                    opacity={1}
+                    className="risk-tooltip"
+                  >
+                    <strong>{item.district}</strong>
+                    <br />
+                    {riskStyle.label} · {formatText(item.hazard)}
+                  </Tooltip>
 
-                    <p>
-                      <strong>Hazard:</strong> {formatText(item.hazard)}
-                    </p>
+                  <Popup className="risk-popup">
+                    <div className="map-popup">
+                      <div className="map-popup-header">
+                        <h3>{item.district}</h3>
+                        <span className={`risk-pill risk-${item.risk_level}`}>
+                          {riskStyle.label}
+                        </span>
+                      </div>
 
-                    <p>
-                      <strong>Risk level:</strong> {formatText(item.risk_level)}
-                    </p>
+                      <p className="map-popup-country">{item.country}</p>
 
-                    <p>
-                      <strong>Risk score:</strong> {item.risk_score}
-                    </p>
+                      <div className="map-popup-grid">
+                        <div>
+                          <span>Hazard</span>
+                          <strong>{formatText(item.hazard)}</strong>
+                        </div>
 
-                    <button
-                      type="button"
-                      onClick={() => onSelectDistrict(item.district)}
-                    >
-                      View advisory
-                    </button>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
-        </MapContainer>
-      </div>
+                        <div>
+                          <span>Risk score</span>
+                          <strong>{formatNumber(item.risk_score, 3)}</strong>
+                        </div>
+
+                        <div>
+                          <span>Rainfall anomaly</span>
+                          <strong>
+                            {formatNumber(item.rainfall_anomaly_pct, 1)}%
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>SPI-like score</span>
+                          <strong>{formatNumber(item.spi, 2)}</strong>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectDistrict(item.district)}
+                      >
+                        View advisory
+                      </button>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+          </MapContainer>
+        </div>
+      )}
     </section>
   );
 }
