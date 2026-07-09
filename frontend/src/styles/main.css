@@ -12,18 +12,25 @@
   --radius-lg: 24px;
   --radius-md: 18px;
   --radius-sm: 12px;
-  --trigger-bg: #fde7e4;
-  --trigger-text: #c12a1d;
-  --warning-bg: #ffe7f2;
-  --warning-text: #cf1365;
-  --watch-bg: #fff0df;
-  --watch-text: #c95e00;
-  --noalert-bg: #e4f7ec;
-  --noalert-text: #0e8b4e;
-  --urgent-bg: #fde7e4;
-  --urgent-text: #c12a1d;
-  --high-bg: #fff0df;
-  --high-text: #c95e00;
+
+  --trigger-bg: #fdecea;
+  --trigger-text: #d92d20;
+
+  --warning-bg: #fde7f3;
+  --warning-text: #c11574;
+
+  --watch-bg: #fff4e5;
+  --watch-text: #f79009;
+
+  --noalert-bg: #e8f9f0;
+  --noalert-text: #12b76a;
+
+  --urgent-bg: #fdecea;
+  --urgent-text: #d92d20;
+
+  --high-bg: #fff4e5;
+  --high-text: #f79009;
+
   --routine-bg: #e9eff9;
   --routine-text: #375b98;
 }
@@ -694,14 +701,15 @@ tbody td {
   max-width: 720px;
 }
 
+
 .map-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   justify-content: flex-end;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.92rem;
+  color: #4e6487;
+  font-weight: 800;
+  font-size: 0.96rem;
 }
 
 .map-legend span {
@@ -713,10 +721,12 @@ tbody td {
 
 .legend-dot {
   display: inline-block;
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   border-radius: 999px;
+  border: 2px solid #ffffff;
   box-shadow: 0 0 0 4px rgba(15, 39, 77, 0.08);
+  flex-shrink: 0;
 }
 
 .map-wrapper {

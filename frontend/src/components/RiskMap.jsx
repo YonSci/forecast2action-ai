@@ -18,22 +18,22 @@ const FALLBACK_COORDINATES = {
 
 const RISK_STYLE = {
   trigger: {
-    color: "#b42318",
+    color: "#D92D20",
     label: "Trigger",
     radius: 18,
   },
   warning: {
-    color: "#c01048",
+    color: "#C11574",
     label: "Warning",
     radius: 15,
   },
   watch: {
-    color: "#b54708",
+    color: "#F79009",
     label: "Watch",
     radius: 12,
   },
   no_alert: {
-    color: "#027a48",
+    color: "#12B76A",
     label: "No alert",
     radius: 10,
   },
