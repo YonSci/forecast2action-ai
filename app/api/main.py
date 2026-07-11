@@ -17,6 +17,19 @@ from pydantic import BaseModel
 from app.advisory.rag_engine import build_rag_advisory
 from app.ml.risk_scoring import score_districts
 
+
+from functools import lru_cache
+from fastapi.middleware.gzip import GZipMiddleware
+
+from functools import lru_cache
+from typing import Optional
+
+from app.data_pipeline.ethiopia_admin_boundary_pipeline import (
+    OUTPUT_DIR as ADMIN_BOUNDARY_OUTPUT_DIR,
+    run_ethiopia_admin_boundary_pipeline,
+)
+
+
 from app.data_pipeline.ethiopia_forecast_grid_pipeline import (
     FORECAST_LEADS,
     OUTPUT_PATH as ETHIOPIA_GRID_PATH,
@@ -52,6 +65,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 REPORTS_PATH = Path("data/sample/community_reports.json")
 TASK_STATUS_PATH = Path("data/sample/action_task_status.json")
@@ -84,6 +98,481 @@ VALID_FORECAST_SCALES = {"subseasonal", "seasonal"}
 VALID_MAP_LAYERS = {item["value"] for item in MAP_LAYER_OPTIONS}
 VALID_MAP_INDICATORS = {item["value"] for item in MAP_INDICATOR_OPTIONS}
 VALID_FORECAST_LEADS = {item["value"] for item in FORECAST_LEADS}
+
+
+
+ADMIN_OPTIONS_PATH = ADMIN_BOUNDARY_OUTPUT_DIR / "ethiopia_admin_options.json"
+ADMIN_GEOJSON_PATHS = {
+    "admin1": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin1.json",
+    "admin2": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin2.json",
+    "admin3": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin3.json",
+}
+
+
+RANKING_LAYER_OPTIONS = [
+    {"value": "risk_score", "label": "Risk Score Map"},
+    {"value": "hazard_probability", "label": "Hazard Probability Map"},
+    {"value": "exposure", "label": "Exposure Map"},
+    {"value": "vulnerability", "label": "Vulnerability Map"},
+]
+
+VALID_RANKING_LAYERS = {item["value"] for item in RANKING_LAYER_OPTIONS}
+VALID_RANKING_ADMIN_LEVELS = {"admin1", "admin2", "admin3"}
+
+DEFAULT_RANKING_THRESHOLDS = {
+    "risk_score": 0.60,
+    "hazard_probability": 0.60,
+    "exposure": 0.70,
+    "vulnerability": 0.70,
+}
+
+
+def point_in_ring(lon: float, lat: float, ring: list) -> bool:
+    inside = False
+
+    if not ring or len(ring) < 3:
+        return False
+
+    j = len(ring) - 1
+
+    for i in range(len(ring)):
+        xi, yi = ring[i][0], ring[i][1]
+        xj, yj = ring[j][0], ring[j][1]
+
+        intersects = ((yi > lat) != (yj > lat)) and (
+            lon < (xj - xi) * (lat - yi) / ((yj - yi) + 1e-12) + xi
+        )
+
+        if intersects:
+            inside = not inside
+
+        j = i
+
+    return inside
+
+
+def point_in_polygon(lon: float, lat: float, polygon_coordinates: list) -> bool:
+    if not polygon_coordinates:
+        return False
+
+    exterior = polygon_coordinates[0]
+
+    if not point_in_ring(lon, lat, exterior):
+        return False
+
+    for hole in polygon_coordinates[1:]:
+        if point_in_ring(lon, lat, hole):
+            return False
+
+    return True
+
+
+def point_in_geometry(lon: float, lat: float, geometry: dict) -> bool:
+    if not geometry:
+        return False
+
+    geometry_type = geometry.get("type")
+    coordinates = geometry.get("coordinates", [])
+
+    if geometry_type == "Polygon":
+        return point_in_polygon(lon, lat, coordinates)
+
+    if geometry_type == "MultiPolygon":
+        return any(
+            point_in_polygon(lon, lat, polygon)
+            for polygon in coordinates
+        )
+
+    return False
+
+
+def collect_geometry_coordinates(coordinates: list, output: list) -> None:
+    if not isinstance(coordinates, list):
+        return
+
+    if (
+        len(coordinates) >= 2
+        and isinstance(coordinates[0], (int, float))
+        and isinstance(coordinates[1], (int, float))
+    ):
+        output.append((coordinates[0], coordinates[1]))
+        return
+
+    for item in coordinates:
+        collect_geometry_coordinates(item, output)
+
+
+def get_geometry_bbox(geometry: dict) -> Optional[dict]:
+    coordinates = []
+    collect_geometry_coordinates(geometry.get("coordinates", []), coordinates)
+
+    if not coordinates:
+        return None
+
+    lons = [item[0] for item in coordinates]
+    lats = [item[1] for item in coordinates]
+
+    return {
+        "west": min(lons),
+        "east": max(lons),
+        "south": min(lats),
+        "north": max(lats),
+    }
+
+
+def point_in_bbox(lon: float, lat: float, bbox: dict) -> bool:
+    if not bbox:
+        return False
+
+    return (
+        lon >= bbox["west"]
+        and lon <= bbox["east"]
+        and lat >= bbox["south"]
+        and lat <= bbox["north"]
+    )
+
+
+def classify_priority_level(value: float, layer: str) -> str:
+    if layer == "risk_score":
+        if value >= 0.80:
+            return "trigger"
+        if value >= 0.60:
+            return "warning"
+        if value >= 0.35:
+            return "watch"
+        return "no_alert"
+
+    if value >= 0.70:
+        return "high"
+    if value >= 0.50:
+        return "moderate"
+    return "low"
+
+
+def get_intervention_action(layer: str, priority_level: str) -> str:
+    if layer == "risk_score":
+        if priority_level == "trigger":
+            return "Trigger immediate early action, pre-position resources, and intensify coordination."
+        if priority_level == "warning":
+            return "Prepare targeted early action, verify local conditions, and alert responsible sectors."
+        if priority_level == "watch":
+            return "Monitor closely and prepare advisory messages for local actors."
+        return "Continue routine monitoring."
+
+    if layer == "hazard_probability":
+        if priority_level == "high":
+            return "Prioritize forecast monitoring, preparedness messaging, and local verification."
+        if priority_level == "moderate":
+            return "Track forecast evolution and prepare readiness communication."
+        return "Continue monitoring."
+
+    if layer == "exposure":
+        if priority_level == "high":
+            return "Prioritize exposed population, assets, livelihoods, and service-access planning."
+        if priority_level == "moderate":
+            return "Review exposed settlements, roads, markets, crops, and livestock assets."
+        return "Maintain exposure database and routine monitoring."
+
+    if layer == "vulnerability":
+        if priority_level == "high":
+            return "Prioritize support to vulnerable communities and strengthen coping-capacity measures."
+        if priority_level == "moderate":
+            return "Target preparedness support and community-level risk communication."
+        return "Continue vulnerability monitoring."
+
+    return "Review area for possible intervention."
+
+
+def get_admin_area_label(properties: dict, admin_level: str) -> str:
+    if admin_level == "admin3":
+        return properties.get("woreda") or properties.get("name") or "Unknown Woreda"
+
+    if admin_level == "admin2":
+        return properties.get("zone") or properties.get("name") or "Unknown Zone"
+
+    return properties.get("region") or properties.get("name") or "Unknown Region"
+
+
+def get_grid_features_for_forecast(
+    forecast_scale: str,
+    lead: str,
+) -> list:
+    grid = load_ethiopia_forecast_grid()
+
+    features = []
+
+    for feature in grid.get("features", []):
+        properties = feature.get("properties", {})
+
+        if properties.get("forecast_scale") != forecast_scale:
+            continue
+
+        if properties.get("lead") != lead:
+            continue
+
+        features.append(feature)
+
+    return features
+
+
+def calculate_admin_area_ranking_item(
+    admin_feature: dict,
+    grid_features: list,
+    layer: str,
+    threshold: float,
+    admin_level: str,
+) -> Optional[dict]:
+    admin_properties = admin_feature.get("properties", {})
+    geometry = admin_feature.get("geometry", {})
+    bbox = get_geometry_bbox(geometry)
+
+    if not bbox:
+        return None
+
+    exact_values = []
+    fallback_bbox_values = []
+
+    for grid_feature in grid_features:
+        grid_properties = grid_feature.get("properties", {})
+
+        lat = grid_properties.get("lat_center")
+        lon = grid_properties.get("lon_center")
+        value = grid_properties.get(layer)
+
+        try:
+            lat = float(lat)
+            lon = float(lon)
+            value = float(value)
+        except (TypeError, ValueError):
+            continue
+
+        if not point_in_bbox(lon, lat, bbox):
+            continue
+
+        fallback_bbox_values.append(value)
+
+        if point_in_geometry(lon, lat, geometry):
+            exact_values.append(value)
+
+    values = exact_values if exact_values else fallback_bbox_values
+
+    if not values:
+        return None
+
+    mean_value = sum(values) / len(values)
+    max_value = max(values)
+    cells_above_threshold = [value for value in values if value >= threshold]
+    cells_above_threshold_pct = len(cells_above_threshold) / len(values)
+
+    priority_score = (
+        0.50 * mean_value
+        + 0.25 * max_value
+        + 0.25 * cells_above_threshold_pct
+    )
+
+    priority_level = classify_priority_level(priority_score, layer)
+
+    return {
+        "admin_level": admin_level,
+        "area_name": get_admin_area_label(admin_properties, admin_level),
+        "region": admin_properties.get("region", ""),
+        "zone": admin_properties.get("zone", ""),
+        "woreda": admin_properties.get("woreda", ""),
+        "region_id": admin_properties.get("region_id", ""),
+        "zone_id": admin_properties.get("zone_id", ""),
+        "woreda_id": admin_properties.get("woreda_id", ""),
+        "mean_value": round(mean_value, 3),
+        "max_value": round(max_value, 3),
+        "cells_count": len(values),
+        "cells_above_threshold": len(cells_above_threshold),
+        "cells_above_threshold_pct": round(cells_above_threshold_pct * 100, 1),
+        "priority_score": round(priority_score, 3),
+        "priority_level": priority_level,
+        "recommended_action": get_intervention_action(layer, priority_level),
+    }
+
+
+@lru_cache(maxsize=128)
+def build_intervention_ranking_cached(
+    forecast_scale: str,
+    lead: str,
+    layer: str,
+    admin_level: str,
+    selection_mode: str,
+    top_n: int,
+    threshold: float,
+    region_id: str,
+    zone_id: str,
+) -> dict:
+    grid_features = get_grid_features_for_forecast(
+        forecast_scale=forecast_scale,
+        lead=lead,
+    )
+
+    admin_data = load_admin_json(ADMIN_GEOJSON_PATHS[admin_level])
+
+    admin_features = filter_admin_features(
+        admin_data.get("features", []),
+        region_id=region_id,
+        zone_id=zone_id,
+    )
+
+    ranking_items = []
+
+    for admin_feature in admin_features:
+        item = calculate_admin_area_ranking_item(
+            admin_feature=admin_feature,
+            grid_features=grid_features,
+            layer=layer,
+            threshold=threshold,
+            admin_level=admin_level,
+        )
+
+        if item:
+            ranking_items.append(item)
+
+    if selection_mode == "threshold":
+        ranking_items = [
+            item for item in ranking_items
+            if item["mean_value"] >= threshold
+            or item["max_value"] >= threshold
+            or item["cells_above_threshold_pct"] > 0
+        ]
+
+    ranking_items = sorted(
+        ranking_items,
+        key=lambda item: item["priority_score"],
+        reverse=True,
+    )
+
+    if selection_mode == "top":
+        ranking_items = ranking_items[:top_n]
+
+    for index, item in enumerate(ranking_items, start=1):
+        item["rank"] = index
+
+    return {
+        "forecast_scale": forecast_scale,
+        "lead": lead,
+        "layer": layer,
+        "admin_level": admin_level,
+        "selection_mode": selection_mode,
+        "top_n": top_n,
+        "threshold": threshold,
+        "region_id": region_id,
+        "zone_id": zone_id,
+        "ranking": ranking_items,
+        "metadata": {
+            "grid_cells_used": len(grid_features),
+            "admin_features_evaluated": len(admin_features),
+            "ranking_count": len(ranking_items),
+            "method": (
+                "Priority score = 0.50 × mean value + 0.25 × max value + "
+                "0.25 × share of grid cells above threshold. Exact point-in-polygon "
+                "matching is used where grid-cell centers fall inside boundaries; "
+                "bounding-box fallback is used for very small areas with no grid center."
+            ),
+        },
+    }
+
+
+def ensure_admin_boundaries() -> None:
+    if not ADMIN_OPTIONS_PATH.exists():
+        run_ethiopia_admin_boundary_pipeline()
+
+
+@lru_cache(maxsize=16)
+def load_admin_json_cached(path_string: str) -> dict:
+    ensure_admin_boundaries()
+
+    with Path(path_string).open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def load_admin_json(path: Path) -> dict:
+    return load_admin_json_cached(str(path))
+
+
+def filter_admin_features(
+    features: list,
+    region_id: str = "",
+    zone_id: str = "",
+    woreda_id: str = "",
+) -> list:
+    filtered_features = []
+
+    for feature in features:
+        props = feature.get("properties", {})
+
+        if region_id and props.get("region_id") != region_id:
+            continue
+
+        if zone_id and props.get("zone_id") != zone_id:
+            continue
+
+        if woreda_id and props.get("woreda_id") != woreda_id:
+            continue
+
+        filtered_features.append(feature)
+
+    return filtered_features
+
+
+@lru_cache(maxsize=128)
+def get_filtered_admin_boundary_cached(
+    level: str,
+    region_id: str,
+    zone_id: str,
+    woreda_id: str,
+) -> dict:
+    if level not in ADMIN_GEOJSON_PATHS:
+        level = "admin1"
+
+    data = load_admin_json(ADMIN_GEOJSON_PATHS[level])
+
+    features = filter_admin_features(
+        data.get("features", []),
+        region_id=region_id,
+        zone_id=zone_id,
+        woreda_id=woreda_id,
+    )
+
+    return {
+        "type": "FeatureCollection",
+        "metadata": {
+            "level": level,
+            "region_id": region_id,
+            "zone_id": zone_id,
+            "woreda_id": woreda_id,
+            "feature_count": len(features),
+        },
+        "features": features,
+    }
+
+def filter_admin_features(
+    features: list,
+    region_id: str = "",
+    zone_id: str = "",
+    woreda_id: str = "",
+) -> list:
+    filtered_features = []
+
+    for feature in features:
+        props = feature.get("properties", {})
+
+        if region_id and props.get("region_id") != region_id:
+            continue
+
+        if zone_id and props.get("zone_id") != zone_id:
+            continue
+
+        if woreda_id and props.get("woreda_id") != woreda_id:
+            continue
+
+        filtered_features.append(feature)
+
+    return filtered_features
+
 
 
 def ensure_ethiopia_forecast_grid() -> None:
@@ -477,23 +966,78 @@ def home():
     }
 
 
-@app.get("/api/map-layers/options")
-def get_map_layer_options():
+
+
+# @app.get("/api/map-layers/options")
+# def get_map_layer_options():
+#     return {
+#         "forecast_scales": [
+#             {"value": "subseasonal", "label": "Subseasonal"},
+#             {"value": "seasonal", "label": "Seasonal"},
+#         ],
+#         "leads": FORECAST_LEADS,
+#         "layers": MAP_LAYER_OPTIONS,
+#         "indicators": MAP_INDICATOR_OPTIONS,
+#         "domain": {
+#             "lat_min": 3.0,
+#             "lat_max": 15.0,
+#             "lon_min": 33.0,
+#             "lon_max": 48.0,
+#         },
+#     }
+
+
+@app.get("/api/admin-boundaries/options")
+def get_admin_boundary_options(
+    region_id: str = "",
+    zone_id: str = "",
+):
+    options = load_admin_json(ADMIN_OPTIONS_PATH)
+
+    regions = options.get("regions", [])
+    zones = options.get("zones", [])
+    woredas = options.get("woredas", [])
+
+    if region_id:
+        zones = [
+            item for item in zones
+            if item.get("region_id") == region_id
+        ]
+
+        woredas = [
+            item for item in woredas
+            if item.get("region_id") == region_id
+        ]
+
+    if zone_id:
+        woredas = [
+            item for item in woredas
+            if item.get("zone_id") == zone_id
+        ]
+
     return {
-        "forecast_scales": [
-            {"value": "subseasonal", "label": "Subseasonal"},
-            {"value": "seasonal", "label": "Seasonal"},
-        ],
-        "leads": FORECAST_LEADS,
-        "layers": MAP_LAYER_OPTIONS,
-        "indicators": MAP_INDICATOR_OPTIONS,
-        "domain": {
-            "lat_min": 3.0,
-            "lat_max": 15.0,
-            "lon_min": 33.0,
-            "lon_max": 48.0,
-        },
+        "regions": regions,
+        "zones": zones,
+        "woredas": woredas,
     }
+
+@app.get("/api/admin-boundaries/geojson")
+def get_admin_boundary_geojson(
+    level: str = "admin1",
+    region_id: str = "",
+    zone_id: str = "",
+    woreda_id: str = "",
+):
+    if level not in ADMIN_GEOJSON_PATHS:
+        level = "admin1"
+
+    return get_filtered_admin_boundary_cached(
+        level=level,
+        region_id=region_id,
+        zone_id=zone_id,
+        woreda_id=woreda_id,
+    )
+
 
 
 @app.get("/api/map-layers/ethiopia")
@@ -561,7 +1105,51 @@ def get_ethiopia_map_layer(
         "features": filtered_features,
     }
 
+@app.get("/api/intervention-ranking")
+def get_intervention_ranking(
+    forecast_scale: str = "subseasonal",
+    lead: str = "week_1",
+    layer: str = "risk_score",
+    admin_level: str = "admin1",
+    selection_mode: str = "top",
+    top_n: int = 5,
+    threshold: Optional[float] = None,
+    region_id: str = "",
+    zone_id: str = "",
+):
+    if forecast_scale not in VALID_FORECAST_SCALES:
+        forecast_scale = "subseasonal"
 
+    if lead not in VALID_FORECAST_LEADS:
+        lead = "week_1" if forecast_scale == "subseasonal" else "month_1"
+
+    if layer not in VALID_RANKING_LAYERS:
+        layer = "risk_score"
+
+    if admin_level not in VALID_RANKING_ADMIN_LEVELS:
+        admin_level = "admin1"
+
+    if selection_mode not in {"top", "threshold"}:
+        selection_mode = "top"
+
+    top_n = max(3, min(int(top_n), 25))
+
+    if threshold is None:
+        threshold = DEFAULT_RANKING_THRESHOLDS.get(layer, 0.60)
+
+    threshold = float(threshold)
+
+    return build_intervention_ranking_cached(
+        forecast_scale=forecast_scale,
+        lead=lead,
+        layer=layer,
+        admin_level=admin_level,
+        selection_mode=selection_mode,
+        top_n=top_n,
+        threshold=threshold,
+        region_id=region_id,
+        zone_id=zone_id,
+    )
 
 @app.get("/api/risk")
 def get_risk_scores():

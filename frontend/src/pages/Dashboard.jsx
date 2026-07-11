@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import ForecastLayerMap from "../components/ForecastLayerMap.jsx";
 import RiskMap from "../components/RiskMap.jsx";
 import { apiUrl } from "../config.js";
+import AdminBoundarySelector from "../components/AdminBoundarySelector.jsx";
+import TopInterventionAreas from "../components/TopInterventionAreas.jsx";
 
 const DEFAULT_AUDIENCE = "disaster_manager";
 
@@ -184,6 +186,18 @@ function Dashboard() {
     contact: "",
     latitude: "",
     longitude: "",
+  });
+
+  const [adminSelection, setAdminSelection] = useState({
+    regionId: "",
+    zoneId: "",
+    woredaId: "",
+    regionLabel: "",
+    zoneLabel: "",
+    woredaLabel: "",
+    boundaryLevel: "admin1",
+    boundaryGeojson: null,
+    boundaryLoading: false,
   });
 
   const selectedRisk = useMemo(() => {
@@ -627,14 +641,22 @@ function Dashboard() {
         </div>
       </section>
 
-      <ForecastLayerMap />
+      <AdminBoundarySelector
+        selectedLanguage={selectedLanguage}
+        onLanguageChange={setSelectedLanguage}
+        onSelectionChange={setAdminSelection}
+      />
+
+      <ForecastLayerMap adminSelection={adminSelection} />
+
+      <TopInterventionAreas adminSelection={adminSelection} />
 
       <RiskMap
         riskData={riskData}
         selectedDistrict={selectedDistrict}
         selectedLanguage={selectedLanguage}
+        adminSelection={adminSelection}
         onSelectDistrict={handleMapDistrictSelect}
-        onLanguageChange={setSelectedLanguage}
       />
 
       <section className="panel priority-section">
