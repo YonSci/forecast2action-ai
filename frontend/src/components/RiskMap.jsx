@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -38,6 +38,12 @@ const RISK_STYLE = {
     radius: 10,
   },
 };
+
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "am", label: "Amharic" },
+  { value: "sw", label: "Swahili" },
+];
 
 function safeNumber(value, fallback = null) {
   const numberValue = Number(value);
@@ -112,7 +118,16 @@ function FitMapToRiskData({ riskData }) {
   return null;
 }
 
-function RiskMap({ riskData = [], selectedDistrict = "", onSelectDistrict }) {
+function RiskMap({
+  riskData = [],
+  selectedDistrict = "",
+  selectedLanguage = "en",
+  onSelectDistrict,
+  onLanguageChange,
+}) {
+  const [selectedRegion, setSelectedRegion] = useState("ethiopia");
+  const [selectedZone, setSelectedZone] = useState("pilot_zones");
+
   const validRiskData = useMemo(() => {
     return riskData.map(normalizeRiskItem).filter((item) => {
       return Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
@@ -125,7 +140,7 @@ function RiskMap({ riskData = [], selectedDistrict = "", onSelectDistrict }) {
 
   const mapCenter = selectedItem
     ? [selectedItem.latitude, selectedItem.longitude]
-    : [5.5, 38.5];
+    : [8.5, 39.5];
 
   function handleSelectDistrict(district) {
     if (typeof onSelectDistrict === "function") {
@@ -133,14 +148,20 @@ function RiskMap({ riskData = [], selectedDistrict = "", onSelectDistrict }) {
     }
   }
 
+  function handleLanguageChange(event) {
+    if (typeof onLanguageChange === "function") {
+      onLanguageChange(event.target.value);
+    }
+  }
+
   return (
     <section className="panel map-panel">
       <div className="map-header">
         <div>
-          <h2>Interactive Risk Map</h2>
+          <h2>Interactive Administrative Risk Map</h2>
           <p>
-            District-level overview of impact-based early warning levels across
-            the pilot areas.
+            Select an administrative area and view district-level impact-based
+            early warning risk information.
           </p>
         </div>
 
@@ -157,6 +178,70 @@ function RiskMap({ riskData = [], selectedDistrict = "", onSelectDistrict }) {
         </div>
       </div>
 
+      <div className="map-admin-controls">
+        <div className="map-control">
+          <label htmlFor="region-select">Select Region</label>
+          <select
+            id="region-select"
+            value={selectedRegion}
+            onChange={(event) => setSelectedRegion(event.target.value)}
+          >
+            <option value="ethiopia">Ethiopia domain</option>
+          </select>
+        </div>
+
+        <div className="map-control">
+          <label htmlFor="zone-select">Select Zone</label>
+          <select
+            id="zone-select"
+            value={selectedZone}
+            onChange={(event) => setSelectedZone(event.target.value)}
+          >
+            <option value="pilot_zones">Pilot zones</option>
+          </select>
+        </div>
+
+        <div className="map-control">
+          <label htmlFor="woreda-select">Select Woreda / District</label>
+          <select
+            id="woreda-select"
+            value={selectedDistrict}
+            onChange={(event) => handleSelectDistrict(event.target.value)}
+          >
+            {validRiskData.length === 0 && (
+              <option value="">No districts loaded</option>
+            )}
+
+            {validRiskData.map((item) => (
+              <option key={item.district} value={item.district}>
+                {item.district}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="map-control">
+          <label htmlFor="language-select">Community message language</label>
+          <select
+            id="language-select"
+            value={selectedLanguage}
+            onChange={handleLanguageChange}
+          >
+            {LANGUAGE_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <p className="map-admin-note">
+        Region, Zone and Woreda cascading selection will be connected to the
+        Ethiopia administrative shapefile once the shapefile is added to the
+        project.
+      </p>
+
       {validRiskData.length === 0 ? (
         <div className="map-empty-state">
           <h3>No mappable risk data available</h3>
@@ -169,14 +254,14 @@ function RiskMap({ riskData = [], selectedDistrict = "", onSelectDistrict }) {
         <div className="map-wrapper">
           <MapContainer
             center={mapCenter}
-            zoom={5}
+            zoom={6}
             minZoom={4}
             maxZoom={11}
             scrollWheelZoom={false}
             className="risk-map"
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              attribution="&copy; OpenStreetMap contributors"
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 

@@ -17,6 +17,13 @@ from pydantic import BaseModel
 from app.advisory.rag_engine import build_rag_advisory
 from app.ml.risk_scoring import score_districts
 
+from app.data_pipeline.ethiopia_forecast_grid_pipeline import (
+    FORECAST_LEADS,
+    OUTPUT_PATH as ETHIOPIA_GRID_PATH,
+    run_ethiopia_forecast_grid_pipeline,
+)
+
+
 
 app = FastAPI(
     title="Forecast2Action AI API",
@@ -55,6 +62,40 @@ VALID_TASK_STATUSES = {
     "Completed",
     "Blocked",
 }
+
+
+MAP_LAYER_OPTIONS = [
+    {"value": "hazard", "label": "Hazard Map"},
+    {"value": "risk_score", "label": "Risk Score Map"},
+    {"value": "hazard_probability", "label": "Hazard Probability Map"},
+    {"value": "exposure", "label": "Exposure Map"},
+    {"value": "vulnerability", "label": "Vulnerability Map"},
+]
+
+MAP_INDICATOR_OPTIONS = [
+    {"value": "spi", "label": "Standardized Precipitation Index"},
+    {"value": "rainfall_anomaly_pct", "label": "Rainfall anomaly"},
+    {"value": "rainfall_percentile", "label": "Rainfall percentile"},
+    {"value": "cdd", "label": "Consecutive dry days"},
+    {"value": "cwd", "label": "Consecutive wet days"},
+]
+
+VALID_FORECAST_SCALES = {"subseasonal", "seasonal"}
+VALID_MAP_LAYERS = {item["value"] for item in MAP_LAYER_OPTIONS}
+VALID_MAP_INDICATORS = {item["value"] for item in MAP_INDICATOR_OPTIONS}
+VALID_FORECAST_LEADS = {item["value"] for item in FORECAST_LEADS}
+
+
+def ensure_ethiopia_forecast_grid() -> None:
+    if not ETHIOPIA_GRID_PATH.exists():
+        run_ethiopia_forecast_grid_pipeline()
+
+
+def load_ethiopia_forecast_grid() -> dict:
+    ensure_ethiopia_forecast_grid()
+
+    with ETHIOPIA_GRID_PATH.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 class CommunityReport(BaseModel):
@@ -434,6 +475,92 @@ def home():
         "message": "Forecast2Action AI API is running",
         "version": "1.2.0",
     }
+
+
+@app.get("/api/map-layers/options")
+def get_map_layer_options():
+    return {
+        "forecast_scales": [
+            {"value": "subseasonal", "label": "Subseasonal"},
+            {"value": "seasonal", "label": "Seasonal"},
+        ],
+        "leads": FORECAST_LEADS,
+        "layers": MAP_LAYER_OPTIONS,
+        "indicators": MAP_INDICATOR_OPTIONS,
+        "domain": {
+            "lat_min": 3.0,
+            "lat_max": 15.0,
+            "lon_min": 33.0,
+            "lon_max": 48.0,
+        },
+    }
+
+
+@app.get("/api/map-layers/ethiopia")
+def get_ethiopia_map_layer(
+    forecast_scale: str = "subseasonal",
+    lead: str = "week_1",
+    layer: str = "hazard",
+    indicator: str = "spi",
+):
+    if forecast_scale not in VALID_FORECAST_SCALES:
+        forecast_scale = "subseasonal"
+
+    if lead not in VALID_FORECAST_LEADS:
+        lead = "week_1" if forecast_scale == "subseasonal" else "month_1"
+
+    if layer not in VALID_MAP_LAYERS:
+        layer = "hazard"
+
+    if indicator not in VALID_MAP_INDICATORS:
+        indicator = "spi"
+
+    grid = load_ethiopia_forecast_grid()
+
+    filtered_features = []
+
+    for feature in grid.get("features", []):
+        properties = feature.get("properties", {})
+
+        if properties.get("forecast_scale") != forecast_scale:
+            continue
+
+        if properties.get("lead") != lead:
+            continue
+
+        selected_feature = dict(feature)
+        selected_properties = dict(properties)
+
+        selected_properties["selected_layer"] = layer
+        selected_properties["selected_indicator"] = indicator
+        selected_properties["selected_indicator_value"] = selected_properties.get(indicator)
+
+        selected_feature["properties"] = selected_properties
+        filtered_features.append(selected_feature)
+
+    return {
+        "type": "FeatureCollection",
+        "metadata": {
+            "title": "Ethiopia Forecast Risk Layers",
+            "forecast_scale": forecast_scale,
+            "lead": lead,
+            "layer": layer,
+            "indicator": indicator,
+            "domain": {
+                "lat_min": 3.0,
+                "lat_max": 15.0,
+                "lon_min": 33.0,
+                "lon_max": 48.0,
+            },
+            "feature_count": len(filtered_features),
+            "data_note": (
+                "Prototype 0.5-degree Ethiopia forecast grid. Replace with real "
+                "subseasonal and seasonal ensemble forecasts for operational use."
+            ),
+        },
+        "features": filtered_features,
+    }
+
 
 
 @app.get("/api/risk")

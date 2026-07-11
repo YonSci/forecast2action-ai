@@ -1,22 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import ForecastLayerMap from "../components/ForecastLayerMap.jsx";
 import RiskMap from "../components/RiskMap.jsx";
 import { apiUrl } from "../config.js";
 
-const AUDIENCES = [
-  { value: "disaster_manager", label: "Disaster Risk Manager" },
-  { value: "ngo_planner", label: "NGO / Anticipatory Action Planner" },
-  {
-    value: "extension_officer",
-    label: "Agriculture & Livestock Extension Officer",
-  },
-  { value: "community", label: "Community Member" },
-];
-
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "am", label: "Amharic" },
-  { value: "sw", label: "Swahili" },
-];
+const DEFAULT_AUDIENCE = "disaster_manager";
 
 const DEFAULT_REPORT_TYPES = [
   { value: "water_shortage", label: "Water shortage / water point drying" },
@@ -52,10 +39,14 @@ function displayValue(value, suffix = "") {
 }
 
 function safeArray(response, keys = []) {
-  if (Array.isArray(response)) return response;
+  if (Array.isArray(response)) {
+    return response;
+  }
 
   for (const key of keys) {
-    if (Array.isArray(response?.[key])) return response[key];
+    if (Array.isArray(response?.[key])) {
+      return response[key];
+    }
   }
 
   return [];
@@ -99,11 +90,17 @@ function getReportTypes(response) {
 }
 
 function getFeedbackForDistrict(feedbackSummary, district) {
-  if (!feedbackSummary || !district) return null;
+  if (!feedbackSummary || !district) {
+    return null;
+  }
 
-  if (feedbackSummary[district]) return feedbackSummary[district];
-  if (feedbackSummary.by_district?.[district])
+  if (feedbackSummary[district]) {
+    return feedbackSummary[district];
+  }
+
+  if (feedbackSummary.by_district?.[district]) {
     return feedbackSummary.by_district[district];
+  }
 
   if (Array.isArray(feedbackSummary.summaries)) {
     return (
@@ -118,13 +115,17 @@ function getFeedbackForDistrict(feedbackSummary, district) {
     );
   }
 
-  if (feedbackSummary.district === district) return feedbackSummary;
+  if (feedbackSummary.district === district) {
+    return feedbackSummary;
+  }
 
   return null;
 }
 
 function getAdvisoryPayload(advisory) {
-  if (!advisory) return {};
+  if (!advisory) {
+    return {};
+  }
 
   return (
     advisory.rag_advisory ||
@@ -162,7 +163,6 @@ async function fetchJson(path, options = {}) {
 function Dashboard() {
   const [riskData, setRiskData] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedAudience, setSelectedAudience] = useState("disaster_manager");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const [advisory, setAdvisory] = useState(null);
@@ -315,10 +315,12 @@ function Dashboard() {
 
   async function loadAdvisory(
     district = selectedDistrict,
-    audience = selectedAudience,
+    audience = DEFAULT_AUDIENCE,
     language = selectedLanguage,
   ) {
-    if (!district) return;
+    if (!district) {
+      return;
+    }
 
     setAdvisoryLoading(true);
 
@@ -340,10 +342,12 @@ function Dashboard() {
 
   async function loadActionTracker(
     district = selectedDistrict,
-    audience = selectedAudience,
+    audience = DEFAULT_AUDIENCE,
     language = selectedLanguage,
   ) {
-    if (!district) return;
+    if (!district) {
+      return;
+    }
 
     try {
       const path = `/api/action-tracker/${encodeURIComponent(
@@ -386,28 +390,22 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!selectedDistrict) return;
+    if (!selectedDistrict) {
+      return;
+    }
 
-    loadAdvisory(selectedDistrict, selectedAudience, selectedLanguage);
-    loadActionTracker(selectedDistrict, selectedAudience, selectedLanguage);
+    loadAdvisory(selectedDistrict, DEFAULT_AUDIENCE, selectedLanguage);
+    loadActionTracker(selectedDistrict, DEFAULT_AUDIENCE, selectedLanguage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDistrict, selectedAudience, selectedLanguage]);
-
-  function handleDistrictChange(event) {
-    setSelectedDistrict(event.target.value);
-  }
+  }, [selectedDistrict, selectedLanguage]);
 
   function handleMapDistrictSelect(district) {
     setSelectedDistrict(district);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 
-  function handleAudienceChange(event) {
-    setSelectedAudience(event.target.value);
-  }
-
-  function handleLanguageChange(event) {
-    setSelectedLanguage(event.target.value);
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   function handleReportInputChange(event) {
@@ -465,8 +463,8 @@ function Dashboard() {
         loadCommunityReports(),
         loadCommunityFeedback(),
         loadPriorityActions(),
-        loadAdvisory(selectedDistrict, selectedAudience, selectedLanguage),
-        loadActionTracker(selectedDistrict, selectedAudience, selectedLanguage),
+        loadAdvisory(selectedDistrict, DEFAULT_AUDIENCE, selectedLanguage),
+        loadActionTracker(selectedDistrict, DEFAULT_AUDIENCE, selectedLanguage),
       ]);
     } catch (error) {
       console.error(error);
@@ -490,7 +488,7 @@ function Dashboard() {
 
       await loadActionTracker(
         selectedDistrict,
-        selectedAudience,
+        DEFAULT_AUDIENCE,
         selectedLanguage,
       );
     } catch (error) {
@@ -500,12 +498,14 @@ function Dashboard() {
   }
 
   async function handleDownloadBulletin(outputFormat) {
-    if (!selectedDistrict) return;
+    if (!selectedDistrict) {
+      return;
+    }
 
     const path = `/api/bulletin/${encodeURIComponent(
       selectedDistrict,
     )}?audience=${encodeURIComponent(
-      selectedAudience,
+      DEFAULT_AUDIENCE,
     )}&language=${encodeURIComponent(
       selectedLanguage,
     )}&output_format=${encodeURIComponent(outputFormat)}`;
@@ -531,12 +531,14 @@ function Dashboard() {
   }
 
   async function handleDownloadActionTrackerCsv() {
-    if (!selectedDistrict) return;
+    if (!selectedDistrict) {
+      return;
+    }
 
     const path = `/api/action-tracker/${encodeURIComponent(
       selectedDistrict,
     )}/csv?audience=${encodeURIComponent(
-      selectedAudience,
+      DEFAULT_AUDIENCE,
     )}&language=${encodeURIComponent(selectedLanguage)}`;
 
     try {
@@ -572,9 +574,11 @@ function Dashboard() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">IGAD Hackathon 2026 Prototype</p>
-          <h1>Forecast2Action AI</h1>
-          <p className="hero-text">Loading dashboard data...</p>
+          <div className="hero-content">
+            <p className="eyebrow">IGAD Hackathon 2026 Prototype</p>
+            <h1>Forecast2Action AI</h1>
+            <p className="hero-text">Loading dashboard data...</p>
+          </div>
         </section>
       </main>
     );
@@ -591,56 +595,6 @@ function Dashboard() {
             signals into explainable advisories, priority actions, community
             messages, implementation tasks, and operational exports.
           </p>
-        </div>
-
-        <div className="selector-card">
-          <div className="selector-field">
-            <label htmlFor="district-select">Select district</label>
-            <select
-              id="district-select"
-              value={selectedDistrict}
-              onChange={handleDistrictChange}
-            >
-              {riskData.length === 0 && (
-                <option value="">No districts loaded</option>
-              )}
-              {riskData.map((item) => (
-                <option key={item.district} value={item.district}>
-                  {item.district}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="selector-field">
-            <label htmlFor="audience-select">Select audience</label>
-            <select
-              id="audience-select"
-              value={selectedAudience}
-              onChange={handleAudienceChange}
-            >
-              {AUDIENCES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="selector-field">
-            <label htmlFor="language-select">Community message language</label>
-            <select
-              id="language-select"
-              value={selectedLanguage}
-              onChange={handleLanguageChange}
-            >
-              {LANGUAGES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </section>
 
@@ -673,10 +627,14 @@ function Dashboard() {
         </div>
       </section>
 
+      <ForecastLayerMap />
+
       <RiskMap
         riskData={riskData}
         selectedDistrict={selectedDistrict}
+        selectedLanguage={selectedLanguage}
         onSelectDistrict={handleMapDistrictSelect}
+        onLanguageChange={setSelectedLanguage}
       />
 
       <section className="panel priority-section">
@@ -806,8 +764,8 @@ function Dashboard() {
         <div className="section-heading">
           <h2>Forecast-to-Action Advisory</h2>
           <p>
-            Audience-specific advisory generated from climate evidence, risk
-            score, community reports, and local knowledge retrieval.
+            Advisory generated from climate evidence, risk score, community
+            reports, and local knowledge retrieval.
           </p>
         </div>
 
@@ -1023,22 +981,27 @@ function Dashboard() {
               {displayValue(actionSummary.total_tasks || actionTasks.length)}
             </strong>
           </div>
+
           <div>
             <span>Not started</span>
             <strong>{displayValue(actionSummary.not_started || 0)}</strong>
           </div>
+
           <div>
             <span>In progress</span>
             <strong>{displayValue(actionSummary.in_progress || 0)}</strong>
           </div>
+
           <div>
             <span>Completed</span>
             <strong>{displayValue(actionSummary.completed || 0)}</strong>
           </div>
+
           <div>
             <span>Blocked</span>
             <strong>{displayValue(actionSummary.blocked || 0)}</strong>
           </div>
+
           <div>
             <span>District</span>
             <strong>{selectedDistrict || "N/A"}</strong>

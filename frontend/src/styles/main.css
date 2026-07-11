@@ -875,3 +875,315 @@ tbody td {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ============================================================
+   Ethiopia Forecast Risk Layers
+   ============================================================ */
+
+.forecast-layer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.forecast-layer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.forecast-layer-header h2 {
+  margin: 0 0 8px;
+}
+
+.forecast-layer-header p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 820px;
+}
+
+.forecast-domain-badge {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1849a9;
+  border: 1px solid #c7d7fe;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.forecast-layer-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.forecast-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.forecast-control label {
+  font-weight: 900;
+  color: var(--text);
+}
+
+.forecast-control select {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--text);
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.forecast-layer-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.forecast-layer-summary > div {
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.forecast-layer-summary span {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+}
+
+.forecast-layer-summary strong {
+  display: block;
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.forecast-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.forecast-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 620px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #dbe7f5;
+  border: 1px solid var(--line);
+}
+
+.forecast-map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.forecast-map-loading {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 900;
+  color: var(--text);
+  box-shadow: 0 8px 22px rgba(15, 39, 77, 0.12);
+}
+
+.forecast-legend-card {
+  background: #fbfdff;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px;
+}
+
+.forecast-legend-card h3 {
+  margin: 0 0 14px;
+}
+
+.forecast-legend-card p {
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.forecast-hazard-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.forecast-hazard-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.forecast-hazard-legend i {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 4px rgba(15, 39, 77, 0.08);
+}
+
+.forecast-gradient-legend {
+  margin-bottom: 18px;
+}
+
+.forecast-gradient-bar {
+  width: 100%;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #12b76a 0%,
+    #fec84b 35%,
+    #f79009 60%,
+    #b42318 82%,
+    #7f1d1d 100%
+  );
+  border: 1px solid var(--line);
+}
+
+.forecast-gradient-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.forecast-popup {
+  min-width: 240px;
+}
+
+.forecast-popup h3 {
+  margin: 0 0 10px;
+  color: var(--text);
+}
+
+.forecast-popup p {
+  margin: 6px 0;
+  color: var(--text);
+}
+
+.forecast-popup hr {
+  border: none;
+  border-top: 1px solid #e5e9f2;
+  margin: 10px 0;
+}
+
+@media (max-width: 1200px) {
+  .forecast-layer-controls,
+  .forecast-layer-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .forecast-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .forecast-legend-card {
+    order: -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .forecast-layer-controls,
+  .forecast-layer-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .forecast-map-wrapper {
+    height: 460px;
+  }
+
+  .forecast-domain-badge {
+    white-space: normal;
+  }
+}
+
+
+/* ============================================================
+   Map Administrative Controls
+   ============================================================ */
+
+.map-admin-controls {
+  padding: 22px 28px 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  background: #fbfdff;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-control label {
+  font-weight: 900;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.map-control select {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--text);
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.map-admin-note {
+  margin: 0;
+  padding: 0 28px 18px;
+  background: #fbfdff;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 1200px) {
+  .map-admin-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .map-admin-controls {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .map-admin-note {
+    padding: 0 18px 16px;
+  }
+}

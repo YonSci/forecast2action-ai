@@ -4,7 +4,11 @@
 
 The system converts climate risk signals into actionable decisions by linking rainfall anomaly evidence, exposure, vulnerability, local community reports, AI/RAG-style advisory generation, and action implementation tracking.
 
----
+## Live Demo
+
+- Frontend: https://forecast2action-ai.vercel.app
+- Backend API: https://forecast2action-ai.onrender.com
+- API Health Check: https://forecast2action-ai.onrender.com/api/risk
 
 ## 1. Project Summary
 
@@ -101,11 +105,11 @@ Risk Score =
 Risk levels are classified as:
 
 | Score Range | Risk Level |
-|---|---|
-| < 0.35 | No alert |
-| 0.35–0.59 | Watch |
-| 0.60–0.79 | Warning |
-| ≥ 0.80 | Trigger |
+| ----------- | ---------- |
+| < 0.35      | No alert   |
+| 0.35–0.59   | Watch      |
+| 0.60–0.79   | Warning    |
+| ≥ 0.80      | Trigger    |
 
 ---
 
@@ -289,12 +293,12 @@ The CSV includes:
 
 The prototype includes sample pilot districts:
 
-| Country | District | Example Hazard |
-|---|---|---|
-| Ethiopia | Borena | Drought |
+| Country  | District    | Example Hazard              |
+| -------- | ----------- | --------------------------- |
+| Ethiopia | Borena      | Drought                     |
 | Ethiopia | Afar Zone 1 | Heat stress / rainfall risk |
-| Kenya | Turkana | Drought |
-| Kenya | Garissa | Heavy rainfall |
+| Kenya    | Turkana     | Drought                     |
+| Kenya    | Garissa     | Heavy rainfall              |
 
 ---
 
@@ -477,18 +481,18 @@ http://localhost:5174
 
 ## 9. Key API Endpoints
 
-| Endpoint | Description |
-|---|---|
-| `/api/risk` | Returns scored district risk data |
-| `/api/advisory/{district}` | Returns RAG-style advisory for selected district |
-| `/api/priority-actions` | Returns ranked priority action queue |
-| `/api/community-reports` | Submit or list community reports |
-| `/api/community-feedback-summary` | Summarizes ground-truth reports |
-| `/api/action-tracker/{district}` | Returns generated action tracker tasks |
-| `/api/action-tracker/status` | Saves task status update |
-| `/api/action-tracker/{district}/csv` | Exports action tracker as CSV |
-| `/api/bulletin/{district}` | Generates HTML or Markdown bulletin |
-| `/api/report-types` | Returns supported community report categories |
+| Endpoint                             | Description                                      |
+| ------------------------------------ | ------------------------------------------------ |
+| `/api/risk`                          | Returns scored district risk data                |
+| `/api/advisory/{district}`           | Returns RAG-style advisory for selected district |
+| `/api/priority-actions`              | Returns ranked priority action queue             |
+| `/api/community-reports`             | Submit or list community reports                 |
+| `/api/community-feedback-summary`    | Summarizes ground-truth reports                  |
+| `/api/action-tracker/{district}`     | Returns generated action tracker tasks           |
+| `/api/action-tracker/status`         | Saves task status update                         |
+| `/api/action-tracker/{district}/csv` | Exports action tracker as CSV                    |
+| `/api/bulletin/{district}`           | Generates HTML or Markdown bulletin              |
+| `/api/report-types`                  | Returns supported community report categories    |
 
 ---
 
