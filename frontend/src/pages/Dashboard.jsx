@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import AdminBoundarySelector from "../components/AdminBoundarySelector.jsx";
 import ForecastLayerMap from "../components/ForecastLayerMap.jsx";
 import RiskMap from "../components/RiskMap.jsx";
-import { apiUrl } from "../config.js";
-import AdminBoundarySelector from "../components/AdminBoundarySelector.jsx";
 import TopInterventionAreas from "../components/TopInterventionAreas.jsx";
+import { apiUrl } from "../config.js";
 
 const DEFAULT_AUDIENCE = "disaster_manager";
 
@@ -178,16 +178,6 @@ function Dashboard() {
   const [advisoryLoading, setAdvisoryLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [reportForm, setReportForm] = useState({
-    report_type: "water_shortage",
-    severity: "medium",
-    description: "",
-    reporter_name: "",
-    contact: "",
-    latitude: "",
-    longitude: "",
-  });
-
   const [adminSelection, setAdminSelection] = useState({
     regionId: "",
     zoneId: "",
@@ -198,6 +188,25 @@ function Dashboard() {
     boundaryLevel: "admin1",
     boundaryGeojson: null,
     boundaryLoading: false,
+  });
+
+  const [forecastSelection, setForecastSelection] = useState({
+    forecastScale: "subseasonal",
+    lead: "week_1",
+    layer: "risk_score",
+    indicator: "spi",
+  });
+
+  const [selectedPriorityArea, setSelectedPriorityArea] = useState(null);
+
+  const [reportForm, setReportForm] = useState({
+    report_type: "water_shortage",
+    severity: "medium",
+    description: "",
+    reporter_name: "",
+    contact: "",
+    latitude: "",
+    longitude: "",
   });
 
   const selectedRisk = useMemo(() => {
@@ -341,7 +350,9 @@ function Dashboard() {
     try {
       const path = `/api/advisory/${encodeURIComponent(
         district,
-      )}?audience=${encodeURIComponent(audience)}&language=${encodeURIComponent(language)}`;
+      )}?audience=${encodeURIComponent(audience)}&language=${encodeURIComponent(
+        language,
+      )}`;
 
       const response = await fetchJson(path);
       setAdvisory(response);
@@ -366,7 +377,9 @@ function Dashboard() {
     try {
       const path = `/api/action-tracker/${encodeURIComponent(
         district,
-      )}?audience=${encodeURIComponent(audience)}&language=${encodeURIComponent(language)}`;
+      )}?audience=${encodeURIComponent(audience)}&language=${encodeURIComponent(
+        language,
+      )}`;
 
       const response = await fetchJson(path);
       setActionTracker(response);
@@ -611,9 +624,7 @@ function Dashboard() {
           </p>
         </div>
       </section>
-
       {errorMessage && <div className="error-banner">{errorMessage}</div>}
-
       <section className="metrics-grid">
         <div className="metric-card">
           <span>Total pilot districts</span>
@@ -645,20 +656,31 @@ function Dashboard() {
         selectedLanguage={selectedLanguage}
         onLanguageChange={setSelectedLanguage}
         onSelectionChange={setAdminSelection}
+        onClearPrioritySelection={() => setSelectedPriorityArea(null)}
       />
-
-      <ForecastLayerMap adminSelection={adminSelection} />
-
-      <TopInterventionAreas adminSelection={adminSelection} />
-
+      <ForecastLayerMap
+        adminSelection={adminSelection}
+        onForecastSelectionChange={setForecastSelection}
+      />
+      <TopInterventionAreas
+        adminSelection={adminSelection}
+        forecastSelection={forecastSelection}
+        selectedPriorityArea={selectedPriorityArea}
+        onPriorityAreaSelect={setSelectedPriorityArea}
+      />
       <RiskMap
         riskData={riskData}
         selectedDistrict={selectedDistrict}
         selectedLanguage={selectedLanguage}
         adminSelection={adminSelection}
+        selectedPriorityArea={selectedPriorityArea}
         onSelectDistrict={handleMapDistrictSelect}
       />
-
+      {/* onSelectionChange=
+      {(selection) => {
+        setAdminSelection(selection);
+        setSelectedPriorityArea(null);
+      }} */}
       <section className="panel priority-section">
         <div className="section-heading">
           <h2>Priority Action Queue</h2>
@@ -717,7 +739,6 @@ function Dashboard() {
           </table>
         </div>
       </section>
-
       <section className="panel">
         <div className="section-heading">
           <h2>Impact-Based Risk Scores</h2>
@@ -781,7 +802,6 @@ function Dashboard() {
           </table>
         </div>
       </section>
-
       <section className="panel advisory-section">
         <div className="section-heading">
           <h2>Forecast-to-Action Advisory</h2>
@@ -976,7 +996,6 @@ function Dashboard() {
           </>
         )}
       </section>
-
       <section className="panel action-tracker-section">
         <div className="tracker-header">
           <div>
@@ -1088,7 +1107,6 @@ function Dashboard() {
           </table>
         </div>
       </section>
-
       <section className="panel community-section">
         <div className="section-heading">
           <h2>Community Ground-Truth Reports</h2>

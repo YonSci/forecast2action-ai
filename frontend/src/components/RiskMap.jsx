@@ -29,14 +29,6 @@ function safeNumber(value, fallback = null) {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
-function normalizeName(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replaceAll("_", " ")
-    .replace(/\s+/g, " ");
-}
-
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -75,13 +67,10 @@ function getRiskStyle(riskLevel) {
 function normalizeRiskItem(item) {
   const fallback = FALLBACK_COORDINATES[item.district] || {};
 
-  const latitude = safeNumber(item.latitude, fallback.latitude);
-  const longitude = safeNumber(item.longitude, fallback.longitude);
-
   return {
     ...item,
-    latitude,
-    longitude,
+    latitude: safeNumber(item.latitude, fallback.latitude),
+    longitude: safeNumber(item.longitude, fallback.longitude),
   };
 }
 
@@ -124,16 +113,7 @@ function getGeojsonBoundsObject(geojson) {
     return null;
   }
 
-  const lats = latLngs.map((item) => item[0]);
-  const lons = latLngs.map((item) => item[1]);
-
-  return {
-    south: Math.min(...lats),
-    north: Math.max(...lats),
-    west: Math.min(...lons),
-    east: Math.max(...lons),
-    latLngs,
-  };
+  return { latLngs };
 }
 
 function filterRiskDataByBoundaryBoundingBox(riskData, boundaryGeojson) {
@@ -141,11 +121,19 @@ function filterRiskDataByBoundaryBoundingBox(riskData, boundaryGeojson) {
     return riskData;
   }
 
-  const bounds = getGeojsonBoundsObject(boundaryGeojson);
+  const latLngs = getGeojsonLatLngs(boundaryGeojson);
 
-  if (!bounds) {
+  if (latLngs.length === 0) {
     return riskData;
   }
+
+  const lats = latLngs.map((item) => item[0]);
+  const lons = latLngs.map((item) => item[1]);
+
+  const south = Math.min(...lats);
+  const north = Math.max(...lats);
+  const west = Math.min(...lons);
+  const east = Math.max(...lons);
 
   return riskData.filter((item) => {
     const lat = Number(item.latitude);
@@ -155,13 +143,27 @@ function filterRiskDataByBoundaryBoundingBox(riskData, boundaryGeojson) {
       return false;
     }
 
-    return (
-      lat >= bounds.south &&
-      lat <= bounds.north &&
-      lon >= bounds.west &&
-      lon <= bounds.east
-    );
+    return lat >= south && lat <= north && lon >= west && lon <= east;
   });
+}
+
+function FitMapToBoundary({ boundaryGeojson, activeBoundaryKey }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const boundsObject = getGeojsonBoundsObject(boundaryGeojson);
+
+    if (!boundsObject || boundsObject.latLngs.length === 0) {
+      return;
+    }
+
+    map.fitBounds(boundsObject.latLngs, {
+      padding: [35, 35],
+      maxZoom: 10,
+    });
+  }, [map, boundaryGeojson, activeBoundaryKey]);
+
+  return null;
 }
 
 function FitMapToRiskData({ riskData, enabled }) {
@@ -188,51 +190,32 @@ function FitMapToRiskData({ riskData, enabled }) {
   return null;
 }
 
-function FitMapToBoundary({ boundaryGeojson }) {
-  const map = useMap();
-
-  useEffect(() => {
-    const boundsObject = getGeojsonBoundsObject(boundaryGeojson);
-
-    if (!boundsObject || boundsObject.latLngs.length === 0) {
-      return;
-    }
-
-    map.fitBounds(boundsObject.latLngs, {
-      padding: [35, 35],
-      maxZoom: 9,
-    });
-  }, [map, boundaryGeojson]);
-
-  return null;
-}
-
 function getBoundaryStyle(feature) {
   const level = feature.properties?.admin_level;
 
   if (level === "admin3") {
     return {
       color: "#7A5AF8",
-      weight: 2,
+      weight: 3.2,
       fillColor: "#7A5AF8",
-      fillOpacity: 0.08,
+      fillOpacity: 0.18,
     };
   }
 
   if (level === "admin2") {
     return {
       color: "#1570EF",
-      weight: 2.2,
+      weight: 2.6,
       fillColor: "#1570EF",
-      fillOpacity: 0.07,
+      fillOpacity: 0.11,
     };
   }
 
   return {
     color: "#1849A9",
-    weight: 1.6,
+    weight: 1.8,
     fillColor: "#1849A9",
-    fillOpacity: 0.04,
+    fillOpacity: 0.06,
   };
 }
 
@@ -269,10 +252,34 @@ function RiskMap({
   riskData = [],
   selectedDistrict = "",
   adminSelection = {},
+  selectedPriorityArea = null,
   onSelectDistrict,
 }) {
-  const boundaryGeojson = adminSelection?.boundaryGeojson || null;
-  const boundaryLoading = adminSelection?.boundaryLoading || false;
+  const hasPrioritySelection = Boolean(selectedPriorityArea?.area_name);
+  const hasPriorityBoundary = Boolean(selectedPriorityArea?.boundaryGeojson);
+
+  const activeBoundaryGeojson = hasPriorityBoundary
+    ? selectedPriorityArea.boundaryGeojson
+    : adminSelection?.boundaryGeojson || null;
+
+  const activeBoundaryKey = hasPriorityBoundary
+    ? `priority-${selectedPriorityArea.selected_at}-${selectedPriorityArea.area_name}-${selectedPriorityArea.boundary_feature_count}`
+    : `shared-${adminSelection?.boundaryLevel}-${adminSelection?.regionId}-${adminSelection?.zoneId}-${adminSelection?.woredaId}`;
+
+  const selectedAdminLabel =
+    selectedPriorityArea?.area_name ||
+    adminSelection?.woredaLabel ||
+    adminSelection?.zoneLabel ||
+    adminSelection?.regionLabel ||
+    "All Ethiopia administrative areas";
+
+  const selectedAreaSource = hasPriorityBoundary
+    ? "Priority Intervention Areas"
+    : "Administrative Area Selection";
+
+  const boundaryFeatureCount = hasPriorityBoundary
+    ? selectedPriorityArea?.boundary_feature_count
+    : activeBoundaryGeojson?.metadata?.feature_count || 0;
 
   const validRiskData = useMemo(() => {
     return riskData.map(normalizeRiskItem).filter((item) => {
@@ -281,49 +288,19 @@ function RiskMap({
   }, [riskData]);
 
   const displayedRiskData = useMemo(() => {
-    return filterRiskDataByBoundaryBoundingBox(validRiskData, boundaryGeojson);
-  }, [validRiskData, boundaryGeojson]);
+    return filterRiskDataByBoundaryBoundingBox(
+      validRiskData,
+      activeBoundaryGeojson,
+    );
+  }, [validRiskData, activeBoundaryGeojson]);
 
   const selectedItem = validRiskData.find(
     (item) => item.district === selectedDistrict,
   );
 
-  const selectedAdminLabel =
-    adminSelection?.woredaLabel ||
-    adminSelection?.zoneLabel ||
-    adminSelection?.regionLabel ||
-    "All Ethiopia administrative areas";
-
   const mapCenter = selectedItem
     ? [selectedItem.latitude, selectedItem.longitude]
     : [8.5, 39.5];
-
-  useEffect(() => {
-    const adminLabel =
-      adminSelection?.woredaLabel ||
-      adminSelection?.zoneLabel ||
-      adminSelection?.regionLabel ||
-      "";
-
-    if (!adminLabel || typeof onSelectDistrict !== "function") {
-      return;
-    }
-
-    const match = validRiskData.find((item) => {
-      return normalizeName(item.district) === normalizeName(adminLabel);
-    });
-
-    if (match && match.district !== selectedDistrict) {
-      onSelectDistrict(match.district);
-    }
-  }, [
-    adminSelection?.regionLabel,
-    adminSelection?.zoneLabel,
-    adminSelection?.woredaLabel,
-    validRiskData,
-    selectedDistrict,
-    onSelectDistrict,
-  ]);
 
   function handleSelectDistrict(district) {
     if (typeof onSelectDistrict === "function") {
@@ -332,18 +309,29 @@ function RiskMap({
   }
 
   return (
-    <section className="panel map-panel">
+    <section className="panel map-panel" id="interactive-risk-map">
       <div className="map-header">
         <div>
           <h2>Interactive Administrative Risk Map</h2>
+
           <p>
-            Boundary selection is shared with the Forecast Risk Layers. The risk
-            points are filtered to the selected administrative area where
-            possible.
+            This map updates from the selected row in Priority Intervention
+            Areas.
           </p>
+
           <p className="map-selected-area">
-            Selected area: <strong>{selectedAdminLabel}</strong>
+            Active area: <strong>{selectedAdminLabel}</strong>
           </p>
+
+          <p className="map-selected-area">
+            Selection source: <strong>{selectedAreaSource}</strong>
+          </p>
+
+          {hasPrioritySelection && (
+            <p className="map-selected-area">
+              Boundary features loaded: <strong>{boundaryFeatureCount}</strong>
+            </p>
+          )}
         </div>
 
         <div className="map-legend" aria-label="Risk legend">
@@ -360,10 +348,16 @@ function RiskMap({
       </div>
 
       <p className="map-admin-note">
-        Administrative boundaries are loaded once from the shared selector and
-        reused here. Advisory content is currently available for prototype pilot
-        points.
+        Clicking “View on map” in Priority Intervention Areas sends the selected
+        boundary directly to this map.
       </p>
+
+      {hasPrioritySelection && !hasPriorityBoundary && (
+        <div className="error-banner">
+          The selected priority area was received, but no boundary geometry was
+          attached. Restart the backend after updating the ranking endpoint.
+        </div>
+      )}
 
       <div className="map-wrapper">
         <MapContainer
@@ -379,21 +373,23 @@ function RiskMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {boundaryGeojson && (
+          {activeBoundaryGeojson && (
             <>
               <GeoJSON
-                key={`risk-boundary-${adminSelection?.regionId || "all"}-${
-                  adminSelection?.zoneId || "all"
-                }-${adminSelection?.woredaId || "all"}`}
-                data={boundaryGeojson}
+                key={activeBoundaryKey}
+                data={activeBoundaryGeojson}
                 style={getBoundaryStyle}
                 onEachFeature={onEachBoundaryFeature}
               />
-              <FitMapToBoundary boundaryGeojson={boundaryGeojson} />
+
+              <FitMapToBoundary
+                boundaryGeojson={activeBoundaryGeojson}
+                activeBoundaryKey={activeBoundaryKey}
+              />
             </>
           )}
 
-          {!boundaryGeojson && (
+          {!activeBoundaryGeojson && (
             <FitMapToRiskData riskData={displayedRiskData} enabled={true} />
           )}
 
@@ -475,22 +471,7 @@ function RiskMap({
             );
           })}
         </MapContainer>
-
-        {boundaryLoading && (
-          <div className="forecast-map-loading">Loading boundary...</div>
-        )}
       </div>
-
-      {displayedRiskData.length === 0 && (
-        <div className="map-empty-state compact-empty-state">
-          <h3>No pilot risk points inside this selected boundary</h3>
-          <p>
-            The administrative boundary is displayed, but the current prototype
-            advisory points may not fall inside the selected Region, Zone or
-            Woreda.
-          </p>
-        </div>
-      )}
     </section>
   );
 }

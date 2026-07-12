@@ -1,26 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiUrl } from "../config.js";
-
-const FORECAST_SCALES = [
-  { value: "subseasonal", label: "Subseasonal" },
-  { value: "seasonal", label: "Seasonal" },
-];
-
-const FORECAST_LEADS = [
-  { value: "week_1", label: "Week 1", forecast_scale: "subseasonal" },
-  { value: "week_2", label: "Week 2", forecast_scale: "subseasonal" },
-  { value: "week_3", label: "Week 3", forecast_scale: "subseasonal" },
-  { value: "week_4", label: "Week 4", forecast_scale: "subseasonal" },
-  { value: "week_1_2", label: "Week 1-2", forecast_scale: "subseasonal" },
-  { value: "week_2_3", label: "Week 2-3", forecast_scale: "subseasonal" },
-  { value: "week_3_4", label: "Week 3-4", forecast_scale: "subseasonal" },
-  { value: "month_1", label: "Month 1", forecast_scale: "seasonal" },
-  { value: "month_2", label: "Month 2", forecast_scale: "seasonal" },
-  { value: "month_3", label: "Month 3", forecast_scale: "seasonal" },
-  { value: "month_4", label: "Month 4", forecast_scale: "seasonal" },
-  { value: "month_5", label: "Month 5", forecast_scale: "seasonal" },
-  { value: "month_6", label: "Month 6", forecast_scale: "seasonal" },
-];
 
 const RANKING_LAYERS = [
   { value: "risk_score", label: "Risk Score" },
@@ -91,23 +70,72 @@ function getOptionLabel(options, value) {
   return match?.label || titleCase(value);
 }
 
-function TopInterventionAreas({ adminSelection = {} }) {
-  const [forecastScale, setForecastScale] = useState("subseasonal");
-  const [lead, setLead] = useState("week_1");
-  const [rankingLayer, setRankingLayer] = useState("risk_score");
-  const [adminLevel, setAdminLevel] = useState("admin1");
+function isRankingLayer(value) {
+  return RANKING_LAYERS.some((item) => item.value === value);
+}
+
+function isSamePriorityArea(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+
+  return (
+    a.admin_level === b.admin_level &&
+    a.region_id === b.region_id &&
+    a.zone_id === b.zone_id &&
+    a.woreda_id === b.woreda_id &&
+    a.area_name === b.area_name
+  );
+}
+
+function getReadableAdminLevel(adminLevel) {
+  if (adminLevel === "admin1") return "Region";
+  if (adminLevel === "admin2") return "Zone";
+  if (adminLevel === "admin3") return "Woreda";
+
+  return titleCase(adminLevel);
+}
+
+function buildBoundaryGeojsonFromItem(item, selectedArea) {
+  if (!item?.boundary_feature) {
+    return null;
+  }
+
+  return {
+    type: "FeatureCollection",
+    metadata: {
+      source: "priority_intervention_area",
+      level: selectedArea.admin_level,
+      area_name: selectedArea.area_name,
+      region_id: selectedArea.region_id,
+      zone_id: selectedArea.zone_id,
+      woreda_id: selectedArea.woreda_id,
+      feature_count: 1,
+    },
+    features: [item.boundary_feature],
+  };
+}
+
+function TopInterventionAreas({
+  adminSelection = {},
+  forecastSelection = {},
+  selectedPriorityArea = null,
+  onPriorityAreaSelect,
+}) {
+  const forecastScale = forecastSelection.forecastScale || "subseasonal";
+  const lead = forecastSelection.lead || "week_1";
+  const selectedMapLayer = forecastSelection.layer || "risk_score";
+
+  const [rankingLayer, setRankingLayer] = useState(
+    isRankingLayer(selectedMapLayer) ? selectedMapLayer : "risk_score",
+  );
+  const [adminLevel, setAdminLevel] = useState("admin3");
   const [selectionMode, setSelectionMode] = useState("top");
   const [topN, setTopN] = useState(5);
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLDS.risk_score);
   const [rankingData, setRankingData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
-  const availableLeads = useMemo(() => {
-    return FORECAST_LEADS.filter(
-      (item) => item.forecast_scale === forecastScale,
-    );
-  }, [forecastScale]);
 
   const selectedAreaLabel =
     adminSelection?.woredaLabel ||
@@ -118,14 +146,11 @@ function TopInterventionAreas({ adminSelection = {} }) {
   const rankingItems = rankingData?.ranking || [];
 
   useEffect(() => {
-    const firstLead = FORECAST_LEADS.find(
-      (item) => item.forecast_scale === forecastScale,
-    );
-
-    if (firstLead && !availableLeads.some((item) => item.value === lead)) {
-      setLead(firstLead.value);
+    if (isRankingLayer(selectedMapLayer)) {
+      setRankingLayer(selectedMapLayer);
+      setThreshold(DEFAULT_THRESHOLDS[selectedMapLayer] || 0.6);
     }
-  }, [forecastScale, lead, availableLeads]);
+  }, [selectedMapLayer]);
 
   useEffect(() => {
     setThreshold(DEFAULT_THRESHOLDS[rankingLayer] || 0.6);
@@ -194,23 +219,55 @@ function TopInterventionAreas({ adminSelection = {} }) {
     adminSelection?.zoneId,
   ]);
 
-  function handleForecastScaleChange(event) {
-    const nextScale = event.target.value;
-    setForecastScale(nextScale);
-
-    const firstLead = FORECAST_LEADS.find(
-      (item) => item.forecast_scale === nextScale,
-    );
-
-    if (firstLead) {
-      setLead(firstLead.value);
-    }
-  }
-
   function handleRankingLayerChange(event) {
     const nextLayer = event.target.value;
+
     setRankingLayer(nextLayer);
     setThreshold(DEFAULT_THRESHOLDS[nextLayer] || 0.6);
+  }
+
+  function handlePriorityAreaSelect(item) {
+    const selectedArea = {
+      ...item,
+      selected_at: Date.now(),
+      admin_level: item.admin_level || adminLevel,
+      region_id: item.region_id || "",
+      zone_id: item.zone_id || "",
+      woreda_id: item.woreda_id || "",
+      region: item.region || "",
+      zone: item.zone || "",
+      woreda: item.woreda || "",
+      area_name:
+        item.area_name ||
+        item.woreda ||
+        item.zone ||
+        item.region ||
+        "Selected area",
+    };
+
+    const boundaryGeojson = buildBoundaryGeojsonFromItem(item, selectedArea);
+
+    const selectedAreaWithBoundary = {
+      ...selectedArea,
+      boundaryGeojson,
+      boundary_feature_count: boundaryGeojson?.features?.length || 0,
+      boundary_source: boundaryGeojson
+        ? "ranking_item_embedded_geometry"
+        : "missing_embedded_geometry",
+    };
+
+    console.log("Priority area selected for map:", selectedAreaWithBoundary);
+
+    if (typeof onPriorityAreaSelect === "function") {
+      onPriorityAreaSelect(selectedAreaWithBoundary);
+    }
+
+    setTimeout(() => {
+      document.getElementById("interactive-risk-map")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
   }
 
   return (
@@ -219,11 +276,13 @@ function TopInterventionAreas({ adminSelection = {} }) {
         <div>
           <h2>Priority Intervention Areas</h2>
           <p>
-            Rank administrative areas that need early action based on forecast
-            risk score, hazard probability, exposure, or vulnerability.
+            Rank administrative areas needing early action. This section uses
+            the forecast scale and lead selected in the Ethiopia Forecast Risk
+            Layers map.
           </p>
           <p className="map-selected-area">
-            Current selection: <strong>{selectedAreaLabel}</strong>
+            Current administrative selection:{" "}
+            <strong>{selectedAreaLabel}</strong>
           </p>
         </div>
 
@@ -234,37 +293,7 @@ function TopInterventionAreas({ adminSelection = {} }) {
 
       {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
-      <div className="intervention-controls">
-        <div className="forecast-control">
-          <label htmlFor="intervention-scale">Forecast scale</label>
-          <select
-            id="intervention-scale"
-            value={forecastScale}
-            onChange={handleForecastScaleChange}
-          >
-            {FORECAST_SCALES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="forecast-control">
-          <label htmlFor="intervention-lead">Lead / horizon</label>
-          <select
-            id="intervention-lead"
-            value={lead}
-            onChange={(event) => setLead(event.target.value)}
-          >
-            {availableLeads.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
+      <div className="intervention-controls intervention-controls-compact">
         <div className="forecast-control">
           <label htmlFor="intervention-layer">Rank by</label>
           <select
@@ -344,13 +373,15 @@ function TopInterventionAreas({ adminSelection = {} }) {
         </div>
 
         <div>
-          <span>Forecast horizon</span>
-          <strong>{getOptionLabel(FORECAST_LEADS, lead)}</strong>
+          <span>Administrative level</span>
+          <strong>{getOptionLabel(ADMIN_LEVELS, adminLevel)}</strong>
         </div>
 
         <div>
-          <span>Admin level</span>
-          <strong>{getOptionLabel(ADMIN_LEVELS, adminLevel)}</strong>
+          <span>Display mode</span>
+          <strong>
+            {selectionMode === "top" ? `Top ${topN}` : "Threshold"}
+          </strong>
         </div>
 
         <div>
@@ -371,46 +402,70 @@ function TopInterventionAreas({ adminSelection = {} }) {
               <th>Max</th>
               <th>Cells above threshold</th>
               <th>Priority score</th>
+              <th>Map selection</th>
               <th>Intervention guidance</th>
             </tr>
           </thead>
+
           <tbody>
-            {rankingItems.map((item) => (
-              <tr key={`${item.admin_level}-${item.area_name}-${item.rank}`}>
-                <td>
-                  <span className="rank-badge">{item.rank}</span>
-                </td>
-                <td>
-                  <strong>{item.area_name}</strong>
-                  <br />
-                  <small>{titleCase(item.admin_level)}</small>
-                </td>
-                <td>{item.region || "N/A"}</td>
-                <td>{item.zone || "N/A"}</td>
-                <td>{formatNumber(item.mean_value)}</td>
-                <td>{formatNumber(item.max_value)}</td>
-                <td>
-                  {item.cells_above_threshold_pct}%{" "}
-                  <small>
-                    ({item.cells_above_threshold}/{item.cells_count})
-                  </small>
-                </td>
-                <td>
-                  <span
-                    className={`priority-score-pill ${getPriorityClass(
-                      item.priority_level,
-                    )}`}
-                  >
-                    {formatNumber(item.priority_score)}
-                  </span>
-                </td>
-                <td>{item.recommended_action}</td>
-              </tr>
-            ))}
+            {rankingItems.map((item) => {
+              const isSelected = isSamePriorityArea(item, selectedPriorityArea);
+
+              return (
+                <tr
+                  key={`${item.admin_level}-${item.region_id}-${item.zone_id}-${item.woreda_id}-${item.area_name}-${item.rank}`}
+                  className={isSelected ? "selected-row" : ""}
+                >
+                  <td>
+                    <span className="rank-badge">{item.rank}</span>
+                  </td>
+
+                  <td>
+                    <strong>{item.area_name}</strong>
+                    <br />
+                    <small>{getReadableAdminLevel(item.admin_level)}</small>
+                  </td>
+
+                  <td>{item.region || "N/A"}</td>
+                  <td>{item.zone || "N/A"}</td>
+                  <td>{formatNumber(item.mean_value)}</td>
+                  <td>{formatNumber(item.max_value)}</td>
+
+                  <td>
+                    {item.cells_above_threshold_pct}%{" "}
+                    <small>
+                      ({item.cells_above_threshold}/{item.cells_count})
+                    </small>
+                  </td>
+
+                  <td>
+                    <span
+                      className={`priority-score-pill ${getPriorityClass(
+                        item.priority_level,
+                      )}`}
+                    >
+                      {formatNumber(item.priority_score)}
+                    </span>
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      className="table-link-button"
+                      onClick={() => handlePriorityAreaSelect(item)}
+                    >
+                      {isSelected ? "Selected" : "View on map"}
+                    </button>
+                  </td>
+
+                  <td>{item.recommended_action}</td>
+                </tr>
+              );
+            })}
 
             {rankingItems.length === 0 && (
               <tr>
-                <td colSpan="9">
+                <td colSpan="10">
                   No areas matched the selected ranking configuration.
                 </td>
               </tr>
@@ -421,9 +476,8 @@ function TopInterventionAreas({ adminSelection = {} }) {
 
       <p className="intervention-method-note">
         Method: priority score combines mean value, maximum value, and the share
-        of grid cells above threshold. Use Risk Score for primary intervention
-        ranking; use Hazard Probability, Exposure, and Vulnerability as
-        diagnostic layers.
+        of grid cells above threshold. Click “View on map” to update the
+        Interactive Administrative Risk Map.
       </p>
     </section>
   );

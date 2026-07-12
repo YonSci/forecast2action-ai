@@ -314,7 +314,6 @@ def get_grid_features_for_forecast(
 
     return features
 
-
 def calculate_admin_area_ranking_item(
     admin_feature: dict,
     grid_features: list,
@@ -361,7 +360,12 @@ def calculate_admin_area_ranking_item(
 
     mean_value = sum(values) / len(values)
     max_value = max(values)
-    cells_above_threshold = [value for value in values if value >= threshold]
+
+    cells_above_threshold = [
+        value for value in values
+        if value >= threshold
+    ]
+
     cells_above_threshold_pct = len(cells_above_threshold) / len(values)
 
     priority_score = (
@@ -371,10 +375,22 @@ def calculate_admin_area_ranking_item(
     )
 
     priority_level = classify_priority_level(priority_score, layer)
+    area_name = get_admin_area_label(admin_properties, admin_level)
+
+    boundary_feature = {
+        "type": "Feature",
+        "id": admin_feature.get("id") or admin_properties.get("id") or area_name,
+        "geometry": geometry,
+        "properties": {
+            **admin_properties,
+            "admin_level": admin_level,
+            "name": area_name,
+        },
+    }
 
     return {
         "admin_level": admin_level,
-        "area_name": get_admin_area_label(admin_properties, admin_level),
+        "area_name": area_name,
         "region": admin_properties.get("region", ""),
         "zone": admin_properties.get("zone", ""),
         "woreda": admin_properties.get("woreda", ""),
@@ -389,8 +405,8 @@ def calculate_admin_area_ranking_item(
         "priority_score": round(priority_score, 3),
         "priority_level": priority_level,
         "recommended_action": get_intervention_action(layer, priority_level),
+        "boundary_feature": boundary_feature,
     }
-
 
 @lru_cache(maxsize=128)
 def build_intervention_ranking_cached(

@@ -3,7 +3,7 @@ import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
 
-const DEFAULT_OPTIONS = {
+const OPTIONS = {
   forecast_scales: [
     { value: "subseasonal", label: "Subseasonal" },
     { value: "seasonal", label: "Seasonal" },
@@ -293,8 +293,7 @@ function getBoundaryOverlayStyle(feature) {
   };
 }
 
-function ForecastLayerMap({ adminSelection = {} }) {
-  const [options, setOptions] = useState(DEFAULT_OPTIONS);
+function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const [forecastScale, setForecastScale] = useState("subseasonal");
   const [lead, setLead] = useState("week_1");
   const [layer, setLayer] = useState("hazard");
@@ -306,18 +305,18 @@ function ForecastLayerMap({ adminSelection = {} }) {
   const boundaryGeojson = adminSelection?.boundaryGeojson || null;
 
   const filteredLeadOptions = useMemo(() => {
-    return options.leads.filter(
+    return OPTIONS.leads.filter(
       (item) => item.forecast_scale === forecastScale,
     );
-  }, [options.leads, forecastScale]);
+  }, [forecastScale]);
 
   const displayedGeojson = useMemo(() => {
     return filterGridByBoundaryBoundingBox(geojson, boundaryGeojson);
   }, [geojson, boundaryGeojson]);
 
-  const selectedLayerLabel = getOptionLabel(options.layers, layer);
-  const selectedLeadLabel = getOptionLabel(options.leads, lead);
-  const selectedIndicatorLabel = getOptionLabel(options.indicators, indicator);
+  const selectedLayerLabel = getOptionLabel(OPTIONS.layers, layer);
+  const selectedLeadLabel = getOptionLabel(OPTIONS.leads, lead);
+  const selectedIndicatorLabel = getOptionLabel(OPTIONS.indicators, indicator);
 
   const selectedAdminLabel =
     adminSelection?.woredaLabel ||
@@ -326,34 +325,18 @@ function ForecastLayerMap({ adminSelection = {} }) {
     "All Ethiopia administrative areas";
 
   useEffect(() => {
-    async function loadOptions() {
-      try {
-        const response = await fetch(apiUrl("/api/map-layers/options"));
-
-        if (!response.ok) {
-          throw new Error(`Options request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        setOptions({
-          forecast_scales:
-            data.forecast_scales || DEFAULT_OPTIONS.forecast_scales,
-          leads: data.leads || DEFAULT_OPTIONS.leads,
-          layers: data.layers || DEFAULT_OPTIONS.layers,
-          indicators: data.indicators || DEFAULT_OPTIONS.indicators,
-        });
-      } catch (error) {
-        console.error(error);
-        setOptions(DEFAULT_OPTIONS);
-      }
+    if (typeof onForecastSelectionChange === "function") {
+      onForecastSelectionChange({
+        forecastScale,
+        lead,
+        layer,
+        indicator,
+      });
     }
-
-    loadOptions();
-  }, []);
+  }, [forecastScale, lead, layer, indicator, onForecastSelectionChange]);
 
   useEffect(() => {
-    const leadsForScale = options.leads.filter(
+    const leadsForScale = OPTIONS.leads.filter(
       (item) => item.forecast_scale === forecastScale,
     );
 
@@ -363,7 +346,7 @@ function ForecastLayerMap({ adminSelection = {} }) {
     ) {
       setLead(leadsForScale[0].value);
     }
-  }, [forecastScale, lead, options.leads]);
+  }, [forecastScale, lead]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -410,7 +393,7 @@ function ForecastLayerMap({ adminSelection = {} }) {
     const nextScale = event.target.value;
     setForecastScale(nextScale);
 
-    const firstLeadForScale = options.leads.find(
+    const firstLeadForScale = OPTIONS.leads.find(
       (item) => item.forecast_scale === nextScale,
     );
 
@@ -469,8 +452,8 @@ function ForecastLayerMap({ adminSelection = {} }) {
           <h2>Ethiopia Forecast Risk Layers</h2>
           <p>
             Prototype gridded subseasonal and seasonal forecast layers for
-            Ethiopia. This map uses the same shared Region, Zone and Woreda
-            selection as the administrative risk map.
+            Ethiopia. This map controls the forecast scale and lead used by the
+            Priority Intervention Areas ranking.
           </p>
           <p className="map-selected-area">
             Selected area: <strong>{selectedAdminLabel}</strong>
@@ -488,7 +471,7 @@ function ForecastLayerMap({ adminSelection = {} }) {
             value={forecastScale}
             onChange={handleForecastScaleChange}
           >
-            {options.forecast_scales.map((item) => (
+            {OPTIONS.forecast_scales.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -518,7 +501,7 @@ function ForecastLayerMap({ adminSelection = {} }) {
             value={layer}
             onChange={(event) => setLayer(event.target.value)}
           >
-            {options.layers.map((item) => (
+            {OPTIONS.layers.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -533,7 +516,7 @@ function ForecastLayerMap({ adminSelection = {} }) {
             value={indicator}
             onChange={(event) => setIndicator(event.target.value)}
           >
-            {options.indicators.map((item) => (
+            {OPTIONS.indicators.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -651,9 +634,8 @@ function ForecastLayerMap({ adminSelection = {} }) {
 
           <p>
             The selected administrative boundary is used to spatially filter the
-            forecast grid using the boundary extent. This is a fast MVP
-            approach. A production version should use exact polygon clipping or
-            vector tiles.
+            forecast grid using the boundary extent. A production version should
+            use exact polygon clipping or vector tiles.
           </p>
         </div>
       </div>

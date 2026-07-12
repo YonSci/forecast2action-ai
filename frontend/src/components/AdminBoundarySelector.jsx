@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "../config.js";
 
 const LANGUAGE_OPTIONS = [
@@ -9,8 +9,8 @@ const LANGUAGE_OPTIONS = [
 
 function getBoundaryLevel(regionId, zoneId, woredaId) {
   if (woredaId) return "admin3";
-  if (zoneId) return "admin3";
-  if (regionId) return "admin2";
+  if (zoneId) return "admin2";
+  if (regionId) return "admin1";
   return "admin1";
 }
 
@@ -23,13 +23,17 @@ function AdminBoundarySelector({
   selectedLanguage = "en",
   onLanguageChange,
   onSelectionChange,
+  onClearPrioritySelection,
 }) {
+  const onSelectionChangeRef = useRef(onSelectionChange);
+
   const [adminOptions, setAdminOptions] = useState({
     regions: [],
     zones: [],
     woredas: [],
   });
 
+  const [optionsLoaded, setOptionsLoaded] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [selectedWoredaId, setSelectedWoredaId] = useState("");
@@ -38,6 +42,10 @@ function AdminBoundarySelector({
 
   const hasActiveSelection =
     selectedRegionId !== "" || selectedZoneId !== "" || selectedWoredaId !== "";
+
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onSelectionChange]);
 
   const filteredZones = useMemo(() => {
     if (!selectedRegionId) return adminOptions.zones || [];
@@ -56,9 +64,15 @@ function AdminBoundarySelector({
   }, [adminOptions.woredas, selectedRegionId, selectedZoneId]);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function loadAdminOptions() {
+      setErrorMessage("");
+
       try {
-        const response = await fetch(apiUrl("/api/admin-boundaries/options"));
+        const response = await fetch(apiUrl("/api/admin-boundaries/options"), {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           throw new Error(`Admin options request failed: ${response.status}`);
@@ -71,18 +85,29 @@ function AdminBoundarySelector({
           zones: data.zones || [],
           woredas: data.woredas || [],
         });
+
+        setOptionsLoaded(true);
       } catch (error) {
-        console.error(error);
-        setErrorMessage(
-          "Could not load Ethiopia administrative boundary options.",
-        );
+        if (error.name !== "AbortError") {
+          console.error(error);
+          setErrorMessage(
+            "Could not load Ethiopia administrative boundary options.",
+          );
+          setOptionsLoaded(false);
+        }
       }
     }
 
     loadAdminOptions();
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
+    if (!optionsLoaded) {
+      return;
+    }
+
     const controller = new AbortController();
 
     async function loadBoundary() {
@@ -118,8 +143,8 @@ function AdminBoundarySelector({
         const zoneLabel = findLabel(adminOptions.zones, selectedZoneId);
         const woredaLabel = findLabel(adminOptions.woredas, selectedWoredaId);
 
-        if (typeof onSelectionChange === "function") {
-          onSelectionChange({
+        if (typeof onSelectionChangeRef.current === "function") {
+          onSelectionChangeRef.current({
             regionId: selectedRegionId,
             zoneId: selectedZoneId,
             woredaId: selectedWoredaId,
@@ -145,28 +170,37 @@ function AdminBoundarySelector({
 
     return () => controller.abort();
   }, [
+    optionsLoaded,
     selectedRegionId,
     selectedZoneId,
     selectedWoredaId,
     adminOptions.regions,
     adminOptions.zones,
     adminOptions.woredas,
-    onSelectionChange,
   ]);
+
+  function clearPrioritySelection() {
+    if (typeof onClearPrioritySelection === "function") {
+      onClearPrioritySelection();
+    }
+  }
 
   function handleRegionChange(event) {
     setSelectedRegionId(event.target.value);
     setSelectedZoneId("");
     setSelectedWoredaId("");
+    clearPrioritySelection();
   }
 
   function handleZoneChange(event) {
     setSelectedZoneId(event.target.value);
     setSelectedWoredaId("");
+    clearPrioritySelection();
   }
 
   function handleWoredaChange(event) {
     setSelectedWoredaId(event.target.value);
+    clearPrioritySelection();
   }
 
   function handleLanguageChange(event) {
@@ -180,6 +214,7 @@ function AdminBoundarySelector({
     setSelectedZoneId("");
     setSelectedWoredaId("");
     setErrorMessage("");
+    clearPrioritySelection();
   }
 
   return (
