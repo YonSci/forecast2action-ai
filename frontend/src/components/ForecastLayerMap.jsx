@@ -39,9 +39,16 @@ const OPTIONS = {
   ],
 };
 
+const ETHIOPIA_CENTER = [9, 40.5];
+
 const ETHIOPIA_BOUNDS = [
   [3, 33],
   [15, 48],
+];
+
+const ETHIOPIA_MAX_BOUNDS = [
+  [1.5, 31.5],
+  [16.5, 49.5],
 ];
 
 const HAZARD_COLORS = {
@@ -150,11 +157,7 @@ function getIndicatorValue(properties, indicator) {
     return `${formatValue(properties[indicator], 1)} percentile`;
   }
 
-  if (indicator === "cdd") {
-    return `${formatValue(properties[indicator], 0)} days`;
-  }
-
-  if (indicator === "cwd") {
+  if (indicator === "cdd" || indicator === "cwd") {
     return `${formatValue(properties[indicator], 0)} days`;
   }
 
@@ -217,7 +220,7 @@ function filterGridByBoundaryBoundingBox(geojson, boundaryGeojson) {
     return geojson;
   }
 
-  const filteredFeatures = geojson.features.filter((feature) => {
+  const filteredFeatures = (geojson.features || []).filter((feature) => {
     const props = feature.properties || {};
     const lat = Number(props.lat_center);
     const lon = Number(props.lon_center);
@@ -245,24 +248,18 @@ function filterGridByBoundaryBoundingBox(geojson, boundaryGeojson) {
   };
 }
 
-function FitForecastMapToSelection({ boundaryGeojson }) {
+function FitForecastMapToEthiopiaDomain({ viewKey }) {
   const map = useMap();
 
   useEffect(() => {
-    const boundsObject = getGeojsonBoundsObject(boundaryGeojson);
-
-    if (boundsObject && boundsObject.latLngs.length > 0) {
-      map.fitBounds(boundsObject.latLngs, {
-        padding: [28, 28],
-        maxZoom: 8,
-      });
-      return;
-    }
-
     map.fitBounds(ETHIOPIA_BOUNDS, {
-      padding: [20, 20],
+      padding: [8, 8],
+      animate: true,
+      duration: 0.4,
     });
-  }, [map, boundaryGeojson]);
+
+    map.setMaxBounds(ETHIOPIA_MAX_BOUNDS);
+  }, [map, viewKey]);
 
   return null;
 }
@@ -273,7 +270,7 @@ function getBoundaryOverlayStyle(feature) {
   if (level === "admin3") {
     return {
       color: "#111827",
-      weight: 2,
+      weight: 2.2,
       fillOpacity: 0,
     };
   }
@@ -281,7 +278,7 @@ function getBoundaryOverlayStyle(feature) {
   if (level === "admin2") {
     return {
       color: "#111827",
-      weight: 1.8,
+      weight: 1.9,
       fillOpacity: 0,
     };
   }
@@ -305,9 +302,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const boundaryGeojson = adminSelection?.boundaryGeojson || null;
 
   const filteredLeadOptions = useMemo(() => {
-    return OPTIONS.leads.filter(
-      (item) => item.forecast_scale === forecastScale,
-    );
+    return OPTIONS.leads.filter((item) => item.forecast_scale === forecastScale);
   }, [forecastScale]);
 
   const displayedGeojson = useMemo(() => {
@@ -324,6 +319,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     adminSelection?.regionLabel ||
     "All Ethiopia administrative areas";
 
+  const viewKey = `${forecastScale}-${lead}-${layer}-${indicator}-${adminSelection?.regionId || "all"}-${adminSelection?.zoneId || "all"}-${adminSelection?.woredaId || "all"}`;
+
   useEffect(() => {
     if (typeof onForecastSelectionChange === "function") {
       onForecastSelectionChange({
@@ -337,7 +334,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
   useEffect(() => {
     const leadsForScale = OPTIONS.leads.filter(
-      (item) => item.forecast_scale === forecastScale,
+      (item) => item.forecast_scale === forecastScale
     );
 
     if (
@@ -364,7 +361,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
         const response = await fetch(
           apiUrl(`/api/map-layers/ethiopia?${params.toString()}`),
-          { signal: controller.signal },
+          { signal: controller.signal }
         );
 
         if (!response.ok) {
@@ -377,7 +374,9 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         if (error.name !== "AbortError") {
           console.error(error);
           setGeojson(null);
-          setErrorMessage("Could not load Ethiopia forecast map layer.");
+          setErrorMessage(
+            "Could not load Ethiopia forecast map layer. Check the backend /api/map-layers/ethiopia endpoint."
+          );
         }
       } finally {
         setLoading(false);
@@ -394,7 +393,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     setForecastScale(nextScale);
 
     const firstLeadForScale = OPTIONS.leads.find(
-      (item) => item.forecast_scale === nextScale,
+      (item) => item.forecast_scale === nextScale
     );
 
     if (firstLeadForScale) {
@@ -421,21 +420,21 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       <div class="forecast-popup">
         <h3>Ethiopia Forecast Grid Cell</h3>
         <p><strong>Selected area:</strong> ${escapeHtml(selectedAdminLabel)}</p>
-        <p><strong>Lead:</strong> ${escapeHtml(properties.lead_label)}</p>
+        <p><strong>Lead:</strong> ${escapeHtml(properties.lead_label || selectedLeadLabel)}</p>
         <p><strong>Map layer:</strong> ${escapeHtml(selectedLayerLabel)}</p>
         <p><strong>Layer value:</strong> ${escapeHtml(getLayerValue(properties, layer))}</p>
         <p><strong>Hazard:</strong> ${escapeHtml(titleCase(properties.hazard))}</p>
         <p><strong>Risk level:</strong> ${escapeHtml(titleCase(properties.risk_level))}</p>
         <p><strong>${escapeHtml(selectedIndicatorLabel)}:</strong> ${escapeHtml(
-          getIndicatorValue(properties, indicator),
-        )}</p>
+      getIndicatorValue(properties, indicator)
+    )}</p>
         <hr />
         <p><strong>SPI:</strong> ${escapeHtml(formatValue(properties.spi, 2))}</p>
         <p><strong>Rainfall anomaly:</strong> ${escapeHtml(
-          formatValue(properties.rainfall_anomaly_pct, 1),
+          formatValue(properties.rainfall_anomaly_pct, 1)
         )}%</p>
         <p><strong>Rainfall percentile:</strong> ${escapeHtml(
-          formatValue(properties.rainfall_percentile, 1),
+          formatValue(properties.rainfall_percentile, 1)
         )}</p>
         <p><strong>CDD:</strong> ${escapeHtml(formatValue(properties.cdd, 0))} days</p>
         <p><strong>CWD:</strong> ${escapeHtml(formatValue(properties.cwd, 0))} days</p>
@@ -452,8 +451,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
           <h2>Ethiopia Forecast Risk Layers</h2>
           <p>
             Prototype gridded subseasonal and seasonal forecast layers for
-            Ethiopia. This map controls the forecast scale and lead used by the
-            Priority Intervention Areas ranking.
+            Ethiopia. This map controls the forecast scale, lead, map layer, and
+            climate indicator used by the Priority Intervention Areas ranking.
           </p>
           <p className="map-selected-area">
             Selected area: <strong>{selectedAdminLabel}</strong>
@@ -552,27 +551,27 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       <div className="forecast-map-layout">
         <div className="forecast-map-wrapper">
           <MapContainer
-            center={[9, 40.5]}
-            zoom={6}
-            minZoom={5}
+            center={ETHIOPIA_CENTER}
+            zoom={6.25}
+            minZoom={5.75}
             maxZoom={9}
+            zoomSnap={0.25}
+            zoomDelta={0.25}
+            maxBounds={ETHIOPIA_MAX_BOUNDS}
+            maxBoundsViscosity={1.0}
             scrollWheelZoom={false}
             className="forecast-map"
           >
             <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
+              attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            <FitForecastMapToSelection boundaryGeojson={boundaryGeojson} />
+            <FitForecastMapToEthiopiaDomain viewKey={viewKey} />
 
             {displayedGeojson && (
               <GeoJSON
-                key={`forecast-grid-${forecastScale}-${lead}-${layer}-${indicator}-${
-                  adminSelection?.regionId || "all"
-                }-${adminSelection?.zoneId || "all"}-${
-                  adminSelection?.woredaId || "all"
-                }`}
+                key={`forecast-grid-${viewKey}`}
                 data={displayedGeojson}
                 style={styleFeature}
                 onEachFeature={onEachFeature}
@@ -581,9 +580,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
             {boundaryGeojson && (
               <GeoJSON
-                key={`forecast-boundary-${adminSelection?.regionId || "all"}-${
-                  adminSelection?.zoneId || "all"
-                }-${adminSelection?.woredaId || "all"}`}
+                key={`forecast-boundary-${viewKey}`}
                 data={boundaryGeojson}
                 style={getBoundaryOverlayStyle}
               />
@@ -633,9 +630,9 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
           )}
 
           <p>
-            The selected administrative boundary is used to spatially filter the
-            forecast grid using the boundary extent. A production version should
-            use exact polygon clipping or vector tiles.
+            The selected administrative boundary is used to filter the displayed
+            forecast grid. A production version should use exact polygon clipping
+            or vector tiles.
           </p>
         </div>
       </div>

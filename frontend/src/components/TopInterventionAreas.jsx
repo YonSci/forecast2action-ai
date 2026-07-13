@@ -65,6 +65,22 @@ function getPriorityClass(priorityLevel) {
   return "priority-low";
 }
 
+function getRiskClass(riskLevel) {
+  if (riskLevel === "trigger") {
+    return "risk-trigger";
+  }
+
+  if (riskLevel === "warning") {
+    return "risk-warning";
+  }
+
+  if (riskLevel === "watch") {
+    return "risk-watch";
+  }
+
+  return "risk-no_alert";
+}
+
 function getOptionLabel(options, value) {
   const match = options.find((item) => item.value === value);
   return match?.label || titleCase(value);
@@ -89,9 +105,17 @@ function isSamePriorityArea(a, b) {
 }
 
 function getReadableAdminLevel(adminLevel) {
-  if (adminLevel === "admin1") return "Region";
-  if (adminLevel === "admin2") return "Zone";
-  if (adminLevel === "admin3") return "Woreda";
+  if (adminLevel === "admin1") {
+    return "Region";
+  }
+
+  if (adminLevel === "admin2") {
+    return "Zone";
+  }
+
+  if (adminLevel === "admin3") {
+    return "Woreda";
+  }
 
   return titleCase(adminLevel);
 }
@@ -125,9 +149,10 @@ function TopInterventionAreas({
   const forecastScale = forecastSelection.forecastScale || "subseasonal";
   const lead = forecastSelection.lead || "week_1";
   const selectedMapLayer = forecastSelection.layer || "risk_score";
+  const selectedIndicator = forecastSelection.indicator || "spi";
 
   const [rankingLayer, setRankingLayer] = useState(
-    isRankingLayer(selectedMapLayer) ? selectedMapLayer : "risk_score",
+    isRankingLayer(selectedMapLayer) ? selectedMapLayer : "risk_score"
   );
   const [adminLevel, setAdminLevel] = useState("admin3");
   const [selectionMode, setSelectionMode] = useState("top");
@@ -169,6 +194,7 @@ function TopInterventionAreas({
         params.set("forecast_scale", forecastScale);
         params.set("lead", lead);
         params.set("layer", rankingLayer);
+        params.set("indicator", selectedIndicator);
         params.set("admin_level", adminLevel);
         params.set("selection_mode", selectionMode);
         params.set("top_n", String(topN));
@@ -184,7 +210,7 @@ function TopInterventionAreas({
 
         const response = await fetch(
           apiUrl(`/api/intervention-ranking?${params.toString()}`),
-          { signal: controller.signal },
+          { signal: controller.signal }
         );
 
         if (!response.ok) {
@@ -197,7 +223,9 @@ function TopInterventionAreas({
         if (error.name !== "AbortError") {
           console.error(error);
           setRankingData(null);
-          setErrorMessage("Could not load priority intervention ranking.");
+          setErrorMessage(
+            "Could not load priority intervention ranking. Check the backend /api/intervention-ranking endpoint."
+          );
         }
       } finally {
         setLoading(false);
@@ -211,6 +239,7 @@ function TopInterventionAreas({
     forecastScale,
     lead,
     rankingLayer,
+    selectedIndicator,
     adminLevel,
     selectionMode,
     topN,
@@ -237,6 +266,10 @@ function TopInterventionAreas({
       region: item.region || "",
       zone: item.zone || "",
       woreda: item.woreda || "",
+      forecast_scale: forecastScale,
+      lead,
+      selected_map_layer: selectedMapLayer,
+      selected_indicator: selectedIndicator,
       area_name:
         item.area_name ||
         item.woreda ||
@@ -256,8 +289,6 @@ function TopInterventionAreas({
         : "missing_embedded_geometry",
     };
 
-    console.log("Priority area selected for map:", selectedAreaWithBoundary);
-
     if (typeof onPriorityAreaSelect === "function") {
       onPriorityAreaSelect(selectedAreaWithBoundary);
     }
@@ -274,15 +305,14 @@ function TopInterventionAreas({
     <section className="panel intervention-panel">
       <div className="section-heading intervention-heading">
         <div>
-          <h2>Priority Intervention Areas</h2>
+          <h2>Priority Intervention Areas and Action Queue</h2>
           <p>
-            Rank administrative areas needing early action. This section uses
-            the forecast scale and lead selected in the Ethiopia Forecast Risk
-            Layers map.
+            Ranked administrative areas needing early action, combining forecast
+            hazard, impact-based risk, exposure, vulnerability, and priority
+            score.
           </p>
           <p className="map-selected-area">
-            Current administrative selection:{" "}
-            <strong>{selectedAreaLabel}</strong>
+            Current administrative selection: <strong>{selectedAreaLabel}</strong>
           </p>
         </div>
 
@@ -379,9 +409,7 @@ function TopInterventionAreas({
 
         <div>
           <span>Display mode</span>
-          <strong>
-            {selectionMode === "top" ? `Top ${topN}` : "Threshold"}
-          </strong>
+          <strong>{selectionMode === "top" ? `Top ${topN}` : "Threshold"}</strong>
         </div>
 
         <div>
@@ -391,19 +419,19 @@ function TopInterventionAreas({
       </div>
 
       <div className="table-scroll">
-        <table className="intervention-table">
+        <table className="intervention-table intervention-action-table">
           <thead>
             <tr>
               <th>Rank</th>
               <th>Area</th>
-              <th>Region</th>
-              <th>Zone</th>
-              <th>Mean</th>
-              <th>Max</th>
-              <th>Cells above threshold</th>
+              <th>Hazard</th>
+              <th>Risk level</th>
+              <th>Risk score</th>
+              <th>Hazard probability</th>
+              <th>Exposure</th>
+              <th>Vulnerability</th>
               <th>Priority score</th>
-              <th>Map selection</th>
-              <th>Intervention guidance</th>
+              <th>Map</th>
             </tr>
           </thead>
 
@@ -423,25 +451,30 @@ function TopInterventionAreas({
                   <td>
                     <strong>{item.area_name}</strong>
                     <br />
-                    <small>{getReadableAdminLevel(item.admin_level)}</small>
-                  </td>
-
-                  <td>{item.region || "N/A"}</td>
-                  <td>{item.zone || "N/A"}</td>
-                  <td>{formatNumber(item.mean_value)}</td>
-                  <td>{formatNumber(item.max_value)}</td>
-
-                  <td>
-                    {item.cells_above_threshold_pct}%{" "}
                     <small>
-                      ({item.cells_above_threshold}/{item.cells_count})
+                      {getReadableAdminLevel(item.admin_level)}
+                      {item.region ? ` · ${item.region}` : ""}
+                      {item.zone ? ` · ${item.zone}` : ""}
                     </small>
                   </td>
+
+                  <td>{titleCase(item.hazard)}</td>
+
+                  <td>
+                    <span className={`risk-pill ${getRiskClass(item.risk_level)}`}>
+                      {titleCase(item.risk_level)}
+                    </span>
+                  </td>
+
+                  <td>{formatNumber(item.risk_score)}</td>
+                  <td>{formatNumber(item.hazard_probability)}</td>
+                  <td>{formatNumber(item.exposure)}</td>
+                  <td>{formatNumber(item.vulnerability)}</td>
 
                   <td>
                     <span
                       className={`priority-score-pill ${getPriorityClass(
-                        item.priority_level,
+                        item.priority_level
                       )}`}
                     >
                       {formatNumber(item.priority_score)}
@@ -457,8 +490,6 @@ function TopInterventionAreas({
                       {isSelected ? "Selected" : "View on map"}
                     </button>
                   </td>
-
-                  <td>{item.recommended_action}</td>
                 </tr>
               );
             })}
@@ -476,8 +507,9 @@ function TopInterventionAreas({
 
       <p className="intervention-method-note">
         Method: priority score combines mean value, maximum value, and the share
-        of grid cells above threshold. Click “View on map” to update the
-        Interactive Administrative Risk Map.
+        of grid cells above threshold. Risk score, hazard probability, exposure,
+        and vulnerability are averaged across forecast grid cells inside the
+        selected administrative boundary.
       </p>
     </section>
   );

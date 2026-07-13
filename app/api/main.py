@@ -126,6 +126,84 @@ DEFAULT_RANKING_THRESHOLDS = {
     "vulnerability": 0.70,
 }
 
+CLIMATE_INDICATOR_OPTIONS = {
+    "spi": {
+        "label": "Standardized Precipitation Index",
+        "digits": 2,
+        "suffix": "",
+    },
+    "rainfall_anomaly_pct": {
+        "label": "Rainfall anomaly",
+        "digits": 1,
+        "suffix": "%",
+    },
+    "rainfall_percentile": {
+        "label": "Rainfall percentile",
+        "digits": 1,
+        "suffix": " percentile",
+    },
+    "cdd": {
+        "label": "Consecutive dry days",
+        "digits": 0,
+        "suffix": " days",
+    },
+    "cwd": {
+        "label": "Consecutive wet days",
+        "digits": 0,
+        "suffix": " days",
+    },
+}
+
+VALID_CLIMATE_INDICATORS = set(CLIMATE_INDICATOR_OPTIONS.keys())
+
+
+def summarize_numeric_field(rows: list, field_name: str) -> dict:
+    values = []
+
+    for row in rows:
+      try:
+          value = float(row.get(field_name))
+      except (TypeError, ValueError):
+          continue
+
+      if value == value:
+          values.append(value)
+
+    if not values:
+        return {
+            "mean": None,
+            "min": None,
+            "max": None,
+            "count": 0,
+        }
+
+    return {
+        "mean": round(sum(values) / len(values), 3),
+        "min": round(min(values), 3),
+        "max": round(max(values), 3),
+        "count": len(values),
+    }
+
+
+def build_climate_indicator_summary(rows: list) -> dict:
+    return {
+        indicator: {
+            **summarize_numeric_field(rows, indicator),
+            "label": config["label"],
+            "suffix": config["suffix"],
+            "digits": config["digits"],
+        }
+        for indicator, config in CLIMATE_INDICATOR_OPTIONS.items()
+    }
+
+
+
+
+
+
+
+
+
 
 def point_in_ring(lon: float, lat: float, ring: list) -> bool:
     inside = False
@@ -314,12 +392,127 @@ def get_grid_features_for_forecast(
 
     return features
 
+
+def safe_float_value(value, default: float = 0.0) -> float:
+    try:
+        number = float(value)
+        if number != number:
+            return default
+        return number
+    except (TypeError, ValueError):
+        return default
+
+
+def mean_value(values: list) -> float:
+    valid_values = [
+        safe_float_value(value)
+        for value in values
+        if value is not None
+    ]
+
+    if not valid_values:
+        return 0.0
+
+    return sum(valid_values) / len(valid_values)
+
+
+def max_value(values: list) -> float:
+    valid_values = [
+        safe_float_value(value)
+        for value in values
+        if value is not None
+    ]
+
+    if not valid_values:
+        return 0.0
+
+    return max(valid_values)
+
+
+def most_common_value(values: list, default: str = "no_alert") -> str:
+    counts = {}
+
+    for value in values:
+        if value is None or value == "":
+            continue
+
+        key = str(value)
+        counts[key] = counts.get(key, 0) + 1
+
+    if not counts:
+        return default
+
+    return sorted(counts.items(), key=lambda item: item[1], reverse=True)[0][0]
+
+
+def classify_area_risk_level(risk_score: float) -> str:
+    if risk_score >= 0.80:
+        return "trigger"
+
+    if risk_score >= 0.60:
+        return "warning"
+
+    if risk_score >= 0.35:
+        return "watch"
+
+    return "no_alert"
+
+
+def infer_area_hazard(hazards: list, risk_level: str) -> str:
+    hazard = most_common_value(hazards, default="drought")
+
+    if hazard and hazard != "no_alert":
+        return hazard
+
+    if risk_level in {"trigger", "warning", "watch"}:
+        return "drought"
+
+    return "no_alert"
+
+
+def infer_area_responsible_sector(hazard: str, risk_level: str) -> str:
+    if risk_level == "trigger":
+        return "Disaster risk management, agriculture, water, health, and local administration"
+
+    if hazard in {"drought", "dry_spell"}:
+        return "Agriculture, water, livestock, disaster risk management, and local administration"
+
+    if hazard in {"heavy_rainfall", "wet_spell", "flood"}:
+        return "Disaster risk management, roads, water, health, and local administration"
+
+    return "Disaster risk management and local administration"
+
+
+def infer_area_deadline(risk_level: str) -> str:
+    if risk_level == "trigger":
+        return "Within 72 hours"
+
+    if risk_level == "warning":
+        return "Within 7 days"
+
+    if risk_level == "watch":
+        return "Within 14 days"
+
+    return "Routine monitoring"
+
+
+def infer_community_signal(cells_above_threshold_pct: float) -> str:
+    if cells_above_threshold_pct >= 50:
+        return "High forecast signal - ground verification needed"
+
+    if cells_above_threshold_pct > 0:
+        return "Emerging forecast signal - monitor locally"
+
+    return "No strong ground signal yet"
+
+
 def calculate_admin_area_ranking_item(
     admin_feature: dict,
     grid_features: list,
     layer: str,
     threshold: float,
     admin_level: str,
+    indicator: str = "spi",
 ) -> Optional[dict]:
     admin_properties = admin_feature.get("properties", {})
     geometry = admin_feature.get("geometry", {})
@@ -328,52 +521,89 @@ def calculate_admin_area_ranking_item(
     if not bbox:
         return None
 
-    exact_values = []
-    fallback_bbox_values = []
+    exact_rows = []
+    fallback_bbox_rows = []
 
     for grid_feature in grid_features:
         grid_properties = grid_feature.get("properties", {})
 
         lat = grid_properties.get("lat_center")
         lon = grid_properties.get("lon_center")
-        value = grid_properties.get(layer)
 
         try:
             lat = float(lat)
             lon = float(lon)
-            value = float(value)
         except (TypeError, ValueError):
             continue
 
         if not point_in_bbox(lon, lat, bbox):
             continue
 
-        fallback_bbox_values.append(value)
+        fallback_bbox_rows.append(grid_properties)
 
         if point_in_geometry(lon, lat, geometry):
-            exact_values.append(value)
+            exact_rows.append(grid_properties)
 
-    values = exact_values if exact_values else fallback_bbox_values
+    rows = exact_rows if exact_rows else fallback_bbox_rows
 
-    if not values:
+    if not rows:
+        return None
+    
+    if indicator not in VALID_CLIMATE_INDICATORS:
+        indicator = "spi"
+
+    climate_indicators = build_climate_indicator_summary(rows)
+    selected_indicator_summary = climate_indicators.get(
+        indicator,
+        climate_indicators["spi"],
+    )
+
+    ranking_values = [
+        safe_float_value(row.get(layer))
+        for row in rows
+        if row.get(layer) is not None
+    ]
+
+    if not ranking_values:
         return None
 
-    mean_value = sum(values) / len(values)
-    max_value = max(values)
+    selected_mean_value = sum(ranking_values) / len(ranking_values)
+    selected_max_value = max(ranking_values)
 
     cells_above_threshold = [
-        value for value in values
+        value for value in ranking_values
         if value >= threshold
     ]
 
-    cells_above_threshold_pct = len(cells_above_threshold) / len(values)
+    cells_above_threshold_pct = len(cells_above_threshold) / len(ranking_values)
 
     priority_score = (
-        0.50 * mean_value
-        + 0.25 * max_value
+        0.50 * selected_mean_value
+        + 0.25 * selected_max_value
         + 0.25 * cells_above_threshold_pct
     )
 
+    risk_scores = [row.get("risk_score") for row in rows]
+    hazard_probabilities = [row.get("hazard_probability") for row in rows]
+    exposure_values = [row.get("exposure") for row in rows]
+    vulnerability_values = [row.get("vulnerability") for row in rows]
+    hazards = [row.get("hazard") for row in rows]
+    risk_levels = [row.get("risk_level") for row in rows]
+
+    risk_score = mean_value(risk_scores)
+    hazard_probability = mean_value(hazard_probabilities)
+    exposure = mean_value(exposure_values)
+    vulnerability = mean_value(vulnerability_values)
+
+    risk_level = most_common_value(
+        risk_levels,
+        default=classify_area_risk_level(risk_score),
+    )
+
+    if risk_level == "no_alert":
+        risk_level = classify_area_risk_level(risk_score)
+
+    hazard = infer_area_hazard(hazards, risk_level)
     priority_level = classify_priority_level(priority_score, layer)
     area_name = get_admin_area_label(admin_properties, admin_level)
 
@@ -388,6 +618,8 @@ def calculate_admin_area_ranking_item(
         },
     }
 
+    cells_above_threshold_pct_display = round(cells_above_threshold_pct * 100, 1)
+
     return {
         "admin_level": admin_level,
         "area_name": area_name,
@@ -397,16 +629,43 @@ def calculate_admin_area_ranking_item(
         "region_id": admin_properties.get("region_id", ""),
         "zone_id": admin_properties.get("zone_id", ""),
         "woreda_id": admin_properties.get("woreda_id", ""),
-        "mean_value": round(mean_value, 3),
-        "max_value": round(max_value, 3),
-        "cells_count": len(values),
+
+        "hazard": hazard,
+        "risk_level": risk_level,
+        "risk_score": round(risk_score, 3),
+        "hazard_probability": round(hazard_probability, 3),
+        "exposure": round(exposure, 3),
+        "vulnerability": round(vulnerability, 3),
+
+        "selected_indicator": indicator,
+        "selected_indicator_label": CLIMATE_INDICATOR_OPTIONS[indicator]["label"],
+        "selected_indicator_value": selected_indicator_summary.get("mean"),
+        "selected_indicator_min": selected_indicator_summary.get("min"),
+        "selected_indicator_max": selected_indicator_summary.get("max"),
+        "selected_indicator_suffix": CLIMATE_INDICATOR_OPTIONS[indicator]["suffix"],
+        "selected_indicator_digits": CLIMATE_INDICATOR_OPTIONS[indicator]["digits"],
+        "climate_indicators": climate_indicators,
+
+        "mean_value": round(selected_mean_value, 3),
+        "max_value": round(selected_max_value, 3),
+        "cells_count": len(ranking_values),
         "cells_above_threshold": len(cells_above_threshold),
-        "cells_above_threshold_pct": round(cells_above_threshold_pct * 100, 1),
+        "cells_above_threshold_pct": cells_above_threshold_pct_display,
         "priority_score": round(priority_score, 3),
         "priority_level": priority_level,
+
+        "community_signal": infer_community_signal(cells_above_threshold_pct_display),
+        "responsible_sector": infer_area_responsible_sector(hazard, risk_level),
+        "suggested_deadline": infer_area_deadline(risk_level),
         "recommended_action": get_intervention_action(layer, priority_level),
+
         "boundary_feature": boundary_feature,
     }
+
+
+if indicator not in VALID_CLIMATE_INDICATORS:
+        indicator = "spi"
+
 
 @lru_cache(maxsize=128)
 def build_intervention_ranking_cached(
@@ -442,6 +701,8 @@ def build_intervention_ranking_cached(
             layer=layer,
             threshold=threshold,
             admin_level=admin_level,
+            indicator=indicator,
+
         )
 
         if item:
@@ -472,11 +733,13 @@ def build_intervention_ranking_cached(
         "lead": lead,
         "layer": layer,
         "admin_level": admin_level,
+        "indicator": indicator,
         "selection_mode": selection_mode,
         "top_n": top_n,
         "threshold": threshold,
         "region_id": region_id,
         "zone_id": zone_id,
+        "indicator": indicator,
         "ranking": ranking_items,
         "metadata": {
             "grid_cells_used": len(grid_features),
@@ -1132,6 +1395,7 @@ def get_intervention_ranking(
     threshold: Optional[float] = None,
     region_id: str = "",
     zone_id: str = "",
+    indicator: str = "spi",
 ):
     if forecast_scale not in VALID_FORECAST_SCALES:
         forecast_scale = "subseasonal"

@@ -7,10 +7,74 @@ const LANGUAGE_OPTIONS = [
   { value: "sw", label: "Swahili" },
 ];
 
+function normalizeOption(item, fallbackPrefix = "") {
+  if (typeof item === "string") {
+    return {
+      value: item,
+      label: item,
+    };
+  }
+
+  return {
+    ...item,
+    value:
+      item.value ||
+      item.id ||
+      item.code ||
+      item.region_id ||
+      item.zone_id ||
+      item.woreda_id ||
+      item.name ||
+      `${fallbackPrefix}-${Math.random()}`,
+    label:
+      item.label ||
+      item.name ||
+      item.region ||
+      item.zone ||
+      item.woreda ||
+      item.value ||
+      item.id ||
+      "Unnamed",
+  };
+}
+
+function normalizeOptions(values, fallbackPrefix = "") {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values.map((item) => normalizeOption(item, fallbackPrefix));
+}
+
+function getOptionsList(data, key) {
+  if (Array.isArray(data?.[key])) {
+    return data[key];
+  }
+
+  if (Array.isArray(data?.options?.[key])) {
+    return data.options[key];
+  }
+
+  if (Array.isArray(data?.data?.[key])) {
+    return data.data[key];
+  }
+
+  return [];
+}
+
 function getBoundaryLevel(regionId, zoneId, woredaId) {
-  if (woredaId) return "admin3";
-  if (zoneId) return "admin2";
-  if (regionId) return "admin1";
+  if (woredaId) {
+    return "admin3";
+  }
+
+  if (zoneId) {
+    return "admin2";
+  }
+
+  if (regionId) {
+    return "admin1";
+  }
+
   return "admin1";
 }
 
@@ -26,6 +90,7 @@ function AdminBoundarySelector({
   onClearPrioritySelection,
 }) {
   const onSelectionChangeRef = useRef(onSelectionChange);
+  const onClearPrioritySelectionRef = useRef(onClearPrioritySelection);
 
   const [adminOptions, setAdminOptions] = useState({
     regions: [],
@@ -47,18 +112,33 @@ function AdminBoundarySelector({
     onSelectionChangeRef.current = onSelectionChange;
   }, [onSelectionChange]);
 
-  const filteredZones = useMemo(() => {
-    if (!selectedRegionId) return adminOptions.zones || [];
+  useEffect(() => {
+    onClearPrioritySelectionRef.current = onClearPrioritySelection;
+  }, [onClearPrioritySelection]);
 
-    return (adminOptions.zones || []).filter(
-      (item) => item.region_id === selectedRegionId,
-    );
+  const filteredZones = useMemo(() => {
+    if (!selectedRegionId) {
+      return adminOptions.zones || [];
+    }
+
+    return (adminOptions.zones || []).filter((item) => {
+      return item.region_id === selectedRegionId || item.regionId === selectedRegionId;
+    });
   }, [adminOptions.zones, selectedRegionId]);
 
   const filteredWoredas = useMemo(() => {
     return (adminOptions.woredas || []).filter((item) => {
-      if (selectedRegionId && item.region_id !== selectedRegionId) return false;
-      if (selectedZoneId && item.zone_id !== selectedZoneId) return false;
+      const itemRegionId = item.region_id || item.regionId || "";
+      const itemZoneId = item.zone_id || item.zoneId || "";
+
+      if (selectedRegionId && itemRegionId !== selectedRegionId) {
+        return false;
+      }
+
+      if (selectedZoneId && itemZoneId !== selectedZoneId) {
+        return false;
+      }
+
       return true;
     });
   }, [adminOptions.woredas, selectedRegionId, selectedZoneId]);
@@ -81,9 +161,9 @@ function AdminBoundarySelector({
         const data = await response.json();
 
         setAdminOptions({
-          regions: data.regions || [],
-          zones: data.zones || [],
-          woredas: data.woredas || [],
+          regions: normalizeOptions(getOptionsList(data, "regions"), "region"),
+          zones: normalizeOptions(getOptionsList(data, "zones"), "zone"),
+          woredas: normalizeOptions(getOptionsList(data, "woredas"), "woreda"),
         });
 
         setOptionsLoaded(true);
@@ -91,7 +171,7 @@ function AdminBoundarySelector({
         if (error.name !== "AbortError") {
           console.error(error);
           setErrorMessage(
-            "Could not load Ethiopia administrative boundary options.",
+            "Could not load Ethiopia administrative boundary options. Check the backend /api/admin-boundaries/options endpoint."
           );
           setOptionsLoaded(false);
         }
@@ -118,19 +198,27 @@ function AdminBoundarySelector({
         const level = getBoundaryLevel(
           selectedRegionId,
           selectedZoneId,
-          selectedWoredaId,
+          selectedWoredaId
         );
 
         const params = new URLSearchParams();
         params.set("level", level);
 
-        if (selectedRegionId) params.set("region_id", selectedRegionId);
-        if (selectedZoneId) params.set("zone_id", selectedZoneId);
-        if (selectedWoredaId) params.set("woreda_id", selectedWoredaId);
+        if (selectedRegionId) {
+          params.set("region_id", selectedRegionId);
+        }
+
+        if (selectedZoneId) {
+          params.set("zone_id", selectedZoneId);
+        }
+
+        if (selectedWoredaId) {
+          params.set("woreda_id", selectedWoredaId);
+        }
 
         const response = await fetch(
           apiUrl(`/api/admin-boundaries/geojson?${params.toString()}`),
-          { signal: controller.signal },
+          { signal: controller.signal }
         );
 
         if (!response.ok) {
@@ -159,7 +247,9 @@ function AdminBoundarySelector({
       } catch (error) {
         if (error.name !== "AbortError") {
           console.error(error);
-          setErrorMessage("Could not load selected boundary.");
+          setErrorMessage(
+            "Could not load selected administrative boundary. Check the backend /api/admin-boundaries/geojson endpoint."
+          );
         }
       } finally {
         setBoundaryLoading(false);
@@ -180,8 +270,8 @@ function AdminBoundarySelector({
   ]);
 
   function clearPrioritySelection() {
-    if (typeof onClearPrioritySelection === "function") {
-      onClearPrioritySelection();
+    if (typeof onClearPrioritySelectionRef.current === "function") {
+      onClearPrioritySelectionRef.current();
     }
   }
 

@@ -1,33 +1,25 @@
-import { useEffect, useMemo } from "react";
-import {
-  GeoJSON,
-  MapContainer,
-  TileLayer,
-  CircleMarker,
-  Popup,
-  Tooltip,
-  useMap,
-} from "react-leaflet";
+import { useEffect } from "react";
+import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-const FALLBACK_COORDINATES = {
-  Borena: { latitude: 4.95, longitude: 38.15 },
-  "Afar Zone 1": { latitude: 12.15, longitude: 40.75 },
-  Turkana: { latitude: 3.12, longitude: 35.6 },
-  Garissa: { latitude: -0.45, longitude: 39.65 },
-};
+const ETHIOPIA_CENTER = [9, 40.5];
+
+const ETHIOPIA_BOUNDS = [
+  [3, 33],
+  [15, 48],
+];
+
+const ETHIOPIA_MAX_BOUNDS = [
+  [1.5, 31.5],
+  [16.5, 49.5],
+];
 
 const RISK_STYLE = {
-  trigger: { color: "#D92D20", label: "Trigger", radius: 18 },
-  warning: { color: "#C11574", label: "Warning", radius: 15 },
-  watch: { color: "#F79009", label: "Watch", radius: 12 },
-  no_alert: { color: "#12B76A", label: "No alert", radius: 10 },
+  trigger: { color: "#D92D20", label: "Trigger" },
+  warning: { color: "#C11574", label: "Warning" },
+  watch: { color: "#F79009", label: "Watch" },
+  no_alert: { color: "#12B76A", label: "No alert" },
 };
-
-function safeNumber(value, fallback = null) {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : fallback;
-}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -36,42 +28,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function formatText(value) {
-  if (value === null || value === undefined || value === "") {
-    return "N/A";
-  }
-
-  return String(value)
-    .replaceAll("_", " ")
-    .replace(/\w\S*/g, (text) => {
-      return text.charAt(0).toUpperCase() + text.substring(1).toLowerCase();
-    });
-}
-
-function formatNumber(value, digits = 2) {
-  const numberValue = Number(value);
-
-  if (!Number.isFinite(numberValue)) {
-    return "N/A";
-  }
-
-  return numberValue.toFixed(digits);
-}
-
-function getRiskStyle(riskLevel) {
-  return RISK_STYLE[riskLevel] || RISK_STYLE.no_alert;
-}
-
-function normalizeRiskItem(item) {
-  const fallback = FALLBACK_COORDINATES[item.district] || {};
-
-  return {
-    ...item,
-    latitude: safeNumber(item.latitude, fallback.latitude),
-    longitude: safeNumber(item.longitude, fallback.longitude),
-  };
 }
 
 function collectLatLngsFromCoordinates(coordinates, output = []) {
@@ -106,86 +62,18 @@ function getGeojsonLatLngs(geojson) {
   return latLngs;
 }
 
-function getGeojsonBoundsObject(geojson) {
-  const latLngs = getGeojsonLatLngs(geojson);
-
-  if (latLngs.length === 0) {
-    return null;
-  }
-
-  return { latLngs };
-}
-
-function filterRiskDataByBoundaryBoundingBox(riskData, boundaryGeojson) {
-  if (!boundaryGeojson) {
-    return riskData;
-  }
-
-  const latLngs = getGeojsonLatLngs(boundaryGeojson);
-
-  if (latLngs.length === 0) {
-    return riskData;
-  }
-
-  const lats = latLngs.map((item) => item[0]);
-  const lons = latLngs.map((item) => item[1]);
-
-  const south = Math.min(...lats);
-  const north = Math.max(...lats);
-  const west = Math.min(...lons);
-  const east = Math.max(...lons);
-
-  return riskData.filter((item) => {
-    const lat = Number(item.latitude);
-    const lon = Number(item.longitude);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return false;
-    }
-
-    return lat >= south && lat <= north && lon >= west && lon <= east;
-  });
-}
-
-function FitMapToBoundary({ boundaryGeojson, activeBoundaryKey }) {
+function FitMapToEthiopiaDomain({ activeBoundaryKey }) {
   const map = useMap();
 
   useEffect(() => {
-    const boundsObject = getGeojsonBoundsObject(boundaryGeojson);
-
-    if (!boundsObject || boundsObject.latLngs.length === 0) {
-      return;
-    }
-
-    map.fitBounds(boundsObject.latLngs, {
-      padding: [35, 35],
-      maxZoom: 10,
+    map.fitBounds(ETHIOPIA_BOUNDS, {
+      padding: [8, 8],
+      animate: true,
+      duration: 0.4,
     });
-  }, [map, boundaryGeojson, activeBoundaryKey]);
 
-  return null;
-}
-
-function FitMapToRiskData({ riskData, enabled }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!enabled || !riskData || riskData.length === 0) {
-      return;
-    }
-
-    const bounds = riskData.map((item) => [item.latitude, item.longitude]);
-
-    if (bounds.length === 1) {
-      map.setView(bounds[0], 7);
-      return;
-    }
-
-    map.fitBounds(bounds, {
-      padding: [45, 45],
-      maxZoom: 7,
-    });
-  }, [map, riskData, enabled]);
+    map.setMaxBounds(ETHIOPIA_MAX_BOUNDS);
+  }, [map, activeBoundaryKey]);
 
   return null;
 }
@@ -196,26 +84,26 @@ function getBoundaryStyle(feature) {
   if (level === "admin3") {
     return {
       color: "#7A5AF8",
-      weight: 3.2,
+      weight: 3.5,
       fillColor: "#7A5AF8",
-      fillOpacity: 0.18,
+      fillOpacity: 0.22,
     };
   }
 
   if (level === "admin2") {
     return {
-      color: "#1570EF",
-      weight: 2.6,
+      color: "#111827",
+      weight: 2.8,
       fillColor: "#1570EF",
-      fillOpacity: 0.11,
+      fillOpacity: 0.12,
     };
   }
 
   return {
-    color: "#1849A9",
-    weight: 1.8,
+    color: "#111827",
+    weight: 2.2,
     fillColor: "#1849A9",
-    fillOpacity: 0.06,
+    fillOpacity: 0.08,
   };
 }
 
@@ -225,9 +113,7 @@ function onEachBoundaryFeature(feature, layer) {
   const labelParts = [];
 
   if (props.region) {
-    labelParts.push(
-      `<p><strong>Region:</strong> ${escapeHtml(props.region)}</p>`,
-    );
+    labelParts.push(`<p><strong>Region:</strong> ${escapeHtml(props.region)}</p>`);
   }
 
   if (props.zone) {
@@ -235,9 +121,7 @@ function onEachBoundaryFeature(feature, layer) {
   }
 
   if (props.woreda) {
-    labelParts.push(
-      `<p><strong>Woreda:</strong> ${escapeHtml(props.woreda)}</p>`,
-    );
+    labelParts.push(`<p><strong>Woreda:</strong> ${escapeHtml(props.woreda)}</p>`);
   }
 
   layer.bindPopup(`
@@ -248,13 +132,7 @@ function onEachBoundaryFeature(feature, layer) {
   `);
 }
 
-function RiskMap({
-  riskData = [],
-  selectedDistrict = "",
-  adminSelection = {},
-  selectedPriorityArea = null,
-  onSelectDistrict,
-}) {
+function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
   const hasPrioritySelection = Boolean(selectedPriorityArea?.area_name);
   const hasPriorityBoundary = Boolean(selectedPriorityArea?.boundaryGeojson);
 
@@ -273,7 +151,7 @@ function RiskMap({
     adminSelection?.regionLabel ||
     "All Ethiopia administrative areas";
 
-  const selectedAreaSource = hasPriorityBoundary
+  const selectedAreaSource = hasPrioritySelection
     ? "Priority Intervention Areas"
     : "Administrative Area Selection";
 
@@ -281,32 +159,7 @@ function RiskMap({
     ? selectedPriorityArea?.boundary_feature_count
     : activeBoundaryGeojson?.metadata?.feature_count || 0;
 
-  const validRiskData = useMemo(() => {
-    return riskData.map(normalizeRiskItem).filter((item) => {
-      return Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
-    });
-  }, [riskData]);
-
-  const displayedRiskData = useMemo(() => {
-    return filterRiskDataByBoundaryBoundingBox(
-      validRiskData,
-      activeBoundaryGeojson,
-    );
-  }, [validRiskData, activeBoundaryGeojson]);
-
-  const selectedItem = validRiskData.find(
-    (item) => item.district === selectedDistrict,
-  );
-
-  const mapCenter = selectedItem
-    ? [selectedItem.latitude, selectedItem.longitude]
-    : [8.5, 39.5];
-
-  function handleSelectDistrict(district) {
-    if (typeof onSelectDistrict === "function") {
-      onSelectDistrict(district);
-    }
-  }
+  const selectedBoundaryPointCount = getGeojsonLatLngs(activeBoundaryGeojson).length;
 
   return (
     <section className="panel map-panel" id="interactive-risk-map">
@@ -315,8 +168,8 @@ function RiskMap({
           <h2>Interactive Administrative Risk Map</h2>
 
           <p>
-            This map updates from the selected row in Priority Intervention
-            Areas.
+            This map uses the same Ethiopia forecast-domain extent and highlights
+            the selected administrative boundary.
           </p>
 
           <p className="map-selected-area">
@@ -348,8 +201,8 @@ function RiskMap({
       </div>
 
       <p className="map-admin-note">
-        Clicking “View on map” in Priority Intervention Areas sends the selected
-        boundary directly to this map.
+        Domain: Lat 3–15°N · Lon 33–48°E. The old prototype pilot circles have
+        been removed so only the selected administrative boundary is displayed.
       </p>
 
       {hasPrioritySelection && !hasPriorityBoundary && (
@@ -359,117 +212,41 @@ function RiskMap({
         </div>
       )}
 
+      {activeBoundaryGeojson && selectedBoundaryPointCount === 0 && (
+        <div className="error-banner">
+          Boundary geometry was received, but it does not contain valid map
+          coordinates.
+        </div>
+      )}
+
       <div className="map-wrapper">
         <MapContainer
-          center={mapCenter}
-          zoom={6}
-          minZoom={4}
-          maxZoom={11}
+          center={ETHIOPIA_CENTER}
+          zoom={6.25}
+          minZoom={5.75}
+          maxZoom={9}
+          zoomSnap={0.25}
+          zoomDelta={0.25}
+          maxBounds={ETHIOPIA_MAX_BOUNDS}
+          maxBoundsViscosity={1.0}
           scrollWheelZoom={false}
           className="risk-map"
         >
           <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
+            attribution='&copy; OpenStreetMap contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          <FitMapToEthiopiaDomain activeBoundaryKey={activeBoundaryKey} />
+
           {activeBoundaryGeojson && (
-            <>
-              <GeoJSON
-                key={activeBoundaryKey}
-                data={activeBoundaryGeojson}
-                style={getBoundaryStyle}
-                onEachFeature={onEachBoundaryFeature}
-              />
-
-              <FitMapToBoundary
-                boundaryGeojson={activeBoundaryGeojson}
-                activeBoundaryKey={activeBoundaryKey}
-              />
-            </>
+            <GeoJSON
+              key={activeBoundaryKey}
+              data={activeBoundaryGeojson}
+              style={getBoundaryStyle}
+              onEachFeature={onEachBoundaryFeature}
+            />
           )}
-
-          {!activeBoundaryGeojson && (
-            <FitMapToRiskData riskData={displayedRiskData} enabled={true} />
-          )}
-
-          {displayedRiskData.map((item) => {
-            const riskStyle = getRiskStyle(item.risk_level);
-            const isSelected = item.district === selectedDistrict;
-            const radius = isSelected ? riskStyle.radius + 5 : riskStyle.radius;
-
-            return (
-              <CircleMarker
-                key={`${item.country}-${item.district}`}
-                center={[item.latitude, item.longitude]}
-                radius={radius}
-                pathOptions={{
-                  color: riskStyle.color,
-                  fillColor: riskStyle.color,
-                  fillOpacity: isSelected ? 0.88 : 0.68,
-                  weight: isSelected ? 4 : 2,
-                }}
-                eventHandlers={{
-                  click: () => handleSelectDistrict(item.district),
-                }}
-              >
-                <Tooltip
-                  direction="top"
-                  offset={[0, -8]}
-                  opacity={1}
-                  className="risk-tooltip"
-                >
-                  <strong>{item.district}</strong>
-                  <br />
-                  {riskStyle.label} · {formatText(item.hazard)}
-                </Tooltip>
-
-                <Popup className="risk-popup">
-                  <div className="map-popup">
-                    <div className="map-popup-header">
-                      <h3>{item.district}</h3>
-                      <span className={`risk-pill risk-${item.risk_level}`}>
-                        {riskStyle.label}
-                      </span>
-                    </div>
-
-                    <p className="map-popup-country">{item.country}</p>
-
-                    <div className="map-popup-grid">
-                      <div>
-                        <span>Hazard</span>
-                        <strong>{formatText(item.hazard)}</strong>
-                      </div>
-
-                      <div>
-                        <span>Risk score</span>
-                        <strong>{formatNumber(item.risk_score, 3)}</strong>
-                      </div>
-
-                      <div>
-                        <span>Rainfall anomaly</span>
-                        <strong>
-                          {formatNumber(item.rainfall_anomaly_pct, 1)}%
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>SPI-like score</span>
-                        <strong>{formatNumber(item.spi, 2)}</strong>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSelectDistrict(item.district)}
-                    >
-                      View advisory
-                    </button>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
         </MapContainer>
       </div>
     </section>
