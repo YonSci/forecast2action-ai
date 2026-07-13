@@ -1,0 +1,833 @@
+/* ============================================================
+   DashboardHeroFinal
+   This stylesheet uses the f2a-* namespace to avoid conflicts with
+   all earlier hero/banner/card CSS.
+   ============================================================ */
+
+.f2a-dashboard-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 34px;
+}
+
+.f2a-hero-banner {
+  position: relative;
+  overflow: hidden;
+  min-height: 448px;
+  border-radius: 34px;
+  padding: 46px 54px 34px;
+  background:
+    radial-gradient(circle at 72% 34%, rgba(0, 144, 255, 0.28), transparent 26%),
+    radial-gradient(circle at 18% 8%, rgba(46, 144, 250, 0.16), transparent 33%),
+    linear-gradient(135deg, #031225 0%, #071f45 48%, #062b62 100%);
+  box-shadow: 0 24px 68px rgba(15, 39, 77, 0.24);
+  color: #ffffff;
+}
+
+.f2a-hero-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.28);
+}
+
+.f2a-hero-bg-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.38;
+  background-image:
+    linear-gradient(rgba(96, 165, 250, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.10) 1px, transparent 1px),
+    radial-gradient(circle, rgba(56, 189, 248, 0.30) 0 1px, transparent 1.8px);
+  background-size: 44px 44px, 44px 44px, 24px 24px;
+}
+
+.f2a-hero-contours {
+  position: absolute;
+  inset: 0;
+  opacity: 0.25;
+  background:
+    radial-gradient(ellipse at 62% 32%, transparent 0 32%, rgba(56, 189, 248, 0.14) 32.4%, transparent 33%),
+    radial-gradient(ellipse at 64% 36%, transparent 0 39%, rgba(56, 189, 248, 0.10) 39.4%, transparent 40%),
+    radial-gradient(ellipse at 66% 40%, transparent 0 46%, rgba(56, 189, 248, 0.08) 46.4%, transparent 47%);
+}
+
+.f2a-hero-copy {
+  position: relative;
+  z-index: 3;
+  width: min(760px, 51%);
+}
+
+.f2a-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  margin: 0 0 18px;
+  color: #72b7ff;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.f2a-eyebrow::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #2e90fa;
+  box-shadow: 0 0 25px rgba(46, 144, 250, 1);
+}
+
+.f2a-hero-copy h1 {
+  margin: 0 0 16px;
+  color: #ffffff;
+  font-size: clamp(3.35rem, 5.45vw, 5.95rem);
+  line-height: 0.97;
+  letter-spacing: -0.075em;
+  text-shadow: 0 17px 38px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+.f2a-hero-copy p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.90);
+  font-size: clamp(0.96rem, 1.10vw, 1.14rem);
+  line-height: 1.52;
+}
+
+.f2a-hero-visual {
+  position: absolute;
+  inset: 0 38px 0 auto;
+  width: 50%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.f2a-ethiopia-risk-image {
+  position: absolute;
+  top: 30px;
+  right: 178px;
+  width: min(405px, 42vw);
+  isolation: isolate;
+  filter:
+    drop-shadow(0 22px 46px rgba(0, 0, 0, 0.24))
+    drop-shadow(0 0 14px rgba(49, 196, 255, 0.36));
+}
+
+/* 
+   The source Ethiopia image has a rectangular dark-blue background.
+   These masks and overlays fade that rectangle into the hero gradient
+   so only the Ethiopia risk visual remains prominent.
+*/
+.f2a-ethiopia-risk-image::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #071f45 0%, rgba(7, 31, 69, 0.35) 16%, transparent 30%, transparent 70%, rgba(7, 31, 69, 0.35) 84%, #071f45 100%),
+    linear-gradient(180deg, #071f45 0%, rgba(7, 31, 69, 0.28) 18%, transparent 32%, transparent 70%, rgba(7, 31, 69, 0.28) 86%, #071f45 100%);
+  mix-blend-mode: multiply;
+  opacity: 0.58;
+}
+
+.f2a-ethiopia-risk-image::after {
+  content: "";
+  position: absolute;
+  inset: -26px;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 52% 55%, transparent 0%, transparent 54%, rgba(7, 31, 69, 0.38) 72%, #071f45 100%);
+}
+
+.f2a-ethiopia-risk-image img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 0;
+  opacity: 0.96;
+  mix-blend-mode: screen;
+  -webkit-mask-image:
+    radial-gradient(ellipse at 52% 55%, black 0%, black 54%, rgba(0,0,0,0.72) 68%, rgba(0,0,0,0.22) 82%, transparent 96%);
+  mask-image:
+    radial-gradient(ellipse at 52% 55%, black 0%, black 54%, rgba(0,0,0,0.72) 68%, rgba(0,0,0,0.22) 82%, transparent 96%);
+}
+
+.f2a-rain-radar {
+  position: absolute;
+  left: 14px;
+  top: 220px;
+  width: 82px;
+  height: 82px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  box-shadow:
+    0 0 0 22px rgba(34, 211, 238, 0.045),
+    0 0 0 44px rgba(34, 211, 238, 0.032);
+}
+
+.f2a-rain-radar svg {
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: #31d7ff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(49, 215, 255, 0.8));
+}
+
+.f2a-hero-panels {
+  position: absolute;
+  top: 58px;
+  right: 10px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.f2a-hero-panel {
+  width: 124px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: rgba(5, 28, 67, 0.62);
+  border: 1px solid rgba(142, 202, 255, 0.22);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+}
+
+.f2a-hero-panel > span {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.f2a-hero-panel strong {
+  color: #86efac;
+  font-size: 0.92rem;
+}
+
+.f2a-hero-panel b {
+  float: right;
+  color: #86efac;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.f2a-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 38px;
+}
+
+.f2a-bars i {
+  width: 8px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, #60a5fa, #1570ef);
+}
+
+.f2a-bars i:nth-child(1) { height: 12px; }
+.f2a-bars i:nth-child(2) { height: 21px; }
+.f2a-bars i:nth-child(3) { height: 17px; }
+.f2a-bars i:nth-child(4) { height: 27px; }
+.f2a-bars i:nth-child(5) { height: 24px; }
+.f2a-bars i:nth-child(6) { height: 36px; }
+
+.f2a-workflow-row {
+  position: absolute;
+  left: 38px;
+  right: 38px;
+  bottom: 30px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 0.86fr)
+    16px
+    minmax(220px, 1.28fr)
+    16px
+    minmax(205px, 1.18fr)
+    16px
+    minmax(188px, 1.08fr)
+    16px
+    minmax(138px, 0.76fr)
+    16px
+    minmax(176px, 0.98fr);
+  gap: 7px;
+  align-items: center;
+}
+
+.f2a-workflow-row em {
+  color: rgba(158, 208, 255, 0.62);
+  font-size: 1.85rem;
+  line-height: 1;
+  font-style: normal;
+  text-align: center;
+}
+
+.f2a-workflow-pill {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: rgba(10, 42, 95, 0.74);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 30px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(8px);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.f2a-workflow-pill span {
+  width: 33px;
+  height: 33px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  flex: 0 0 auto;
+}
+
+.f2a-workflow-pill svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.f2a-workflow-pill strong {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(0.66rem, 0.70vw, 0.82rem);
+  line-height: 1.14;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.f2a-workflow-pill.blue { color: #2e90fa; }
+.f2a-workflow-pill.green { color: #34d399; }
+.f2a-workflow-pill.purple { color: #a855f7; }
+.f2a-workflow-pill.cyan { color: #22d3ee; }
+.f2a-workflow-pill.amber { color: #f59e0b; }
+
+.f2a-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.f2a-kpi-card {
+  position: relative;
+  min-height: 212px;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 25px;
+  background: #ffffff;
+  border: 1px solid #dbe7f7;
+  box-shadow: 0 18px 48px rgba(15, 39, 77, 0.08);
+  color: #1570ef;
+}
+
+.f2a-kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: currentColor;
+}
+
+.f2a-kpi-card::after {
+  content: "";
+  position: absolute;
+  right: -54px;
+  bottom: -54px;
+  width: 155px;
+  height: 155px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.07;
+}
+
+.f2a-kpi-card.blue { color: #1570ef; }
+.f2a-kpi-card.red { color: #ef233c; }
+.f2a-kpi-card.purple { color: #7c3aed; }
+.f2a-kpi-card.green { color: #12a881; }
+
+.f2a-kpi-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.f2a-kpi-top i {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 6px rgba(18, 183, 106, 0.08);
+}
+
+.f2a-kpi-card.red .f2a-kpi-top i {
+  box-shadow: 0 0 0 6px rgba(239, 35, 60, 0.08);
+}
+
+.f2a-kpi-card.purple .f2a-kpi-top i {
+  background: #f59e0b;
+  box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.10);
+}
+
+.f2a-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(21, 112, 239, 0.10);
+}
+
+.f2a-kpi-card.red .f2a-kpi-icon {
+  background: rgba(239, 35, 60, 0.10);
+}
+
+.f2a-kpi-card.purple .f2a-kpi-icon {
+  background: rgba(124, 58, 237, 0.10);
+}
+
+.f2a-kpi-card.green .f2a-kpi-icon {
+  background: rgba(18, 168, 129, 0.10);
+}
+
+.f2a-kpi-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.f2a-kpi-label {
+  display: block;
+  min-height: 38px;
+  margin-bottom: 13px;
+  color: var(--navy, #06204a);
+  font-weight: 950;
+  line-height: 1.23;
+  font-size: clamp(0.78rem, 0.86vw, 0.94rem);
+}
+
+.f2a-kpi-value {
+  position: relative;
+  z-index: 1;
+  display: block;
+  color: var(--navy, #06204a);
+  font-size: clamp(1.82rem, 2.65vw, 3.05rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
+}
+
+.f2a-kpi-card.red .f2a-kpi-value {
+  color: #ef233c;
+}
+
+.f2a-kpi-card.purple .f2a-kpi-value {
+  color: #7c3aed;
+}
+
+.f2a-kpi-card.green .f2a-kpi-value {
+  color: #12a881;
+}
+
+.f2a-kpi-card p {
+  position: relative;
+  z-index: 1;
+  margin: 10px 0 0;
+  color: var(--muted, #5d6b85);
+  font-weight: 700;
+  line-height: 1.35;
+  font-size: clamp(0.76rem, 0.82vw, 0.90rem);
+}
+
+.f2a-kpi-card small {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 11px;
+  color: #ef233c;
+  font-weight: 700;
+  font-size: 0.80rem;
+}
+
+@media (max-width: 1550px) {
+  .f2a-hero-copy {
+    width: min(700px, 50%);
+  }
+
+  .f2a-hero-copy h1 {
+    font-size: clamp(3.25rem, 5vw, 5.3rem);
+  }
+
+  .f2a-ethiopia-risk-image {
+    right: 130px;
+    width: 350px;
+  }
+
+  .f2a-hero-panel {
+    width: 112px;
+  }
+
+  .f2a-workflow-row {
+    left: 30px;
+    right: 30px;
+    grid-template-columns:
+      minmax(130px, 0.86fr)
+      12px
+      minmax(194px, 1.28fr)
+      12px
+      minmax(178px, 1.18fr)
+      12px
+      minmax(165px, 1.08fr)
+      12px
+      minmax(125px, 0.76fr)
+      12px
+      minmax(152px, 0.98fr);
+  }
+
+  .f2a-workflow-pill {
+    padding: 8px 10px;
+    gap: 7px;
+  }
+
+  .f2a-workflow-pill span {
+    width: 30px;
+    height: 30px;
+  }
+
+  .f2a-workflow-pill svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .f2a-hero-banner {
+    min-height: auto;
+    padding: 38px 30px;
+  }
+
+  .f2a-hero-copy {
+    width: 100%;
+  }
+
+  .f2a-hero-copy h1 {
+    white-space: normal;
+  }
+
+  .f2a-hero-visual {
+    display: none;
+  }
+
+  .f2a-workflow-row {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin-top: 28px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .f2a-workflow-row em {
+    display: none;
+  }
+
+  .f2a-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .f2a-hero-banner {
+    border-radius: 24px;
+    padding: 30px 20px;
+  }
+
+  .f2a-hero-copy h1 {
+    font-size: clamp(3rem, 14vw, 4.2rem);
+  }
+
+  .f2a-workflow-row,
+  .f2a-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .f2a-workflow-pill {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================
+   Ethiopia map blend refinement V6
+   Paste at the VERY BOTTOM of dashboardHeroFinal.css or main.css.
+   This removes the visible rectangular map boundary by using a
+   feathered transparent PNG and softer CSS blending.
+   ============================================================ */
+
+.f2a-ethiopia-risk-image {
+  top: 24px;
+  right: 132px;
+  width: min(445px, 45vw);
+  overflow: visible;
+  isolation: isolate;
+  filter:
+    drop-shadow(0 22px 46px rgba(0, 0, 0, 0.20))
+    drop-shadow(0 0 16px rgba(49, 196, 255, 0.34));
+}
+
+/* Soft blue glow behind the Ethiopia image, matching the hero banner color */
+.f2a-ethiopia-risk-image::before {
+  content: "";
+  position: absolute;
+  inset: 8% 4% 0% 4%;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 48% 52%,
+      rgba(21, 112, 239, 0.22) 0%,
+      rgba(21, 112, 239, 0.13) 34%,
+      rgba(7, 31, 69, 0.08) 58%,
+      transparent 78%);
+  filter: blur(18px);
+  opacity: 0.95;
+  mix-blend-mode: screen;
+}
+
+/* Remove older overlay frame logic */
+.f2a-ethiopia-risk-image::after {
+  content: none;
+}
+
+.f2a-ethiopia-risk-image img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0.98;
+  border: 0;
+  mix-blend-mode: screen;
+
+  /* Extra safety mask in browser, complementing the feathered PNG alpha */
+  -webkit-mask-image:
+    radial-gradient(ellipse at 50% 52%,
+      #000 0%,
+      #000 64%,
+      rgba(0,0,0,0.82) 74%,
+      rgba(0,0,0,0.34) 86%,
+      transparent 98%);
+  mask-image:
+    radial-gradient(ellipse at 50% 52%,
+      #000 0%,
+      #000 64%,
+      rgba(0,0,0,0.82) 74%,
+      rgba(0,0,0,0.34) 86%,
+      transparent 98%);
+}
+
+/* Keep the side cards clearly outside the map image */
+.f2a-hero-panels {
+  right: 2px;
+  z-index: 8;
+}
+
+@media (max-width: 1550px) {
+  .f2a-ethiopia-risk-image {
+    right: 122px;
+    width: 392px;
+  }
+}
+
+
+/* ============================================================
+   KPI card font-size fix
+   Paste at the VERY BOTTOM of:
+   frontend/src/styles/dashboardHeroFinal.css
+
+   This reduces large KPI values such as Ethiopia and Subseasonal,
+   and prevents words from breaking in the middle.
+   ============================================================ */
+
+.f2a-kpi-card {
+  min-height: 196px;
+  padding: 20px;
+}
+
+.f2a-kpi-top {
+  margin-bottom: 14px;
+}
+
+.f2a-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+}
+
+.f2a-kpi-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.f2a-kpi-label {
+  min-height: 34px;
+  margin-bottom: 10px;
+  font-size: clamp(0.72rem, 0.78vw, 0.86rem);
+  line-height: 1.18;
+}
+
+.f2a-kpi-value {
+  font-size: clamp(1.55rem, 2.05vw, 2.45rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+
+  /* Prevent breaking words like "Subseasonal" into "Subseaso / nal" */
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+/* Slightly smaller for long text values */
+.f2a-kpi-card:nth-child(1) .f2a-kpi-value,
+.f2a-kpi-card:nth-child(2) .f2a-kpi-value,
+.f2a-kpi-card:nth-child(5) .f2a-kpi-value {
+  font-size: clamp(1.50rem, 1.95vw, 2.30rem);
+}
+
+/* Keep numeric KPI values strong but not oversized */
+.f2a-kpi-card:nth-child(3) .f2a-kpi-value,
+.f2a-kpi-card:nth-child(4) .f2a-kpi-value,
+.f2a-kpi-card:nth-child(6) .f2a-kpi-value {
+  font-size: clamp(1.90rem, 2.60vw, 3.00rem);
+}
+
+.f2a-kpi-card p {
+  margin-top: 8px;
+  font-size: clamp(0.70rem, 0.76vw, 0.84rem);
+  line-height: 1.30;
+}
+
+.f2a-kpi-card small {
+  margin-top: 8px;
+  font-size: 0.74rem;
+}
+
+/* Medium screens: keep cards readable without word splitting */
+@media (max-width: 1550px) {
+  .f2a-kpi-card {
+    min-height: 188px;
+    padding: 18px;
+  }
+
+  .f2a-kpi-value {
+    font-size: clamp(1.42rem, 1.85vw, 2.05rem);
+  }
+
+  .f2a-kpi-card:nth-child(1) .f2a-kpi-value,
+  .f2a-kpi-card:nth-child(2) .f2a-kpi-value,
+  .f2a-kpi-card:nth-child(5) .f2a-kpi-value {
+    font-size: clamp(1.36rem, 1.75vw, 1.95rem);
+  }
+
+  .f2a-kpi-label {
+    font-size: clamp(0.70rem, 0.74vw, 0.82rem);
+  }
+}
+
+/* Reduce banner vertical gap under the right-side cards */
+
+.f2a-hero-banner {
+  min-height: 405px;
+  padding-top: 42px;
+  padding-bottom: 26px;
+}
+
+/* Move the right-side Risk Signal / Confidence / Updated cards slightly up */
+.f2a-hero-panels {
+  top: 50px;
+  gap: 8px;
+}
+
+/* Slightly compact the side cards */
+.f2a-hero-panel {
+  min-height: 66px;
+  padding: 10px 13px;
+}
+
+.f2a-hero-panel > span {
+  margin-bottom: 5px;
+  font-size: 0.62rem;
+}
+
+.f2a-hero-panel strong {
+  font-size: 0.88rem;
+}
+
+.f2a-bars {
+  height: 34px;
+}
+
+/* Move the workflow row upward to close the red-marked space */
+.f2a-workflow-row {
+  bottom: 22px;
+}
+
+/* Keep the Ethiopia image aligned after reducing banner height */
+.f2a-ethiopia-risk-image {
+  top: 20px;
+}
+
+/* Keep the rain icon visually centered after reducing height */
+.f2a-rain-radar {
+  top: 208px;
+}
+
+@media (max-width: 1550px) {
+  .f2a-hero-banner {
+    min-height: 390px;
+  }
+
+  .f2a-workflow-row {
+    bottom: 20px;
+  }
+
+  .f2a-hero-panels {
+    top: 46px;
+  }
+}
