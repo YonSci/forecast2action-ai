@@ -22,7 +22,7 @@ from functools import lru_cache
 from fastapi.middleware.gzip import GZipMiddleware
 
 from functools import lru_cache
-from typing import Optional
+from typing import Any, Optional
 
 from app.data_pipeline.ethiopia_admin_boundary_pipeline import (
     OUTPUT_DIR as ADMIN_BOUNDARY_OUTPUT_DIR,
@@ -663,10 +663,6 @@ def calculate_admin_area_ranking_item(
     }
 
 
-if indicator not in VALID_CLIMATE_INDICATORS:
-        indicator = "spi"
-
-
 @lru_cache(maxsize=128)
 def build_intervention_ranking_cached(
     forecast_scale: str,
@@ -678,7 +674,11 @@ def build_intervention_ranking_cached(
     threshold: float,
     region_id: str,
     zone_id: str,
+    indicator: str,
 ) -> dict:
+    if indicator not in VALID_CLIMATE_INDICATORS:
+        indicator = "spi"
+
     grid_features = get_grid_features_for_forecast(
         forecast_scale=forecast_scale,
         lead=lead,
@@ -1429,6 +1429,7 @@ def get_intervention_ranking(
         threshold=threshold,
         region_id=region_id,
         zone_id=zone_id,
+        indicator=indicator,
     )
 
 @app.get("/api/risk")
@@ -1453,7 +1454,10 @@ def get_advisory(
             "message": "No advisory found for this district.",
         }
 
-    row = matched.iloc[0].to_dict()
+    row: dict[str, Any] = {
+        str(key): value
+        for key, value in matched.iloc[0].to_dict().items()
+    }
 
     hazard_label = row["hazard"].replace("_", " ")
     risk_level = row["risk_level"]
@@ -2054,30 +2058,6 @@ Forecast2Action AI classified **{district_name}, {country}** as **{risk_level}**
 |---|---:|
 | Countries monitored | {total_countries} |
 | Hazards monitored | {total_hazards} |
-| Warning areas | {total_warnings} |
-| Trigger areas | {total_triggers} |
-
-## Selected District Location
-
-| Field | Value |
-|---|---|
-| District | {district_name} |
-| Country | {country} |
-| Latitude | {latitude_text} |
-| Longitude | {longitude_text} |
-| Map reference | {map_line} |
-
-## Climate Evidence
-
-| Indicator | Value |
-|---|---:|
-| Year | {year} |
-| Season | {season} |
-| Seasonal rainfall | {rainfall_mm} mm |
-| Baseline mean rainfall | {baseline_mean_mm} mm |
-| Baseline rainfall standard deviation | {baseline_std_mm} mm |
-| Rainfall anomaly | {rainfall_anomaly_mm} mm |
-| Rainfall anomaly percent | {rainfall_anomaly_pct}% |
 | SPI-like score | {spi} |
 
 ## Risk Indicator Values
