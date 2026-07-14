@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from app.advisory.rag_engine import build_rag_advisory
 from app.ml.risk_scoring import score_districts
 
+from app.api.ai_map_interpretation import router as ai_map_interpretation_router
 
 from functools import lru_cache
 from fastapi.middleware.gzip import GZipMiddleware
@@ -47,6 +48,8 @@ app = FastAPI(
     ),
     version="1.2.0",
 )
+
+app.include_router(ai_map_interpretation_router)
 
 allowed_origins = [
     "http://localhost:5173",

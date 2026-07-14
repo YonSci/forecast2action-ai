@@ -4,6 +4,9 @@ import { apiUrl } from "../config.js";
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
   { value: "am", label: "Amharic" },
+  { value: "om", label: "Oromifa / Afaan Oromo" },
+  { value: "ti", label: "Tigrinya" },
+  { value: "so", label: "Somali" },
   { value: "sw", label: "Swahili" },
 ];
 

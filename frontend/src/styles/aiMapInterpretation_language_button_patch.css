@@ -1,0 +1,29 @@
+/* Add this at the bottom of frontend/src/styles/aiMapInterpretation.css if buttons are affected by old styles */
+.ai-action-bar {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f8fbff, #eff6ff);
+  border: 1px solid #cfe1f7;
+  flex-wrap: wrap;
+}
+
+.ai-generate-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 22px;
+  min-height: 48px;
+  background: linear-gradient(135deg, #1570ef, #1849a9);
+  color: #ffffff;
+  font-weight: 950;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(21, 112, 239, 0.24);
+  visibility: visible !important;
+  opacity: 1;
+}
