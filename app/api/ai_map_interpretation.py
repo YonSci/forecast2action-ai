@@ -1,17 +1,118 @@
+import base64
 import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+
 router = APIRouter(prefix="/api/ai", tags=["AI Map Interpretation"])
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 KNOWLEDGE_BASE_DIR = PROJECT_ROOT / "knowledge_base"
-DEFAULT_MODEL = os.getenv("OPENAI_MAP_AI_MODEL", "gpt-5.6-luna")
+
+# Provider values:
+#   free_auto  -> NVIDIA -> Gemini -> Groq only when no screenshot -> OpenRouter -> OpenAI -> rule fallback
+#   auto       -> alias of free_auto
+#   nvidia     -> NVIDIA only
+#   gemini     -> Gemini only
+#   groq       -> Groq only; text/JSON only
+#   openrouter -> OpenRouter only
+#   openai     -> OpenAI only
+AI_PROVIDER = os.getenv("AI_PROVIDER", "openai").strip().lower()
+
+OPENAI_DEFAULT_MODEL = os.getenv("OPENAI_MAP_AI_MODEL", "gpt-5")
+NVIDIA_DEFAULT_MODEL = os.getenv(
+    "NVIDIA_AI_MODEL",
+    "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+)
+GEMINI_DEFAULT_MODEL = os.getenv("GEMINI_AI_MODEL", "gemini-2.5-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
+GROQ_DEFAULT_MODEL = os.getenv("GROQ_AI_MODEL", "openai/gpt-oss-120b")
+GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
+OPENROUTER_DEFAULT_MODEL = os.getenv("OPENROUTER_AI_MODEL", "openrouter/free")
+
+NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+
+AI_PROVIDER_OPTIONS = [
+    {
+        "value": "free_auto",
+        "label": "Automatic free-provider chain",
+        "description": "NVIDIA NIM → Gemini → Groq if screenshot is off → OpenRouter → OpenAI → rule-based fallback.",
+        "supports_screenshot": True,
+        "models": [
+            {"value": "auto", "label": "Automatic model per provider chain"},
+        ],
+    },
+    {
+        "value": "nvidia",
+        "label": "NVIDIA NIM",
+        "description": "Best option for map screenshot + structured JSON summaries.",
+        "supports_screenshot": True,
+        "models": [
+            {"value": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1", "label": "NVIDIA Llama 3.1 Nemotron Nano VL 8B"},
+            {"value": "meta/llama-3.2-11b-vision-instruct", "label": "Meta Llama 3.2 11B Vision Instruct"},
+            {"value": "meta/llama-3.2-90b-vision-instruct", "label": "Meta Llama 3.2 90B Vision Instruct"},
+            {"value": "custom", "label": "Custom NVIDIA NIM model ID"},
+        ],
+    },
+    {
+        "value": "gemini",
+        "label": "Google Gemini",
+        "description": "Good multimodal option for screenshot + text summaries.",
+        "supports_screenshot": True,
+        "models": [
+            {"value": "gemini-2.5-flash", "label": "Gemini 2.5 Flash"},
+            {"value": "gemini-2.5-flash-lite", "label": "Gemini 2.5 Flash-Lite"},
+            {"value": "custom", "label": "Custom Gemini model ID"},
+        ],
+    },
+    {
+        "value": "groq",
+        "label": "Groq",
+        "description": "Fast text-only option. Use when the screenshot toggle is off.",
+        "supports_screenshot": False,
+        "models": [
+            {"value": "openai/gpt-oss-120b", "label": "GPT-OSS 120B on Groq"},
+            {"value": "llama-3.3-70b-versatile", "label": "Llama 3.3 70B Versatile on Groq"},
+            {"value": "custom", "label": "Custom Groq model ID"},
+        ],
+    },
+    {
+        "value": "openrouter",
+        "label": "OpenRouter",
+        "description": "Free-model router / fallback route.",
+        "supports_screenshot": True,
+        "models": [
+            {"value": "openrouter/free", "label": "OpenRouter free model router"},
+            {"value": "custom", "label": "Custom OpenRouter model ID"},
+        ],
+    },
+    {
+        "value": "openai",
+        "label": "OpenAI",
+        "description": "Paid fallback if API billing is available.",
+        "supports_screenshot": True,
+        "models": [
+            {"value": "gpt-5", "label": "GPT-5"},
+            {"value": "gpt-4.1", "label": "GPT-4.1"},
+            {"value": "gpt-4o", "label": "GPT-4o"},
+            {"value": "custom", "label": "Custom OpenAI model ID"},
+        ],
+    },
+]
 
 LANGUAGE_LABELS = {
     "en": "English",
@@ -19,56 +120,23 @@ LANGUAGE_LABELS = {
     "om": "Oromifa / Afaan Oromo",
     "ti": "Tigrinya",
     "so": "Somali",
-    "sw": "Swahili",
-    "fr": "French",
-    "ar": "Arabic",
 }
 
+MAP_LAYER_LABELS = {
+    "hazard": "Hazard map",
+    "risk_score": "Risk score map",
+    "hazard_probability": "Hazard probability map",
+    "exposure": "Exposure map",
+    "vulnerability": "Vulnerability map",
+}
 
-def normalize_language_code(value: Optional[str]) -> str:
-    text = str(value or "en").strip().lower()
-
-    if text in {"am", "amh", "amharic", "am-et", "አማርኛ"}:
-        return "am"
-    if text in {"om", "orm", "oromo", "oromifa", "afaan oromo", "afan oromo", "or"}:
-        return "om"
-    if text in {"ti", "tir", "tig", "tigrinya", "tigrigna", "ትግርኛ"}:
-        return "ti"
-    if text in {"so", "som", "somali", "af-soomaali", "af soomaali", "soomaali"}:
-        return "so"
-    if text in {"sw", "swa", "swahili", "kiswahili"}:
-        return "sw"
-    if text in {"fr", "fre", "fra", "french", "français", "francais"}:
-        return "fr"
-    if text in {"ar", "ara", "arabic", "العربية"}:
-        return "ar"
-    if text in {"en", "eng", "english", "en-us", "en-gb"}:
-        return "en"
-
-    return text or "en"
-
-
-def language_label(value: Optional[str]) -> str:
-    return LANGUAGE_LABELS.get(normalize_language_code(value), "English")
-
-
-def language_instruction(value: Optional[str]) -> str:
-    code = normalize_language_code(value)
-    if code == "am":
-        return "Write the entire report in Amharic using Ethiopic script. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    if code == "om":
-        return "Write the entire report in Oromifa / Afaan Oromo using Latin script. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    if code == "ti":
-        return "Write the entire report in Tigrinya using Ethiopic script. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    if code == "so":
-        return "Write the entire report in Somali using Latin script. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    if code == "sw":
-        return "Write the entire report in Swahili using Latin script. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    if code == "fr":
-        return "Write the entire report in French. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    if code == "ar":
-        return "Write the entire report in Arabic. Do not write the report in English. Keep administrative place names as provided when appropriate."
-    return "Write the entire report in English. Keep administrative place names as provided when appropriate."
+CLIMATE_INDICATOR_LABELS = {
+    "spi": "Standardized Precipitation Index",
+    "rainfall_anomaly_pct": "Rainfall anomaly",
+    "rainfall_percentile": "Rainfall percentile",
+    "cdd": "Consecutive dry days",
+    "cwd": "Consecutive wet days",
+}
 
 
 class ForecastSelection(BaseModel):
@@ -100,17 +168,23 @@ class AIMapInterpretationRequest(BaseModel):
     forecast_selection: ForecastSelection = Field(default_factory=ForecastSelection)
     admin_selection: AdminSelection = Field(default_factory=AdminSelection)
     map_context: MapContext = Field(default_factory=MapContext)
+
     top_admin_areas: List[Dict[str, Any]] = Field(default_factory=list)
     all_map_layer_summaries: Dict[str, Any] = Field(default_factory=dict)
     all_climate_indicator_summaries: Dict[str, Any] = Field(default_factory=dict)
+
     map_image_base64: Optional[str] = None
     use_screenshot: bool = False
+
     target_language: Optional[str] = "en"
     target_language_label: Optional[str] = "English"
     audience_focus: Optional[str] = (
         "farmers, rainfed agriculture, agro-pastoral communities, livestock, "
         "policymakers, DRM offices, and humanitarian organizations"
     )
+    requested_provider: Optional[str] = None
+    requested_model: Optional[str] = None
+    requested_model_label: Optional[str] = None
 
 
 AI_MAP_REPORT_SCHEMA: Dict[str, Any] = {
@@ -120,39 +194,107 @@ AI_MAP_REPORT_SCHEMA: Dict[str, Any] = {
         "title": {"type": "string"},
         "target_language": {"type": "string"},
         "executive_summary": {"type": "string"},
-        "spatial_interpretation": {"type": "array", "items": {"type": "string"}},
-        "highest_risk_areas": {"type": "array", "items": {"type": "string"}},
-        "climate_indicator_interpretation": {"type": "array", "items": {"type": "string"}},
-        "cross_layer_insights": {"type": "array", "items": {"type": "string"}},
-        "impact_assessment": {"type": "array", "items": {"type": "string"}},
+        "national_spatial_overview": {"type": "array", "items": {"type": "string"}},
+        "layer_by_layer_summary": {"type": "array", "items": {"type": "string"}},
+        "indicator_by_indicator_summary": {"type": "array", "items": {"type": "string"}},
+        "priority_area_justification": {"type": "array", "items": {"type": "string"}},
         "farmer_advisory": {"type": "array", "items": {"type": "string"}},
-        "policy_recommendations": {"type": "array", "items": {"type": "string"}},
         "humanitarian_priorities": {"type": "array", "items": {"type": "string"}},
-        "confidence_note": {"type": "string"},
         "sms_summary": {"type": "string"},
     },
     "required": [
         "title",
         "target_language",
         "executive_summary",
-        "spatial_interpretation",
-        "highest_risk_areas",
-        "climate_indicator_interpretation",
-        "cross_layer_insights",
-        "impact_assessment",
+        "national_spatial_overview",
+        "layer_by_layer_summary",
+        "indicator_by_indicator_summary",
+        "priority_area_justification",
         "farmer_advisory",
-        "policy_recommendations",
         "humanitarian_priorities",
-        "confidence_note",
         "sms_summary",
     ],
 }
 
 
-def request_to_dict(request: AIMapInterpretationRequest) -> Dict[str, Any]:
-    if hasattr(request, "model_dump"):
-        return request.model_dump()
-    return request.dict()
+class ProviderError(Exception):
+    pass
+
+
+def normalize_provider(value: str | None) -> str:
+    provider = str(value or os.getenv("AI_PROVIDER", AI_PROVIDER) or "free_auto").strip().lower()
+    aliases = {
+        "auto": "free_auto",
+        "multi": "free_auto",
+        "multi_provider": "free_auto",
+        "nvidia_nim": "nvidia",
+        "google": "gemini",
+        "google_gemini": "gemini",
+        "open_router": "openrouter",
+    }
+    return aliases.get(provider, provider)
+
+
+def clean_model_id(value: str | None) -> Optional[str]:
+    text = str(value or "").strip()
+    if not text or text.lower() in {"auto", "automatic", "default", "auto_default"}:
+        return None
+    return text
+
+
+def resolve_model_for_provider(
+    request: "AIMapInterpretationRequest",
+    provider: str,
+    default_model: str,
+    env_name: Optional[str] = None,
+    explicit_model: Optional[str] = None,
+) -> str:
+    if explicit_model:
+        return explicit_model
+
+    requested_provider = normalize_provider(request.requested_provider)
+    requested_model = clean_model_id(request.requested_model)
+
+    if requested_provider == provider and requested_model:
+        return requested_model
+
+    if env_name:
+        return os.getenv(env_name, default_model)
+
+    return default_model
+
+
+def normalize_language_code(value: str | None) -> str:
+    text = str(value or "en").strip().lower()
+    if text in {"am", "amh", "amharic", "am-et", "አማርኛ"}:
+        return "am"
+    if text in {"om", "orm", "oromo", "oromifa", "afaan oromo", "afan oromo", "or"}:
+        return "om"
+    if text in {"ti", "tir", "tig", "tigrinya", "tigrigna", "ትግርኛ"}:
+        return "ti"
+    if text in {"so", "som", "somali", "af-soomaali", "af soomaali", "soomaali"}:
+        return "so"
+    if text in {"en", "eng", "english", "en-us", "en-gb"}:
+        return "en"
+    return text or "en"
+
+
+def get_language_label(value: str | None) -> str:
+    code = normalize_language_code(value)
+    return LANGUAGE_LABELS.get(code, "English")
+
+
+def get_language_instruction(value: str | None) -> str:
+    code = normalize_language_code(value)
+    if code == "am":
+        return "Write the entire report in Amharic using Ethiopic script. Keep place names as provided when appropriate."
+    if code == "om":
+        return "Write the entire report in Oromifa / Afaan Oromo using Latin script. Keep place names as provided when appropriate."
+    if code == "ti":
+        return "Write the entire report in Tigrinya using Ethiopic script. Keep place names as provided when appropriate."
+    if code == "so":
+        return "Write the entire report in Somali using Latin script. Keep place names as provided when appropriate."
+    return "Write the entire report in English. Keep place names as provided when appropriate."
 
 
 def title_case(value: Any) -> str:
@@ -193,21 +335,44 @@ def get_area_location(item: Dict[str, Any]) -> str:
     return ", ".join(parts) if parts else area_name(item)
 
 
-def normalize_data_url(map_image_base64: Optional[str]) -> Optional[str]:
-    if not map_image_base64:
+def get_map_image_data_url(request: AIMapInterpretationRequest) -> Optional[str]:
+    if not request.use_screenshot or not request.map_image_base64:
         return None
-    value = map_image_base64.strip()
+    value = request.map_image_base64.strip()
     if value.startswith("data:image/"):
         return value
     return f"data:image/png;base64,{value}"
 
 
-def get_request_language_code(request: AIMapInterpretationRequest) -> str:
-    return normalize_language_code(request.target_language or request.target_language_label)
+def data_url_to_bytes(data_url: str) -> Tuple[bytes, str]:
+    if not data_url.startswith("data:"):
+        return base64.b64decode(data_url), "image/png"
+    header, encoded = data_url.split(",", 1)
+    mime_match = re.match(r"data:([^;]+);base64", header)
+    mime_type = mime_match.group(1) if mime_match else "image/png"
+    return base64.b64decode(encoded), mime_type
 
 
-def get_request_language_label(request: AIMapInterpretationRequest) -> str:
-    return LANGUAGE_LABELS.get(get_request_language_code(request), language_label(request.target_language_label))
+def parse_json_from_text(text: str) -> Dict[str, Any]:
+    cleaned = (text or "").strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?", "", cleaned).strip()
+        cleaned = re.sub(r"```$", "", cleaned).strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(cleaned[start : end + 1])
+        raise
+
+
+def compact_json(value: Any, max_chars: int = 18000) -> str:
+    text = json.dumps(value, ensure_ascii=False, indent=2)
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n...TRUNCATED..."
 
 
 def read_knowledge_base_documents() -> List[Dict[str, str]]:
@@ -244,12 +409,20 @@ def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> Li
         request.map_context.metric_type,
         request.map_context.seasonal_context,
         request.audience_focus,
-        get_request_language_label(request),
-        json.dumps(request.all_map_layer_summaries, ensure_ascii=False)[:3000],
-        json.dumps(request.all_climate_indicator_summaries, ensure_ascii=False)[:3000],
+        request.target_language_label,
+        compact_json(request.all_map_layer_summaries, max_chars=3000),
+        compact_json(request.all_climate_indicator_summaries, max_chars=3000),
     ]
     for item in request.top_admin_areas[:8]:
-        query_parts.extend([item.get("hazard"), item.get("risk_level"), item.get("region"), item.get("zone"), item.get("woreda")])
+        query_parts.extend(
+            [
+                item.get("hazard"),
+                item.get("risk_level"),
+                item.get("region"),
+                item.get("zone"),
+                item.get("woreda"),
+            ]
+        )
 
     query_tokens = set(tokenize(" ".join(str(part) for part in query_parts if part)))
     scored = []
@@ -259,7 +432,19 @@ def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> Li
         overlap = len(query_tokens.intersection(doc_tokens))
         bonus = 0
         lowered = doc_text.lower()
-        for keyword in ["drought", "dry", "flood", "wet", "livestock", "agriculture", "humanitarian", "sms", "water", "policy", "pasture"]:
+        for keyword in [
+            "drought",
+            "dry",
+            "flood",
+            "wet",
+            "livestock",
+            "agriculture",
+            "humanitarian",
+            "sms",
+            "water",
+            "policy",
+            "pasture",
+        ]:
             if keyword in query_tokens and keyword in lowered:
                 bonus += 3
         scored.append((overlap + bonus, document))
@@ -276,238 +461,400 @@ def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> Li
     return selected
 
 
-def build_system_prompt(request: AIMapInterpretationRequest) -> str:
-    return f"""
+def build_system_prompt() -> str:
+    return """
 You are an expert climate risk, agriculture, livestock, agro-pastoralism, and humanitarian early-warning analyst.
 
-Your job is to interpret Forecast2Action AI hazard/risk map layers and climate indicator maps for Ethiopia and convert them into actionable advice.
-
-LANGUAGE REQUIREMENT:
-{language_instruction(get_request_language_code(request))}
+Your job is to interpret Ethiopia-wide forecast map layers and climate indicator maps for Forecast2Action AI.
 
 Important rules:
-- Use the structured JSON map summaries as the source of truth.
+- Use structured JSON map summaries as the source of truth.
 - Use the optional map screenshot only as supporting visual context.
-- Analyze ALL provided map layers: hazard, risk score, hazard probability, exposure, and vulnerability.
-- Analyze ALL provided climate indicators: SPI, rainfall anomaly, rainfall percentile, CDD, and CWD.
-- Do not invent regions, zones, or woredas that are not provided in the structured data.
-- Identify the administrative areas with highest risk and explain why.
-- Explain likely impacts for rainfed agriculture, agro-pastoralist communities, livestock, and humanitarian operations.
-- Provide practical recommendations for farmers, policymakers, and humanitarian/DRM actors.
-- Mention uncertainty and recommend local verification.
-- Return only valid JSON matching the requested schema.
+- First explain the Ethiopia-wide spatial distribution, hotspots, low-value areas, high-value areas, and national patterns.
+- Interpret all hazard/risk layers: hazard, risk score, hazard probability, exposure, and vulnerability.
+- Interpret all climate indicators: SPI, rainfall anomaly, rainfall percentile, CDD, and CWD.
+- Then explain why the listed priority intervention areas were selected.
+- Do not invent regions, zones, or woredas that are not present in the structured data.
+- Provide farmer/agro-pastoral advisory and humanitarian priorities.
+- Return only valid JSON matching the requested keys.
 """.strip()
 
 
 def build_user_prompt(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> str:
-    code = get_request_language_code(request)
-    label = get_request_language_label(request)
-    payload = request_to_dict(request)
-    payload.pop("map_image_base64", None)
+    language_label = get_language_label(request.target_language)
+    language_instruction = get_language_instruction(request.target_language)
+
+    forecast_window = title_case(request.forecast_selection.forecastScale)
+    lead = title_case(request.forecast_selection.lead)
+    admin_scope = request.map_context.admin_scope or "Ethiopia"
+    active_layer = MAP_LAYER_LABELS.get(
+        request.forecast_selection.layer or "",
+        title_case(request.forecast_selection.layer or "hazard"),
+    )
+    active_indicator = CLIMATE_INDICATOR_LABELS.get(
+        request.forecast_selection.indicator or "",
+        title_case(request.forecast_selection.indicator or "spi"),
+    )
+
+    payload = request.model_dump(exclude={"map_image_base64"})
 
     return f"""
-Generate a localized AI Map Interpretation & Advisory report.
+OUTPUT LANGUAGE:
+{language_instruction}
 
-TARGET LANGUAGE:
-- Language code: {code}
-- Language label: {label}
-- Strict instruction: {language_instruction(code)}
-- The title, executive summary, all bullet points, confidence note, and SMS summary must be in {label}.
+EXECUTIVE SUMMARY REQUIREMENT:
+The executive_summary must explicitly mention:
+- Forecast window: {forecast_window}
+- Lead / horizon: {lead}
+- Admin scope: {admin_scope}
+- Active map layer: {active_layer}
+- Active climate indicator: {active_indicator}
+- Output language: {language_label}
 
-CONTEXT & METADATA:
-- Forecast window: {request.forecast_selection.forecastScale}
-- Lead time: {request.forecast_selection.lead}
-- Current seasonal context: {request.map_context.current_seasonal_context or request.map_context.seasonal_context or "Not specified"}
-- Active map layer selected in dashboard: {request.forecast_selection.layer}
-- Active climate indicator selected in dashboard: {request.forecast_selection.indicator}
-- Hazard type: {request.map_context.hazard_type or "Infer from data if available"}
-- Admin scope: {request.map_context.admin_scope or "All Ethiopia or selected administrative boundary"}
-- Audience: {request.audience_focus}
+PRIMARY INTERPRETATION FOCUS:
+This report must be country-level first. Focus on spatial distribution across Ethiopia:
+- where hotspots are found
+- where high values and low values are found
+- overall Ethiopia-wide pattern
+- layer-by-layer interpretation of Hazard / Risk Score / Hazard Probability / Exposure / Vulnerability
+- indicator-by-indicator interpretation of SPI / Rainfall anomaly / Rainfall percentile / CDD / CWD
+
+Only after the country-level interpretation, explain why the Priority Intervention Areas and Action Queue areas were selected.
 
 TASK:
-1. Interpret all hazard/risk map layers: hazard, risk score, hazard probability, exposure, vulnerability.
-2. Interpret all climate indicator maps: Standardized Precipitation Index, rainfall anomaly, rainfall percentile, consecutive dry days, consecutive wet days.
-3. Identify specific regions, zones, and woredas facing the highest risks.
-4. Explain what this means for rainfed agriculture, agro-pastoral communities, livestock, and local livelihoods.
-5. Provide 3-4 concrete recommendations for local farmers and agro-pastoral communities.
-6. Provide 3-4 recommendations for regional policymakers and DRM actors.
-7. Provide 2-3 high-level humanitarian/resource allocation priorities.
-8. Explain cross-layer insights, for example whether risk is driven by hazard probability, exposure, vulnerability, or climate indicators.
-9. Keep the tone professional, objective, and easy to read.
+1. Provide national_spatial_overview for Ethiopia-wide patterns.
+2. Provide layer_by_layer_summary with one clear bullet for each map layer.
+3. Provide indicator_by_indicator_summary with one clear bullet for each climate indicator.
+4. Provide priority_area_justification explaining how the spatial patterns justify the selected priority areas.
+5. Provide farmer_advisory for farmers and agro-pastoral communities.
+6. Provide humanitarian_priorities for DRM and humanitarian resource allocation.
+7. Provide a short sms_summary in the output language.
 
-STRUCTURED MAP DATA AND ALL-LAYER SUMMARIES:
-{json.dumps(payload, indent=2, ensure_ascii=False)}
+STRUCTURED MAP DATA:
+{compact_json(payload, max_chars=28000)}
 
 RETRIEVED EARLY-ACTION GUIDANCE:
-{json.dumps(retrieved_guidance, indent=2, ensure_ascii=False)}
+{compact_json(retrieved_guidance, max_chars=9000)}
+
+Return only JSON with these keys:
+title, target_language, executive_summary, national_spatial_overview,
+layer_by_layer_summary, indicator_by_indicator_summary,
+priority_area_justification, farmer_advisory, humanitarian_priorities, sms_summary.
 """.strip()
 
 
-def localized_fallback_text(code: str, main_area: str, hazard: str, lead: str) -> Dict[str, Any]:
-    if code == "om":
-        return {
-            "title": "Hiikkaa Kaartaa AI fi Gorsa Tarkaanfii",
-            "executive_summary": f"Raaga {lead} keessatti naannoo {main_area} irratti mallattoon balaa {hazard} mulʼata. Murtiin hojiirra oolmaa dura ragaan naannoo irraa mirkaneeffamuu qaba.",
-            "spatial": ["Naannoon sadarkaa olaanaa qabu tarree bulchiinsa kennamerratti hundaaʼe adda baafameera.", "Balaan yeroo carraan balaa, saaxilamummaa fi miidhama waliin walitti dhufan cimaa taʼa."],
-            "climate": ["SPI, jijjiirama roobaa, persentaayilii roobaa, CDD fi CWD waliin ilaalamuu qabu.", "CDD olkaʼaa fi roobni gadi buʼaan yaaddoo goginsaa agarsiisuu dandaʼa."],
-            "impact": ["Qonna rooba irratti hirkatu irratti hanqinni jiidhaa mudachuu dandaʼa.", "Hawaasni horsiisee-bulaa bishaanii fi margaa irratti dhiibbaa arguu dandaʼa."],
-            "farmer": ["Bishaan argamu qusachuu fi kuusaa bishaanii cimsuu.", "Yeroo facaasa rooba mirkanaaʼaa irratti hundeessuu.", "Haala margaa, midhaanii fi loonii hordofuu.", "Rakkoo mulʼatu qaama naannoo beeksisuu."],
-            "policy": ["Aanaalee balaa olaanaa qaban keessatti haala jiru saʼaatii 24-72 keessatti mirkaneessuu.", "Qaamolee qonnaa, beeyladaa, bishaanii fi DRM walitti fiduu.", "Ergaa akeekkachiisaa afaan naannootiin qopheessuu.", "Gabaasa hawaasaa fayyadamuun tarkaanfii haaromsuu."],
-            "human": ["Bishaan, tajaajila beeyladaa fi hordoffii margaa dursanii qopheessuu.", "Qabeenya gara naannoo saaxilamummaa fi miidhamummaan olaanaa taʼetti qajeelchuu.", "Ragaa lafa irraa argamuun murtii cimsuu."],
-            "confidence": "Kun gorsa buʼuura seera fallback ti. Murtii hojii dura ragaan naannoo irraa mirkaneeffamuu qaba.",
-            "sms": f"AKEEKKACHIISA: {main_area} keessatti balaa {hazard} {lead} irratti hordofaa. Bishaan qusadhaa, haala naannoo gabaasaa, qajeelfama qaamolee naannoo hordofaa.",
-        }
-    if code == "ti":
-        return {
-            "title": "ትርጓመ ካርታ AIን ምኽሪ ተግባርን",
-            "executive_summary": f"ናይ {lead} ትንበያ ኣብ {main_area} ሓደጋ {hazard} ክህሉ ከምዝኽእል የመልክት። ቅድሚ ውሳነ ምውሳድ ናይ ከባቢ ምርግጋጽ የድሊ።",
-            "spatial": ["እቶም ብልዑል ሓደጋ ዝተለዩ ከባቢታት ካብ ዝተዋህበ ዝርዝር ምምሕዳር ተመርኲሶም እዮም።", "ሓደጋ ኣብ ዝለዓለ ዕድል ሓደጋ፣ ተጋላጽነትን ተጎዳእነትን ምስ ተደራረበ ይዓቢ።"],
-            "climate": ["SPI፣ ለውጢ ዝናብ፣ ፐርሰንታይል ዝናብ፣ CDDን CWDን ብሓባር ክምርመሩ ይግባእ።", "CDD ምውሳኽን ዝናብ ምንካይን ሓደጋ ድርቂ ከመልክት ይኽእል።"],
-            "impact": ["ብዝናብ ዝምራሕ ሕርሻ ጸገም ርጥበት ክረክብ ይኽእል።", "ማሕበረሰብ ሓረስቶትን ኣርብቶ ኣደርን ኣብ ማይን መግቢ እንስሳን ጸቕጢ ክረክብ ይኽእል።"],
-            "farmer": ["ማይ ምቑጣብን መኽዘን ማይ ምጥንኻርን።", "ግዜ ዘርኢ ከከም እምነት ዝናብ ምውሳን።", "ኩነታት ሰብልን እንስሳን ምክትታል።", "ዝተራእየ ጸገም ንባለስልጣን ከባቢ ምሕባር።"],
-            "policy": ["ኣብ ልዑል ሓደጋ ዘለዉ ወረዳታት ኩነታት ኣብ 24-72 ሰዓታት ምርግጋጽ።", "ቢሮታት ሕርሻ፣ እንስሳ፣ ማይን DRMን ምውህሃድ።", "መልእኽቲ ምትሕስሳብ ብቋንቋ ከባቢ ምድላው።", "ጸብጻብ ማሕበረሰብ ተጠቒምካ ተግባር ምምሕያሽ።"],
-            "human": ["ምክትታል ነጥቢ ማይ፣ ደገፍ እንስሳን መግብን ቀዳምነት ምሃብ።", "ሃብቲ ናብ ልዑል ተጋላጽነት ዘለዎ ከባቢ ምቕናዕ።", "ውሳነ ብምርግጋጽ መሬት ምድጋፍ።"],
-            "confidence": "እዚ ብ fallback ዝተዳለወ ምኽሪ እዩ። ቅድሚ ናይ ስራሕ ውሳነ ናይ ከባቢ ምርግጋጽ የድሊ።",
-            "sms": f"ምትሕስሳብ: {main_area} ኣብ {lead} ሓደጋ {hazard} ኣሎ። ማይ ቆጥቡ፣ ኩነታት ከባቢ ኣመልክቱ፣ መምርሒ ባለስልጣን ስዓቡ።",
-        }
-    if code == "so":
-        return {
-            "title": "Fasiraadda Khariidadda AI iyo Talo Hawleed",
-            "executive_summary": f"Saadaasha {lead} waxay muujinaysaa khatar {hazard} oo ka jirta agagaarka {main_area}. Xaqiijin maxalli ah ayaa loo baahan yahay ka hor inta aan talo dadweyne la hawlgelin.",
-            "spatial": ["Goobaha khatarta sare leh waxaa lagu aqoonsaday iyadoo lagu salaynayo darajada maamulka ee la bixiyay.", "Mudnaanta waa in la siiyaa meelaha ay isku darsamaan suurtagalnimada khatarta, nuglaanta iyo soo-gaadhistu."],
-            "climate": ["SPI, leexashada roobka, boqolleyda roobka, CDD iyo CWD waa in si wadajir ah loo eego.", "CDD sare iyo roob ka hooseeya caadiga waxay muujin karaan walaac abaar ama qalayl."],
-            "impact": ["Beeraha roobka ku tiirsan waxaa saameyn kara yaraanta qoyaanka ciidda.", "Bulshooyinka xoolo-dhaqatada iyo beeraleyda-xoolo-dhaqatada ah waxaa ku iman kara cadaadis biyo iyo daaq."],
-            "farmer": ["Kaydi oo ilaali biyaha la heli karo.", "La jaanqaad wakhtiga beerista iyadoo lagu salaynayo bilowga roobka.", "La soco xaaladda daaqa, dalagga iyo xoolaha.", "U soo sheeg saameynta muuqata maamulka deegaanka."],
-            "policy": ["Xaqiiji xaaladda degmooyinka khatarta sare leh 24-72 saacadood gudahood.", "Isku dubbarid xafiisyada beeraha, xoolaha, biyaha iyo maaraynta masiibooyinka.", "Diyaari farriimo digniin ah oo luqadda deegaanka ku qoran.", "Isticmaal warbixinnada bulshada si loo cusbooneysiiyo ficillada."],
-            "human": ["Mudnaan sii kormeerka ilaha biyaha, taageerada xoolaha iyo daaqa.", "Kheyraadka u sii diyaari meelaha nuglaanta iyo soo-gaadhistu sareyso.", "Xaqiiji saadaasha adigoo adeegsanaya warbixinno goobta ka yimid."],
-            "confidence": "Tani waa talo fallback ah. Xaqiijin maxalli ah ayaa muhiim ah ka hor go'aan hawlgal.",
-            "sms": f"DIGNIIN: {main_area}. Khatar {hazard} ayaa jirta {lead}. Ilaali biyaha, la soco xaaladda deegaanka, raacna talada maamulka deegaanka.",
-        }
-    if code == "am":
-        return {
-            "title": "የAI ካርታ ትርጓሜና የተግባር ምክር",
-            "executive_summary": f"የ{lead} ትንበያ በ{main_area} አካባቢ የ{hazard} አደጋ ምልክት እንዳለ ያሳያል። የሕዝብ ምክር ከመስጠት በፊት የመሬት ላይ ማረጋገጫ ያስፈልጋል።",
-            "spatial": ["ከፍተኛ አደጋ ያላቸው ቦታዎች በተሰጠው የአስተዳደር ደረጃ ዝርዝር መሠረት ተለይተዋል።", "የአደጋ ዕድል፣ ተጋላጭነት እና ተጎጂነት በአንድ ላይ ሲጨምሩ ቅድሚያ ሊሰጥ ይገባል።"],
-            "climate": ["SPI፣ የዝናብ ልዩነት፣ የዝናብ percentile፣ CDD እና CWD በአንድ ላይ መተንተን አለባቸው።", "ከፍተኛ CDD እና ዝቅተኛ ዝናብ የድርቅ ስጋት ሊያመለክቱ ይችላሉ።"],
-            "impact": ["በዝናብ ላይ የሚመረኮዝ ግብርና የእርጥበት ጭንቀት ሊያጋጥመው ይችላል።", "አርብቶ አደር እና አግሮ-ፓስቶራል ማህበረሰቦች በውሃ እና በግጦሽ ላይ ጫና ሊያዩ ይችላሉ።"],
-            "farmer": ["የሚገኘውን ውሃ ይቆጥቡ እና የውሃ ማከማቻን ያጠናክሩ።", "የመዝራት ጊዜን ከዝናብ መጀመሪያ ጋር ያስተካክሉ።", "የሰብል፣ የግጦሽ እና የእንስሳት ሁኔታን ይከታተሉ።", "የሚታዩ ተፅዕኖዎችን ለአካባቢ ባለሥልጣን ያሳውቁ።"],
-            "policy": ["በከፍተኛ አደጋ ያሉ ወረዳዎችን በ24-72 ሰዓት ውስጥ ያረጋግጡ።", "የግብርና፣ የእንስሳት፣ የውሃ እና DRM ቢሮዎችን ያስተባብሩ።", "በአካባቢ ቋንቋ የማስጠንቀቂያ መልዕክቶችን ያዘጋጁ።", "የማህበረሰብ ሪፖርቶችን በመጠቀም እርምጃዎችን ያዘምኑ።"],
-            "human": ["የውሃ ነጥቦችን፣ የእንስሳት ድጋፍን እና ግጦሽን ቅድሚያ ይስጡ።", "ሀብቶችን ከፍተኛ ተጋላጭነት እና ተጎጂነት ወዳላቸው ቦታዎች ያቅርቡ።", "ውሳኔዎችን በመሬት ላይ ማረጋገጫ ይደግፉ።"],
-            "confidence": "ይህ የfallback ምክር ነው። ከኦፕሬሽን ውሳኔ በፊት የአካባቢ ማረጋገጫ ያስፈልጋል።",
-            "sms": f"ማስጠንቀቂያ: {main_area} በ{lead} የ{hazard} አደጋ አለ። ውሃ ይቆጥቡ፣ ሁኔታውን ይከታተሉ፣ የአካባቢ መመሪያን ይከተሉ።",
-        }
-    return {}
+def validate_report_shape(report: Dict[str, Any]) -> Dict[str, Any]:
+    required_array_keys = [
+        "national_spatial_overview",
+        "layer_by_layer_summary",
+        "indicator_by_indicator_summary",
+        "priority_area_justification",
+        "farmer_advisory",
+        "humanitarian_priorities",
+    ]
+    for key in required_array_keys:
+        if key not in report or not isinstance(report[key], list):
+            report[key] = [] if key not in report else [str(report[key])]
+    for key in ["title", "target_language", "executive_summary", "sms_summary"]:
+        if key not in report or report[key] is None:
+            report[key] = ""
+    return report
 
 
-def fallback_report(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]], error_message: Optional[str] = None) -> Dict[str, Any]:
-    areas = request.top_admin_areas or []
-    top_areas = areas[:5]
-    code = get_request_language_code(request)
-    label = get_request_language_label(request)
-
-    if top_areas:
-        first = top_areas[0]
-        hazard = title_case(first.get("hazard") or request.map_context.hazard_type or "climate hazard")
-        risk_level = title_case(first.get("risk_level") or "elevated")
-        main_area = get_area_location(first)
-    else:
-        hazard = title_case(request.map_context.hazard_type or "climate hazard")
-        risk_level = "Elevated"
-        main_area = request.admin_selection.woredaLabel or request.admin_selection.zoneLabel or request.admin_selection.regionLabel or "the selected area"
-
-    localized = localized_fallback_text(code, main_area, hazard, title_case(request.forecast_selection.lead))
-    if localized:
-        return {
-            "title": localized["title"],
-            "target_language": label,
-            "executive_summary": localized["executive_summary"],
-            "spatial_interpretation": localized["spatial"],
-            "highest_risk_areas": [
-                f"{get_area_location(item)}: {title_case(item.get('risk_level'))}; risk score {format_number(item.get('risk_score'))}; hazard probability {format_number(item.get('hazard_probability'))}."
-                for item in top_areas
-            ] or localized["spatial"],
-            "climate_indicator_interpretation": localized["climate"],
-            "cross_layer_insights": localized["spatial"],
-            "impact_assessment": localized["impact"],
-            "farmer_advisory": localized["farmer"],
-            "policy_recommendations": localized["policy"],
-            "humanitarian_priorities": localized["human"],
-            "confidence_note": localized["confidence"],
-            "sms_summary": localized["sms"],
-            "_metadata": {
-                "ai_engine": "rule_based_fallback_localized",
-                "model": None,
-                "used_screenshot": bool(request.map_image_base64),
-                "target_language": label,
-                "target_language_code": code,
-                "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
-                "error": error_message,
-            },
-        }
-
-    highest_risk_areas = []
-    for item in top_areas:
-        highest_risk_areas.append(
-            f"{get_area_location(item)}: {title_case(item.get('risk_level'))} {title_case(item.get('hazard'))} signal; risk score {format_number(item.get('risk_score'))}, hazard probability {format_number(item.get('hazard_probability'))}, exposure {format_number(item.get('exposure'))}, vulnerability {format_number(item.get('vulnerability'))}."
-        )
-    if not highest_risk_areas:
-        highest_risk_areas = ["No administrative ranking was provided. Generate the ranking first to identify specific high-risk areas."]
-
-    layer = title_case(request.forecast_selection.layer)
-    indicator = title_case(request.forecast_selection.indicator)
+def fallback_report(
+    request: AIMapInterpretationRequest,
+    retrieved_guidance: List[Dict[str, str]],
+    error_message: Optional[str] = None,
+    provider_errors: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    language_code = normalize_language_code(request.target_language)
+    language_label = get_language_label(language_code)
+    forecast_window = title_case(request.forecast_selection.forecastScale)
     lead = title_case(request.forecast_selection.lead)
-    scale = title_case(request.forecast_selection.forecastScale)
+    admin_scope = request.map_context.admin_scope or "Ethiopia"
+    active_layer = MAP_LAYER_LABELS.get(request.forecast_selection.layer or "", title_case(request.forecast_selection.layer or "hazard"))
+    active_indicator = CLIMATE_INDICATOR_LABELS.get(request.forecast_selection.indicator or "", title_case(request.forecast_selection.indicator or "spi"))
+
+    top_areas = request.top_admin_areas[:5] if request.top_admin_areas else []
+    if top_areas:
+        priority_text = [
+            (
+                f"{get_area_location(item)} is selected because it ranks high in the priority queue. "
+                f"Risk score: {format_number(item.get('risk_score'))}; "
+                f"hazard probability: {format_number(item.get('hazard_probability'))}; "
+                f"exposure: {format_number(item.get('exposure'))}; "
+                f"vulnerability: {format_number(item.get('vulnerability'))}."
+            )
+            for item in top_areas
+        ]
+    else:
+        priority_text = ["No priority-area ranking was provided for justification."]
+
+    layer_summary = []
+    for key, label in MAP_LAYER_LABELS.items():
+        summary = request.all_map_layer_summaries.get(key)
+        if summary:
+            layer_summary.append(
+                f"{label}: national summary was provided. Review hotspot areas, low-value areas, and regional statistics to interpret the country-level pattern."
+            )
+        else:
+            layer_summary.append(f"{label}: no national summary was provided.")
+
+    indicator_summary = []
+    for key, label in CLIMATE_INDICATOR_LABELS.items():
+        summary = request.all_climate_indicator_summaries.get(key)
+        if summary:
+            indicator_summary.append(
+                f"{label}: national summary was provided. Review the highest/lowest areas and regional statistics to understand the spatial pattern."
+            )
+        else:
+            indicator_summary.append(f"{label}: no national summary was provided.")
+
     return {
         "title": "AI Map Interpretation & Advisory",
-        "target_language": label,
-        "executive_summary": f"The {scale} {lead} forecast indicates {risk_level.lower()} {hazard.lower()} risk around {main_area}. The active dashboard layer is {layer}, and the active climate indicator is {indicator}.",
-        "spatial_interpretation": ["The highest-risk signal is concentrated around the provided top-ranked administrative areas.", "Risk should be interpreted jointly from hazard probability, risk score, exposure, and vulnerability layers."],
-        "highest_risk_areas": highest_risk_areas,
-        "climate_indicator_interpretation": ["SPI, rainfall anomaly, rainfall percentile, CDD, and CWD should be reviewed together.", "Low SPI, negative rainfall anomaly, low rainfall percentile, and high CDD values generally indicate dry-spell or drought concern."],
-        "cross_layer_insights": ["The strongest concern is where climate hazard signals overlap with high exposure and high vulnerability.", "Use all-layer summaries to separate hazard-driven risk from vulnerability-driven risk."],
-        "impact_assessment": ["Rainfed agriculture may face moisture stress where dry conditions persist.", "Agro-pastoral communities may experience pasture and water stress if forecast dryness is confirmed locally."],
-        "farmer_advisory": ["Conserve available water and strengthen household or farm-level water storage.", "Adjust planting timing where rainfall onset is uncertain.", "Monitor pasture, crop stress, and livestock body condition.", "Report emerging impacts to local authorities."],
-        "policy_recommendations": ["Verify conditions in the highest-risk woredas within 24-72 hours.", "Coordinate agriculture, livestock, water, health, and DRM offices.", "Prepare targeted advisories using local language and local impact information.", "Use community reports to update the action tracker."],
-        "humanitarian_priorities": ["Prioritize water-point monitoring and livestock support in high-risk areas.", "Pre-position resources where hazard probability, exposure, and vulnerability are jointly high.", "Use field reports to confirm whether forecast risk is becoming observed impact."],
-        "confidence_note": "This advisory was generated by the rule-based fallback because the OpenAI call was unavailable. Use field verification before operational decisions.",
-        "sms_summary": f"EARLY WARNING: {main_area}. {risk_level} {hazard} risk for {lead}. Monitor local conditions and follow local authority guidance.",
-        "_metadata": {"ai_engine": "rule_based_fallback", "model": None, "used_screenshot": bool(request.map_image_base64), "target_language": label, "target_language_code": code, "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance], "error": error_message},
+        "target_language": language_label,
+        "executive_summary": (
+            f"Forecast window: {forecast_window}; Lead / horizon: {lead}; Admin scope: {admin_scope}; "
+            f"Active map layer: {active_layer}; Active climate indicator: {active_indicator}; "
+            f"Output language: {language_label}. The report is using the rule-based fallback because no configured AI provider completed successfully."
+        ),
+        "national_spatial_overview": [
+            "The Ethiopia-wide interpretation should use all hazard/risk layers and all climate indicators, not only the priority intervention list.",
+            "Hotspots should be identified from high-value areas and hotspot regions in the all-layer summaries; lower-value areas should be used as contrast areas.",
+        ],
+        "layer_by_layer_summary": layer_summary,
+        "indicator_by_indicator_summary": indicator_summary,
+        "priority_area_justification": priority_text,
+        "farmer_advisory": [
+            "Conserve available water and strengthen household or farm-level water storage.",
+            "Adjust planting and field activities according to rainfall onset, dry-spell risk, or wet-spell risk.",
+            "Monitor pasture, crop stress, livestock body condition, and local water availability.",
+            "Report emerging impacts to local extension, DRM, or community focal points.",
+        ],
+        "humanitarian_priorities": [
+            "Prioritize resource allocation where hazard probability, exposure, and vulnerability overlap.",
+            "Use community ground-truth reports to confirm whether forecast risk is becoming observed impact.",
+            "Coordinate DRM, agriculture, livestock, water, and humanitarian actors around the highest-risk hotspots.",
+        ],
+        "sms_summary": (
+            f"EARLY WARNING: {admin_scope}. {forecast_window} {lead} forecast. "
+            f"Monitor local climate conditions and follow guidance from local authorities."
+        ),
+        "_metadata": {
+            "ai_engine": "rule_based_fallback",
+            "provider": None,
+            "model": None,
+            "requested_provider": normalize_provider(request.requested_provider),
+            "requested_model": clean_model_id(request.requested_model) or "auto",
+            "used_screenshot": bool(get_map_image_data_url(request)),
+            "target_language": language_label,
+            "target_language_code": language_code,
+            "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+            "error": error_message,
+            "provider_errors": provider_errors or [],
+        },
     }
 
 
-def parse_json_from_text(text: str) -> Dict[str, Any]:
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?", "", cleaned).strip()
-        cleaned = re.sub(r"```$", "", cleaned).strip()
+def build_chat_messages(
+    request: AIMapInterpretationRequest,
+    retrieved_guidance: List[Dict[str, str]],
+    include_image: bool,
+) -> Tuple[List[Dict[str, Any]], bool]:
+    system_prompt = build_system_prompt() + "\nReturn only valid JSON with exactly the requested keys. No Markdown fences."
+    user_prompt = build_user_prompt(request, retrieved_guidance)
+    image_url = get_map_image_data_url(request) if include_image else None
+
+    content: Any
+    if image_url:
+        content = [
+            {"type": "text", "text": user_prompt},
+            {"type": "image_url", "image_url": {"url": image_url}},
+        ]
+    else:
+        content = user_prompt
+
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": content},
+    ], bool(image_url)
+
+
+def call_chat_completions_provider(
+    *,
+    provider_name: str,
+    api_key_env: str,
+    base_url: str,
+    model: str,
+    request: AIMapInterpretationRequest,
+    retrieved_guidance: List[Dict[str, str]],
+    include_image: bool,
+    extra_headers: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    api_key = os.getenv(api_key_env)
+    if not api_key:
+        raise ProviderError(f"{api_key_env} is not set.")
+
     try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start >= 0 and end > start:
-            return json.loads(cleaned[start : end + 1])
-        raise
+        from openai import OpenAI
+    except Exception as exc:
+        raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
+
+    messages, used_image = build_chat_messages(request, retrieved_guidance, include_image=include_image)
+    client = OpenAI(base_url=base_url, api_key=api_key)
+
+    kwargs: Dict[str, Any] = {}
+    if extra_headers:
+        kwargs["extra_headers"] = extra_headers
+
+    completion = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=float(os.getenv("AI_TEMPERATURE", "0.2")),
+        top_p=float(os.getenv("AI_TOP_P", "0.7")),
+        max_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+        **kwargs,
+    )
+
+    text = completion.choices[0].message.content or ""
+    report = validate_report_shape(parse_json_from_text(text))
+    report["_metadata"] = {
+        "ai_engine": f"{provider_name}_chat_completions",
+        "provider": provider_name,
+        "model": model,
+        "requested_provider": normalize_provider(request.requested_provider),
+        "requested_model": clean_model_id(request.requested_model) or "auto",
+        "base_url": base_url,
+        "used_screenshot": used_image,
+        "target_language": get_language_label(request.target_language),
+        "target_language_code": normalize_language_code(request.target_language),
+        "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+    }
+    return report
+
+
+def call_nvidia_nim_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
+    return call_chat_completions_provider(
+        provider_name="nvidia_nim",
+        api_key_env="NVIDIA_API_KEY",
+        base_url=os.getenv("NVIDIA_BASE_URL", NVIDIA_BASE_URL),
+        model=resolve_model_for_provider(request, "nvidia", NVIDIA_DEFAULT_MODEL, "NVIDIA_AI_MODEL"),
+        request=request,
+        retrieved_guidance=retrieved_guidance,
+        include_image=True,
+    )
+
+
+def call_groq_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]], model: Optional[str] = None) -> Dict[str, Any]:
+    return call_chat_completions_provider(
+        provider_name="groq",
+        api_key_env="GROQ_API_KEY",
+        base_url=os.getenv("GROQ_BASE_URL", GROQ_BASE_URL),
+        model=model or resolve_model_for_provider(request, "groq", GROQ_DEFAULT_MODEL, "GROQ_AI_MODEL"),
+        request=request,
+        retrieved_guidance=retrieved_guidance,
+        include_image=False,
+    )
+
+
+def call_openrouter_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
+    site_url = os.getenv("OPENROUTER_SITE_URL", "https://forecast2action-ai.vercel.app")
+    app_title = os.getenv("OPENROUTER_APP_TITLE", "Forecast2Action AI")
+    return call_chat_completions_provider(
+        provider_name="openrouter",
+        api_key_env="OPENROUTER_API_KEY",
+        base_url=os.getenv("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL),
+        model=resolve_model_for_provider(request, "openrouter", OPENROUTER_DEFAULT_MODEL, "OPENROUTER_AI_MODEL"),
+        request=request,
+        retrieved_guidance=retrieved_guidance,
+        include_image=bool(get_map_image_data_url(request)),
+        extra_headers={"HTTP-Referer": site_url, "X-OpenRouter-Title": app_title},
+    )
+
+
+def call_gemini_model(
+    request: AIMapInterpretationRequest,
+    retrieved_guidance: List[Dict[str, str]],
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ProviderError("GEMINI_API_KEY or GOOGLE_API_KEY is not set.")
+
+    try:
+        from google import genai
+        from google.genai import types
+    except Exception as exc:
+        raise ProviderError("Google Gen AI package is required. Run: pip install google-genai") from exc
+
+    gemini_model = model or resolve_model_for_provider(request, "gemini", GEMINI_DEFAULT_MODEL, "GEMINI_AI_MODEL")
+    client = genai.Client(api_key=api_key)
+    system_prompt = build_system_prompt()
+    user_prompt = build_user_prompt(request, retrieved_guidance)
+    text_prompt = f"{system_prompt}\n\n{user_prompt}\n\nReturn only valid JSON. No Markdown fences."
+
+    contents: List[Any] = [types.Part.from_text(text_prompt)]
+    image_url = get_map_image_data_url(request)
+    used_image = False
+    if image_url:
+        image_bytes, mime_type = data_url_to_bytes(image_url)
+        contents.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
+        used_image = True
+
+    try:
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=float(os.getenv("AI_TEMPERATURE", "0.2")),
+                top_p=float(os.getenv("AI_TOP_P", "0.7")),
+                max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+            ),
+        )
+    except TypeError:
+        # Older SDK versions may prefer plain dictionaries for config.
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=contents,
+            config={
+                "response_mime_type": "application/json",
+                "temperature": float(os.getenv("AI_TEMPERATURE", "0.2")),
+                "top_p": float(os.getenv("AI_TOP_P", "0.7")),
+                "max_output_tokens": int(os.getenv("AI_MAX_TOKENS", "2800")),
+            },
+        )
+
+    report = validate_report_shape(parse_json_from_text(response.text or ""))
+    report["_metadata"] = {
+        "ai_engine": "gemini_generate_content",
+        "provider": "gemini",
+        "model": gemini_model,
+        "requested_provider": normalize_provider(request.requested_provider),
+        "requested_model": clean_model_id(request.requested_model) or "auto",
+        "used_screenshot": used_image,
+        "target_language": get_language_label(request.target_language),
+        "target_language_code": normalize_language_code(request.target_language),
+        "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+    }
+    return report
 
 
 def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set.")
+        raise ProviderError("OPENAI_API_KEY is not set.")
 
     try:
         from openai import OpenAI
     except Exception as exc:
-        raise RuntimeError("OpenAI Python package is not installed. Run: pip install openai") from exc
+        raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
 
     client = OpenAI(api_key=api_key)
-    model = os.getenv("OPENAI_MAP_AI_MODEL", DEFAULT_MODEL)
-    code = get_request_language_code(request)
-    label = get_request_language_label(request)
-
-    system_prompt = build_system_prompt(request)
+    model = resolve_model_for_provider(request, "openai", OPENAI_DEFAULT_MODEL, "OPENAI_MAP_AI_MODEL")
+    system_prompt = build_system_prompt()
     user_prompt = build_user_prompt(request, retrieved_guidance)
-    image_url = normalize_data_url(request.map_image_base64) if request.use_screenshot else None
+    image_url = get_map_image_data_url(request)
 
     content: List[Dict[str, Any]] = [{"type": "input_text", "text": user_prompt}]
     if image_url:
@@ -528,60 +875,217 @@ def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: L
                     "schema": AI_MAP_REPORT_SCHEMA,
                 }
             },
-            max_output_tokens=3000,
+            max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
         )
-        report = parse_json_from_text(response.output_text)
-        report["target_language"] = label
-        report["_metadata"] = {
-            "ai_engine": "openai_responses_api",
-            "model": model,
-            "used_screenshot": bool(image_url),
-            "target_language": label,
-            "target_language_code": code,
-            "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
-        }
-        return report
+        report = validate_report_shape(parse_json_from_text(response.output_text))
+        engine = "openai_responses_api"
     except Exception as structured_error:
         fallback_content: List[Dict[str, Any]] = [
             {
                 "type": "input_text",
-                "text": (
-                    f"{system_prompt}\n\n{user_prompt}\n\n"
-                    f"FINAL LANGUAGE REMINDER: {language_instruction(code)}\n"
-                    "Return ONLY valid JSON with these keys: title, target_language, executive_summary, "
-                    "spatial_interpretation, highest_risk_areas, climate_indicator_interpretation, "
-                    "cross_layer_insights, impact_assessment, farmer_advisory, policy_recommendations, "
-                    "humanitarian_priorities, confidence_note, sms_summary."
-                ),
+                "text": f"{system_prompt}\n\n{user_prompt}\n\nReturn only valid JSON. Do not include Markdown fences.",
             }
         ]
         if image_url:
             fallback_content.append({"type": "input_image", "image_url": image_url, "detail": "low"})
-        response = client.responses.create(model=model, input=[{"role": "user", "content": fallback_content}], max_output_tokens=3000)
-        report = parse_json_from_text(response.output_text)
-        report["target_language"] = label
-        report["_metadata"] = {
-            "ai_engine": "openai_responses_api_json_fallback",
-            "model": model,
-            "used_screenshot": bool(image_url),
-            "target_language": label,
-            "target_language_code": code,
-            "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
-            "structured_output_error": str(structured_error),
-        }
-        return report
+        response = client.responses.create(
+            model=model,
+            input=[{"role": "user", "content": fallback_content}],
+            max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+        )
+        report = validate_report_shape(parse_json_from_text(response.output_text))
+        engine = "openai_responses_api_json_fallback"
+        report.setdefault("_metadata", {})["structured_output_error"] = str(structured_error)
+
+    report["_metadata"] = {
+        **report.get("_metadata", {}),
+        "ai_engine": engine,
+        "provider": "openai",
+        "model": model,
+        "requested_provider": normalize_provider(request.requested_provider),
+        "requested_model": clean_model_id(request.requested_model) or "auto",
+        "used_screenshot": bool(image_url),
+        "target_language": get_language_label(request.target_language),
+        "target_language_code": normalize_language_code(request.target_language),
+        "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+    }
+    return report
+
+
+def try_provider(provider_label: str, func, errors: List[str]) -> Optional[Dict[str, Any]]:
+    try:
+        return func()
+    except Exception as exc:
+        errors.append(f"{provider_label} failed: {exc}")
+        return None
+
+
+def call_configured_ai_provider(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
+    provider = normalize_provider(request.requested_provider or os.getenv("AI_PROVIDER", AI_PROVIDER))
+
+    if provider in {"auto", "free_auto", "multi", "multi_provider"}:
+        errors: List[str] = []
+
+        # 1. NVIDIA NIM vision model first.
+        if os.getenv("NVIDIA_API_KEY"):
+            result = try_provider("NVIDIA NIM", lambda: call_nvidia_nim_model(request, retrieved_guidance), errors)
+            if result:
+                result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
+                result["_metadata"]["provider_attempts"] = ["nvidia"]
+                result["_metadata"]["provider_errors"] = errors
+                return result
+        else:
+            errors.append("NVIDIA skipped: NVIDIA_API_KEY is not set.")
+
+        # 2. Gemini Flash / Flash-Lite second.
+        if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
+            for gemini_model in [os.getenv("GEMINI_AI_MODEL", GEMINI_DEFAULT_MODEL), os.getenv("GEMINI_FALLBACK_MODEL", GEMINI_FALLBACK_MODEL)]:
+                if not gemini_model:
+                    continue
+                result = try_provider(
+                    f"Gemini {gemini_model}",
+                    lambda m=gemini_model: call_gemini_model(request, retrieved_guidance, model=m),
+                    errors,
+                )
+                if result:
+                    result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
+                    result["_metadata"]["provider_attempts"] = ["nvidia", "gemini"]
+                    result["_metadata"]["provider_errors"] = errors
+                    return result
+        else:
+            errors.append("Gemini skipped: GEMINI_API_KEY/GOOGLE_API_KEY is not set.")
+
+        # 3. Groq only when screenshot is disabled or absent.
+        screenshot_is_active = bool(get_map_image_data_url(request))
+        if not screenshot_is_active:
+            if os.getenv("GROQ_API_KEY"):
+                groq_models = [os.getenv("GROQ_AI_MODEL", GROQ_DEFAULT_MODEL), os.getenv("GROQ_FALLBACK_MODEL", GROQ_FALLBACK_MODEL)]
+                for groq_model in groq_models:
+                    if not groq_model:
+                        continue
+                    result = try_provider(
+                        f"Groq {groq_model}",
+                        lambda m=groq_model: call_groq_model(request, retrieved_guidance, model=m),
+                        errors,
+                    )
+                    if result:
+                        result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
+                        result["_metadata"]["provider_attempts"] = ["nvidia", "gemini", "groq"]
+                        result["_metadata"]["provider_errors"] = errors
+                        return result
+            else:
+                errors.append("Groq skipped: GROQ_API_KEY is not set.")
+        else:
+            errors.append("Groq skipped: screenshot is enabled, and Groq is configured here as text-only.")
+
+        # 4. OpenRouter free.
+        if os.getenv("OPENROUTER_API_KEY"):
+            result = try_provider("OpenRouter free", lambda: call_openrouter_model(request, retrieved_guidance), errors)
+            if result:
+                result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
+                result["_metadata"]["provider_attempts"] = ["nvidia", "gemini", "groq", "openrouter"]
+                result["_metadata"]["provider_errors"] = errors
+                return result
+        else:
+            errors.append("OpenRouter skipped: OPENROUTER_API_KEY is not set.")
+
+        # 5. OpenAI if billing is available/configured.
+        if os.getenv("OPENAI_API_KEY"):
+            result = try_provider("OpenAI", lambda: call_openai_model(request, retrieved_guidance), errors)
+            if result:
+                result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
+                result["_metadata"]["provider_attempts"] = ["nvidia", "gemini", "groq", "openrouter", "openai"]
+                result["_metadata"]["provider_errors"] = errors
+                return result
+        else:
+            errors.append("OpenAI skipped: OPENAI_API_KEY is not set.")
+
+        raise ProviderError(" | ".join(errors) if errors else "No provider completed successfully.")
+
+    if provider == "nvidia":
+        return call_nvidia_nim_model(request, retrieved_guidance)
+    if provider == "gemini":
+        return call_gemini_model(request, retrieved_guidance)
+    if provider == "groq":
+        if get_map_image_data_url(request):
+            raise ProviderError("Groq provider is configured as text-only. Disable screenshot or use NVIDIA/Gemini/OpenRouter/OpenAI.")
+        return call_groq_model(request, retrieved_guidance)
+    if provider == "openrouter":
+        return call_openrouter_model(request, retrieved_guidance)
+    if provider == "openai":
+        return call_openai_model(request, retrieved_guidance)
+
+    raise ProviderError(f"Unsupported AI_PROVIDER='{provider}'. Use free_auto, openai, nvidia, gemini, groq, or openrouter.")
+
+
+@router.get("/model-options")
+async def get_ai_model_options() -> Dict[str, Any]:
+    return {
+        "default_provider": normalize_provider(os.getenv("AI_PROVIDER", AI_PROVIDER)),
+        "providers": AI_PROVIDER_OPTIONS,
+        "configured": {
+            "nvidia": bool(os.getenv("NVIDIA_API_KEY")),
+            "gemini": bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")),
+            "groq": bool(os.getenv("GROQ_API_KEY")),
+            "openrouter": bool(os.getenv("OPENROUTER_API_KEY")),
+            "openai": bool(os.getenv("OPENAI_API_KEY")),
+        },
+        "environment_defaults": {
+            "nvidia": os.getenv("NVIDIA_AI_MODEL", NVIDIA_DEFAULT_MODEL),
+            "gemini": os.getenv("GEMINI_AI_MODEL", GEMINI_DEFAULT_MODEL),
+            "gemini_fallback": os.getenv("GEMINI_FALLBACK_MODEL", GEMINI_FALLBACK_MODEL),
+            "groq": os.getenv("GROQ_AI_MODEL", GROQ_DEFAULT_MODEL),
+            "groq_fallback": os.getenv("GROQ_FALLBACK_MODEL", GROQ_FALLBACK_MODEL),
+            "openrouter": os.getenv("OPENROUTER_AI_MODEL", OPENROUTER_DEFAULT_MODEL),
+            "openai": os.getenv("OPENAI_MAP_AI_MODEL", OPENAI_DEFAULT_MODEL),
+        },
+    }
+
+
+@router.get("/provider-status")
+async def get_ai_provider_status() -> Dict[str, Any]:
+    provider = normalize_provider(os.getenv("AI_PROVIDER", AI_PROVIDER))
+    return {
+        "ai_provider": provider,
+        "routing_order_when_free_auto": [
+            "nvidia_nim_vision",
+            "gemini_flash_or_flash_lite",
+            "groq_text_only_when_screenshot_disabled",
+            "openrouter_free",
+            "openai_if_billing_available",
+            "rule_based_fallback",
+        ],
+        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "openai_model": os.getenv("OPENAI_MAP_AI_MODEL", OPENAI_DEFAULT_MODEL),
+        "nvidia_configured": bool(os.getenv("NVIDIA_API_KEY")),
+        "nvidia_model": os.getenv("NVIDIA_AI_MODEL", NVIDIA_DEFAULT_MODEL),
+        "nvidia_base_url": os.getenv("NVIDIA_BASE_URL", NVIDIA_BASE_URL),
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")),
+        "gemini_model": os.getenv("GEMINI_AI_MODEL", GEMINI_DEFAULT_MODEL),
+        "gemini_fallback_model": os.getenv("GEMINI_FALLBACK_MODEL", GEMINI_FALLBACK_MODEL),
+        "groq_configured": bool(os.getenv("GROQ_API_KEY")),
+        "groq_model": os.getenv("GROQ_AI_MODEL", GROQ_DEFAULT_MODEL),
+        "groq_fallback_model": os.getenv("GROQ_FALLBACK_MODEL", GROQ_FALLBACK_MODEL),
+        "groq_base_url": os.getenv("GROQ_BASE_URL", GROQ_BASE_URL),
+        "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")),
+        "openrouter_model": os.getenv("OPENROUTER_AI_MODEL", OPENROUTER_DEFAULT_MODEL),
+        "openrouter_base_url": os.getenv("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL),
+    }
 
 
 @router.post("/map-interpretation")
 async def generate_ai_map_interpretation(request: AIMapInterpretationRequest) -> Dict[str, Any]:
-    # Normalize language fields in the request object so downstream prompt, cache metadata,
-    # fallback, and report metadata are consistent for om/ti/so/am/en.
-    code = get_request_language_code(request)
-    request.target_language = code
-    request.target_language_label = LANGUAGE_LABELS.get(code, "English")
-
     retrieved_guidance = retrieve_guidance(request)
     try:
-        return call_openai_model(request, retrieved_guidance)
+        return call_configured_ai_provider(request, retrieved_guidance)
     except Exception as error:
-        return fallback_report(request=request, retrieved_guidance=retrieved_guidance, error_message=str(error))
+        provider_errors = []
+        text = str(error)
+        if " | " in text:
+            provider_errors = text.split(" | ")
+        return fallback_report(
+            request=request,
+            retrieved_guidance=retrieved_guidance,
+            error_message=str(error),
+            provider_errors=provider_errors,
+        )

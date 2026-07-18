@@ -4,7 +4,7 @@ import { apiUrl } from "../config.js";
 import "../styles/aiMapInterpretation.css";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const CACHE_VERSION = "v6-multilanguage-all-layers";
+const CACHE_VERSION = "v11-multi-provider-model-select";
 
 const MAP_LAYERS = [
   { key: "hazard", label: "Hazard map", rankingLayer: "risk_score" },
@@ -49,10 +49,96 @@ const LANGUAGE_LABELS = {
   om: "Oromifa / Afaan Oromo",
   ti: "Tigrinya",
   so: "Somali",
-  sw: "Swahili",
   fr: "French",
   ar: "Arabic",
 };
+
+const FALLBACK_AI_PROVIDER_OPTIONS = [
+  {
+    value: "free_auto",
+    label: "Automatic free-provider chain",
+    description: "NVIDIA NIM → Gemini → Groq if screenshot is off → OpenRouter → OpenAI → fallback",
+    supports_screenshot: true,
+    models: [{ value: "auto", label: "Automatic model per provider chain" }],
+  },
+  {
+    value: "nvidia",
+    label: "NVIDIA NIM",
+    description: "Best for map screenshot + structured JSON summaries.",
+    supports_screenshot: true,
+    models: [
+      { value: "nvidia/llama-3.1-nemotron-nano-vl-8b-v1", label: "NVIDIA Llama 3.1 Nemotron Nano VL 8B" },
+      { value: "meta/llama-3.2-11b-vision-instruct", label: "Meta Llama 3.2 11B Vision Instruct" },
+      { value: "meta/llama-3.2-90b-vision-instruct", label: "Meta Llama 3.2 90B Vision Instruct" },
+      { value: "custom", label: "Custom NVIDIA NIM model ID" },
+    ],
+  },
+  {
+    value: "gemini",
+    label: "Google Gemini",
+    description: "Multimodal option for screenshot + text summaries.",
+    supports_screenshot: true,
+    models: [
+      { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+      { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+      { value: "custom", label: "Custom Gemini model ID" },
+    ],
+  },
+  {
+    value: "groq",
+    label: "Groq",
+    description: "Fast text-only mode. Turn screenshot off before using Groq.",
+    supports_screenshot: false,
+    models: [
+      { value: "openai/gpt-oss-120b", label: "GPT-OSS 120B on Groq" },
+      { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile on Groq" },
+      { value: "custom", label: "Custom Groq model ID" },
+    ],
+  },
+  {
+    value: "openrouter",
+    label: "OpenRouter",
+    description: "Free-model router / fallback route.",
+    supports_screenshot: true,
+    models: [
+      { value: "openrouter/free", label: "OpenRouter free model router" },
+      { value: "custom", label: "Custom OpenRouter model ID" },
+    ],
+  },
+  {
+    value: "openai",
+    label: "OpenAI",
+    description: "Paid fallback if API billing is available.",
+    supports_screenshot: true,
+    models: [
+      { value: "gpt-5", label: "GPT-5" },
+      { value: "gpt-4.1", label: "GPT-4.1" },
+      { value: "gpt-4o", label: "GPT-4o" },
+      { value: "custom", label: "Custom OpenAI model ID" },
+    ],
+  },
+];
+
+function getProviderConfig(providerOptions, providerValue) {
+  return (
+    providerOptions.find((item) => item.value === providerValue) ||
+    providerOptions.find((item) => item.value === "free_auto") ||
+    providerOptions[0]
+  );
+}
+
+function getDefaultModelForProvider(providerOptions, providerValue) {
+  const config = getProviderConfig(providerOptions, providerValue);
+  return config?.models?.[0]?.value || "auto";
+}
+
+function getModelLabel(providerConfig, modelValue, customModel) {
+  if (modelValue === "custom") {
+    return customModel?.trim() || "Custom model ID";
+  }
+
+  return providerConfig?.models?.find((item) => item.value === modelValue)?.label || modelValue || "Automatic";
+}
 
 function normalizeLanguageCode(value) {
   const text = String(value || "en").trim().toLowerCase();
@@ -160,7 +246,14 @@ function simpleHash(text) {
   return (hash >>> 0).toString(36);
 }
 
-function buildCacheKey({ forecastSelection, adminSelection, normalizedLanguage, useScreenshot }) {
+function buildCacheKey({
+  forecastSelection,
+  adminSelection,
+  normalizedLanguage,
+  useScreenshot,
+  selectedProvider,
+  selectedModel,
+}) {
   const cacheIdentity = {
     cacheVersion: CACHE_VERSION,
     forecastScale: forecastSelection?.forecastScale || "subseasonal",
@@ -175,6 +268,8 @@ function buildCacheKey({ forecastSelection, adminSelection, normalizedLanguage, 
     },
     targetLanguage: normalizedLanguage || "en",
     useScreenshot: Boolean(useScreenshot),
+    aiProvider: selectedProvider || "free_auto",
+    aiModel: selectedModel || "auto",
     layerMode: "all-map-layers",
     indicatorMode: "all-climate-indicators",
   };
@@ -243,7 +338,7 @@ function normalizeArea(item = {}) {
   };
 }
 
-async function fetchRanking({ forecastSelection, adminSelection, layer, indicator, topN = 8 }) {
+async function fetchRanking({ forecastSelection, adminSelection, layer, indicator, topN = 2500 }) {
   const params = new URLSearchParams();
 
   params.set("forecast_scale", forecastSelection.forecastScale || "subseasonal");
@@ -273,22 +368,134 @@ async function fetchRanking({ forecastSelection, adminSelection, layer, indicato
   return Array.isArray(data?.ranking) ? data.ranking.map(normalizeArea) : [];
 }
 
-function summarizeRanking(items, valueKey) {
-  const values = items
-    .map((item) => Number(item?.[valueKey]))
-    .filter((value) => Number.isFinite(value));
-
-  const topAreas = items.slice(0, 8).map(normalizeArea);
-
-  if (values.length === 0) {
-    return { value_key: valueKey, count: items.length, top_areas: topAreas };
+function quantile(sortedValues, q) {
+  if (!sortedValues.length) {
+    return null;
   }
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const mean = values.reduce((total, value) => total + value, 0) / values.length;
+  const position = (sortedValues.length - 1) * q;
+  const base = Math.floor(position);
+  const rest = position - base;
 
-  return { value_key: valueKey, count: items.length, min, max, mean, top_areas: topAreas };
+  if (sortedValues[base + 1] !== undefined) {
+    return sortedValues[base] + rest * (sortedValues[base + 1] - sortedValues[base]);
+  }
+
+  return sortedValues[base];
+}
+
+function summarizeByRegion(items, valueKey) {
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const value = Number(item?.[valueKey]);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    const region = item?.region || "Unknown region";
+    if (!groups.has(region)) {
+      groups.set(region, {
+        region,
+        count: 0,
+        sum: 0,
+        min: value,
+        max: value,
+        examples: [],
+      });
+    }
+
+    const group = groups.get(region);
+    group.count += 1;
+    group.sum += value;
+    group.min = Math.min(group.min, value);
+    group.max = Math.max(group.max, value);
+
+    if (group.examples.length < 5) {
+      group.examples.push(normalizeArea(item));
+    }
+  });
+
+  const summaries = Array.from(groups.values()).map((group) => ({
+    region: group.region,
+    count: group.count,
+    mean: group.sum / group.count,
+    min: group.min,
+    max: group.max,
+    examples: group.examples,
+  }));
+
+  return {
+    top_regions_by_mean: [...summaries]
+      .sort((a, b) => b.mean - a.mean)
+      .slice(0, 5),
+    bottom_regions_by_mean: [...summaries]
+      .sort((a, b) => a.mean - b.mean)
+      .slice(0, 5),
+  };
+}
+
+function summarizeHazardCategories(items) {
+  const counts = {};
+
+  items.forEach((item) => {
+    const hazard = item?.hazard || "Unclassified";
+    const riskLevel = item?.risk_level || "Unclassified";
+    const key = `${hazard} / ${riskLevel}`;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+}
+
+function summarizeRanking(items, valueKey) {
+  const validItems = items
+    .map((item) => ({ ...normalizeArea(item), _value: Number(item?.[valueKey]) }))
+    .filter((item) => Number.isFinite(item._value));
+
+  const values = validItems.map((item) => item._value).sort((a, b) => a - b);
+  const highToLow = [...validItems].sort((a, b) => b._value - a._value);
+  const lowToHigh = [...validItems].sort((a, b) => a._value - b._value);
+
+  if (values.length === 0) {
+    return {
+      value_key: valueKey,
+      count: items.length,
+      national_summary_note:
+        "No numeric values were available for this layer or indicator. Interpret using available hazard/risk categories and map screenshot.",
+      highest_value_areas: items.slice(0, 8).map(normalizeArea),
+      lowest_value_areas: [],
+      hotspot_regions: [],
+      low_value_regions: [],
+      hazard_risk_categories: summarizeHazardCategories(items),
+    };
+  }
+
+  const mean = values.reduce((total, value) => total + value, 0) / values.length;
+  const regional = summarizeByRegion(validItems, valueKey);
+
+  return {
+    value_key: valueKey,
+    count: values.length,
+    min: values[0],
+    max: values[values.length - 1],
+    mean,
+    q10: quantile(values, 0.10),
+    q25: quantile(values, 0.25),
+    median: quantile(values, 0.50),
+    q75: quantile(values, 0.75),
+    q90: quantile(values, 0.90),
+    highest_value_areas: highToLow.slice(0, 8).map(({ _value, ...item }) => ({ ...item, value: _value })),
+    lowest_value_areas: lowToHigh.slice(0, 8).map(({ _value, ...item }) => ({ ...item, value: _value })),
+    hotspot_regions: regional.top_regions_by_mean,
+    low_value_regions: regional.bottom_regions_by_mean,
+    hazard_risk_categories: summarizeHazardCategories(items),
+    interpretation_hint:
+      "Use highest_value_areas, lowest_value_areas, hotspot_regions, and low_value_regions to describe spatial distribution across Ethiopia, not only priority intervention areas.",
+  };
 }
 
 async function buildAllLayerSummaries(forecastSelection, adminSelection) {
@@ -299,7 +506,7 @@ async function buildAllLayerSummaries(forecastSelection, adminSelection) {
         adminSelection,
         layer: layer.rankingLayer,
         indicator: forecastSelection.indicator || "spi",
-        topN: 8,
+        topN: 2500,
       });
       const valueKey = layer.key === "hazard" ? "risk_score" : layer.key;
       return [
@@ -324,7 +531,7 @@ async function buildAllClimateIndicatorSummaries(forecastSelection, adminSelecti
         adminSelection,
         layer: "risk_score",
         indicator: indicator.key,
-        topN: 8,
+        topN: 2500,
       });
       return [
         indicator.key,
@@ -381,35 +588,26 @@ function copyReport(report) {
   const lines = [
     report.title || "AI Map Interpretation & Advisory",
     "",
+    "Layer-by-layer map summary",
+    ...(report.layer_by_layer_summary || []).map((item) => `- ${item}`),
+    "",
+    "Indicator-by-indicator summary",
+    ...(report.indicator_by_indicator_summary || []).map((item) => `- ${item}`),
+    "",
     "Executive summary",
     report.executive_summary || "",
     "",
-    "Spatial interpretation",
-    ...(report.spatial_interpretation || []).map((item) => `- ${item}`),
+    "Ethiopia-wide spatial overview",
+    ...(report.national_spatial_overview || []).map((item) => `- ${item}`),
     "",
-    "Highest-risk areas",
-    ...(report.highest_risk_areas || []).map((item) => `- ${item}`),
-    "",
-    "Climate indicator interpretation",
-    ...(report.climate_indicator_interpretation || []).map((item) => `- ${item}`),
-    "",
-    "Cross-layer insights",
-    ...(report.cross_layer_insights || []).map((item) => `- ${item}`),
-    "",
-    "Impact assessment",
-    ...(report.impact_assessment || []).map((item) => `- ${item}`),
+    "Why priority areas were selected",
+    ...(report.priority_area_justification || []).map((item) => `- ${item}`),
     "",
     "Farmer advisory",
     ...(report.farmer_advisory || []).map((item) => `- ${item}`),
     "",
-    "Policy recommendations",
-    ...(report.policy_recommendations || []).map((item) => `- ${item}`),
-    "",
     "Humanitarian priorities",
     ...(report.humanitarian_priorities || []).map((item) => `- ${item}`),
-    "",
-    "Confidence note",
-    report.confidence_note || "",
     "",
     "SMS summary",
     report.sms_summary || "",
@@ -434,6 +632,11 @@ function AIMapInterpretation({
   selectedLanguage = "en",
 }) {
   const [useScreenshot, setUseScreenshot] = useState(true);
+  const [providerOptions, setProviderOptions] = useState(FALLBACK_AI_PROVIDER_OPTIONS);
+  const [selectedProvider, setSelectedProvider] = useState("free_auto");
+  const [selectedModel, setSelectedModel] = useState("auto");
+  const [customModel, setCustomModel] = useState("");
+  const [providerStatus, setProviderStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -444,14 +647,60 @@ function AIMapInterpretation({
     [selectedLanguage]
   );
 
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadProviderOptions() {
+      try {
+        const response = await fetch(apiUrl("/api/ai/model-options"));
+        if (!response.ok) {
+          throw new Error(`Model options request failed: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!isActive) {
+          return;
+        }
+        const options = Array.isArray(data?.providers) && data.providers.length > 0 ? data.providers : FALLBACK_AI_PROVIDER_OPTIONS;
+        setProviderOptions(options);
+        setProviderStatus(data);
+      } catch (error) {
+        console.warn("Could not load AI model options", error);
+        if (isActive) {
+          setProviderOptions(FALLBACK_AI_PROVIDER_OPTIONS);
+        }
+      }
+    }
+
+    loadProviderOptions();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const selectedProviderConfig = useMemo(() => {
+    return getProviderConfig(providerOptions, selectedProvider);
+  }, [providerOptions, selectedProvider]);
+
+  const resolvedSelectedModel = useMemo(() => {
+    return selectedModel === "custom" ? customModel.trim() : selectedModel;
+  }, [selectedModel, customModel]);
+
+  const selectedModelLabel = useMemo(() => {
+    return getModelLabel(selectedProviderConfig, selectedModel, customModel);
+  }, [selectedProviderConfig, selectedModel, customModel]);
+
   const cacheKey = useMemo(() => {
     return buildCacheKey({
       forecastSelection,
       adminSelection,
       normalizedLanguage,
       useScreenshot,
+      selectedProvider,
+      selectedModel: resolvedSelectedModel || selectedModel,
     });
-  }, [forecastSelection, adminSelection, normalizedLanguage, useScreenshot]);
+  }, [forecastSelection, adminSelection, normalizedLanguage, useScreenshot, selectedProvider, selectedModel, resolvedSelectedModel]);
 
   useEffect(() => {
     const cached = getCachedReport(cacheKey);
@@ -472,8 +721,21 @@ function AIMapInterpretation({
       activeIndicator: getIndicatorLabel(forecastSelection.indicator),
       adminScope: getAdminScope(adminSelection),
       language: getLanguageLabel(normalizedLanguage),
+      provider: selectedProviderConfig?.label || selectedProvider,
+      model: selectedModelLabel,
     };
-  }, [forecastSelection, adminSelection, normalizedLanguage]);
+  }, [forecastSelection, adminSelection, normalizedLanguage, selectedProviderConfig, selectedProvider, selectedModelLabel]);
+
+  function handleProviderChange(event) {
+    const nextProvider = event.target.value;
+    setSelectedProvider(nextProvider);
+    setSelectedModel(getDefaultModelForProvider(providerOptions, nextProvider));
+    setCustomModel("");
+  }
+
+  function handleModelChange(event) {
+    setSelectedModel(event.target.value);
+  }
 
   async function handleGenerateReport({ forceRefresh = false } = {}) {
     setLoading(true);
@@ -485,13 +747,22 @@ function AIMapInterpretation({
         const cached = getCachedReport(cacheKey);
         if (cached) {
           setReport(cached);
-          setStatusMessage(`Loaded saved ${getLanguageLabel(normalizedLanguage)} advisory. No new OpenAI API call was made.`);
+          setStatusMessage(`Loaded saved ${getLanguageLabel(normalizedLanguage)} advisory. No new AI provider API call was made.`);
           setLoading(false);
           return;
         }
       }
 
-      setStatusMessage("Preparing all map layer and climate indicator summaries...");
+      if (selectedProvider === "groq" && useScreenshot) {
+        setUseScreenshot(false);
+        throw new Error("Groq is configured as text-only in this workflow. Turn off 'Use current map screenshot' or select NVIDIA, Gemini, OpenRouter, OpenAI, or Automatic.");
+      }
+
+      if (selectedModel === "custom" && !customModel.trim()) {
+        throw new Error("Please enter a custom model ID, or choose a model from the list.");
+      }
+
+      setStatusMessage("Preparing Ethiopia-wide spatial summaries for all map layers and climate indicators...");
 
       const rankingLayer =
         forecastSelection.layer && forecastSelection.layer !== "hazard"
@@ -505,7 +776,7 @@ function AIMapInterpretation({
             adminSelection,
             layer: rankingLayer,
             indicator: forecastSelection.indicator || "spi",
-            topN: 8,
+            topN: 2500,
           }),
           buildAllLayerSummaries(forecastSelection, adminSelection),
           buildAllClimateIndicatorSummaries(forecastSelection, adminSelection),
@@ -523,13 +794,15 @@ function AIMapInterpretation({
       }
 
       const languageLabel = getLanguageLabel(normalizedLanguage);
-      setStatusMessage(`Generating ${languageLabel} advisory from all layers, all indicators, RAG guidance, and selected language...`);
+      const providerLabel = selectedProviderConfig?.label || selectedProvider;
+      const modelLabel = selectedModelLabel || resolvedSelectedModel || "Automatic";
+      setStatusMessage(`Generating ${languageLabel} Ethiopia-wide spatial interpretation using ${providerLabel} / ${modelLabel}...`);
 
       const payload = {
         forecast_selection: forecastSelection,
         admin_selection: adminSelection,
         map_context: {
-          metric_type: "All hazard, risk, exposure, vulnerability, and climate indicator map summaries",
+          metric_type: "Ethiopia-wide summaries for all hazard/risk/exposure/vulnerability layers and all climate indicators",
           seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} ${getLeadLabel(forecastSelection.lead)}`,
           current_seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} forecast for ${getLeadLabel(forecastSelection.lead)}`,
           hazard_type: selectedPriorityArea?.hazard || getDefaultHazard(topAreas),
@@ -544,6 +817,9 @@ function AIMapInterpretation({
         target_language_label: languageLabel,
         audience_focus:
           "farmers, rainfed agriculture, agro-pastoral communities, livestock, policymakers, DRM offices, and humanitarian organizations",
+        requested_provider: selectedProvider,
+        requested_model: resolvedSelectedModel || "auto",
+        requested_model_label: selectedModelLabel,
       };
 
       const response = await fetch(apiUrl("/api/ai/map-interpretation"), {
@@ -561,7 +837,9 @@ function AIMapInterpretation({
       saveCachedReport(cacheKey, data);
 
       const engine = data?._metadata?.ai_engine || "AI";
-      setStatusMessage(`Generated and saved ${languageLabel} advisory using ${engine}.`);
+      const provider = data?._metadata?.provider || selectedProviderConfig?.label || "AI provider";
+      const model = data?._metadata?.model || selectedModelLabel || "selected model";
+      setStatusMessage(`Generated and saved ${languageLabel} advisory using ${provider} / ${model} (${engine}).`);
     } catch (error) {
       console.error(error);
       setErrorMessage(error.message || "Could not generate AI map interpretation. Check backend endpoint and API key.");
@@ -583,9 +861,9 @@ function AIMapInterpretation({
           <span className="ai-map-kicker">AI capability</span>
           <h2>AI Map Interpretation & Advisory</h2>
           <p>
-            Interprets all hazard/risk layers and all climate indicators, uses
-            RAG guidance and an optional map screenshot, then generates localized
-            advice in the selected community message language.
+            Interprets Ethiopia-wide spatial distribution for all hazard/risk layers and climate indicators,
+            explains why priority areas were selected, and generates focused farmer and humanitarian advisories
+            in the selected community message language.
           </p>
         </div>
       </div>
@@ -615,6 +893,14 @@ function AIMapInterpretation({
           <span>Output language</span>
           <strong>{contextSummary.language}</strong>
         </div>
+        <div>
+          <span>AI provider</span>
+          <strong>{contextSummary.provider}</strong>
+        </div>
+        <div>
+          <span>AI model</span>
+          <strong>{contextSummary.model}</strong>
+        </div>
       </div>
 
       <div className="ai-included-data">
@@ -629,6 +915,43 @@ function AIMapInterpretation({
       </div>
 
       <div className="ai-action-bar">
+        <div className="ai-provider-selectors">
+          <label>
+            <span>AI provider</span>
+            <select value={selectedProvider} onChange={handleProviderChange} disabled={loading}>
+              {providerOptions.map((provider) => (
+                <option key={provider.value} value={provider.value}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>Model</span>
+            <select value={selectedModel} onChange={handleModelChange} disabled={loading}>
+              {(selectedProviderConfig?.models || [{ value: "auto", label: "Automatic" }]).map((model) => (
+                <option key={model.value} value={model.value}>
+                  {model.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {selectedModel === "custom" && (
+            <label className="ai-custom-model-field">
+              <span>Custom model ID</span>
+              <input
+                type="text"
+                value={customModel}
+                onChange={(event) => setCustomModel(event.target.value)}
+                placeholder="provider/model-id"
+                disabled={loading}
+              />
+            </label>
+          )}
+        </div>
+
         <label className="ai-toggle">
           <input
             type="checkbox"
@@ -666,6 +989,14 @@ function AIMapInterpretation({
         </button>
       </div>
 
+      {selectedProviderConfig?.description && (
+        <div className="ai-provider-note">
+          <strong>{selectedProviderConfig.label}:</strong> {selectedProviderConfig.description}
+          {selectedProvider === "groq" && useScreenshot ? " Groq is text-only in this app, so disable the screenshot toggle before generating." : ""}
+          {providerStatus?.configured && selectedProvider !== "free_auto" && providerStatus.configured[selectedProvider] === false ? " API key is not configured for this provider, so the backend will fall back if you generate." : ""}
+        </div>
+      )}
+
       {statusMessage && <div className="ai-status-note">{statusMessage}</div>}
       {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
@@ -677,7 +1008,7 @@ function AIMapInterpretation({
             layers, all climate indicators, local RAG guidance, the selected
             language, and an optional map screenshot. If the same request was
             already generated, it will load the saved advisory instead of making
-            another OpenAI API call.
+            another AI provider API call.
           </p>
         </div>
       )}
@@ -688,7 +1019,8 @@ function AIMapInterpretation({
             <div>
               <h3>{report.title || "AI Map Interpretation & Advisory"}</h3>
               <p>
-                Engine: <strong>{report?._metadata?.ai_engine || "OpenAI / fallback"}</strong>
+                Engine: <strong>{report?._metadata?.ai_engine || "AI provider / fallback"}</strong>
+                {report?._metadata?.provider ? ` · Provider: ${report._metadata.provider}` : ""}
                 {report?._metadata?.model ? ` · Model: ${report._metadata.model}` : ""}
                 {report?._metadata?.target_language ? ` · Language: ${report._metadata.target_language}` : report?.target_language ? ` · Language: ${report.target_language}` : ""}
               </p>
@@ -703,32 +1035,37 @@ function AIMapInterpretation({
             </div>
           </div>
 
+          <div className="ai-first-output-grid">
+            <ReportList title="Layer-by-layer map summary" items={report.layer_by_layer_summary} />
+            <ReportList title="Indicator-by-indicator summary" items={report.indicator_by_indicator_summary} />
+          </div>
+
           <div className="ai-executive-summary">
             <h4>Executive summary</h4>
+            <p className="ai-executive-meta">
+              <strong>Forecast window:</strong> {contextSummary.forecastScale} · {" "}
+              <strong>Lead / horizon:</strong> {contextSummary.lead} · {" "}
+              <strong>Admin scope:</strong> {contextSummary.adminScope} · {" "}
+              <strong>Active map layer:</strong> {contextSummary.activeLayer} · {" "}
+              <strong>Active climate indicator:</strong> {contextSummary.activeIndicator} · {" "}
+              <strong>Output language:</strong> {contextSummary.language}
+            </p>
             <p>{report.executive_summary}</p>
           </div>
 
-          <div className="ai-report-grid">
-            <ReportList title="Spatial interpretation" items={report.spatial_interpretation} />
-            <ReportList title="Highest-risk areas" items={report.highest_risk_areas} />
-            <ReportList title="Climate indicator interpretation" items={report.climate_indicator_interpretation} />
-            <ReportList title="Cross-layer insights" items={report.cross_layer_insights} />
-            <ReportList title="Impact assessment" items={report.impact_assessment} />
+          <div className="ai-report-grid ai-focused-report-grid">
+            <ReportList title="Ethiopia-wide spatial overview" items={report.national_spatial_overview} />
+            <ReportList title="Why priority areas were selected" items={report.priority_area_justification} />
             <ReportList title="Farmer and agro-pastoral advisory" items={report.farmer_advisory} />
-            <ReportList title="Policy recommendations" items={report.policy_recommendations} />
             <ReportList title="Humanitarian priorities" items={report.humanitarian_priorities} />
           </div>
 
-          <div className="ai-bottom-grid">
-            <div className="ai-confidence-note">
-              <h4>Confidence and caveats</h4>
-              <p>{report.confidence_note}</p>
-            </div>
-            <div className="ai-sms-summary">
+          {report.sms_summary && (
+            <div className="ai-sms-summary ai-sms-summary-wide">
               <h4>SMS summary</h4>
               <p>{report.sms_summary}</p>
             </div>
-          </div>
+          )}
         </div>
       )}
     </section>
