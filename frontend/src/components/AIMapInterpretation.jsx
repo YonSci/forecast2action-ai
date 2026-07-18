@@ -4,7 +4,7 @@ import { apiUrl } from "../config.js";
 import "../styles/aiMapInterpretation.css";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const CACHE_VERSION = "v11-multi-provider-model-select";
+const CACHE_VERSION = "v12-map-switcher-tabs-model-select";
 
 const MAP_LAYERS = [
   { key: "hazard", label: "Hazard map", rankingLayer: "risk_score" },
@@ -211,6 +211,30 @@ function getIndicatorLabel(value) {
   return CLIMATE_INDICATORS.find((item) => item.key === value)?.label || titleCase(value || "spi");
 }
 
+function getMapGroupLabel(forecastSelection = {}) {
+  if (forecastSelection?.activeMapGroup) {
+    return forecastSelection.activeMapGroup;
+  }
+
+  if (forecastSelection?.mapMode === "climate_indicator") {
+    return "Climate Indicator";
+  }
+
+  return "Hazard Map Layer";
+}
+
+function getDisplayedMapLabel(forecastSelection = {}) {
+  if (forecastSelection?.activeMapLabel) {
+    return forecastSelection.activeMapLabel;
+  }
+
+  if (forecastSelection?.mapMode === "climate_indicator") {
+    return getIndicatorLabel(forecastSelection.indicator);
+  }
+
+  return getLayerLabel(forecastSelection.layer);
+}
+
 function getAdminScope(adminSelection) {
   return (
     adminSelection?.woredaLabel ||
@@ -258,6 +282,9 @@ function buildCacheKey({
     cacheVersion: CACHE_VERSION,
     forecastScale: forecastSelection?.forecastScale || "subseasonal",
     lead: forecastSelection?.lead || "week_1",
+    mapMode: forecastSelection?.mapMode || "hazard_layer",
+    activeMapGroup: forecastSelection?.activeMapGroup || "Hazard Map Layer",
+    activeMapLabel: forecastSelection?.activeMapLabel || "",
     admin: {
       regionId: adminSelection?.regionId || "",
       zoneId: adminSelection?.zoneId || "",
@@ -714,11 +741,20 @@ function AIMapInterpretation({
   }, [cacheKey, normalizedLanguage]);
 
   const contextSummary = useMemo(() => {
+    const isClimateIndicatorMode = forecastSelection?.mapMode === "climate_indicator";
+
     return {
       forecastScale: getForecastScaleLabel(forecastSelection.forecastScale),
       lead: getLeadLabel(forecastSelection.lead),
-      activeLayer: getLayerLabel(forecastSelection.layer),
-      activeIndicator: getIndicatorLabel(forecastSelection.indicator),
+      activeMapGroup: getMapGroupLabel(forecastSelection),
+      displayedMap: getDisplayedMapLabel(forecastSelection),
+      activeLayer: isClimateIndicatorMode
+        ? "Not active for Climate Indicator tab"
+        : getLayerLabel(forecastSelection.layer),
+      activeIndicator: isClimateIndicatorMode
+        ? getIndicatorLabel(forecastSelection.indicator)
+        : "Not active for Hazard Map Layer tab",
+      isClimateIndicatorMode,
       adminScope: getAdminScope(adminSelection),
       language: getLanguageLabel(normalizedLanguage),
       provider: selectedProviderConfig?.label || selectedProvider,
@@ -802,7 +838,9 @@ function AIMapInterpretation({
         forecast_selection: forecastSelection,
         admin_selection: adminSelection,
         map_context: {
-          metric_type: "Ethiopia-wide summaries for all hazard/risk/exposure/vulnerability layers and all climate indicators",
+          metric_type: `Active map group: ${getMapGroupLabel(forecastSelection)}; displayed map: ${getDisplayedMapLabel(forecastSelection)}; Ethiopia-wide summaries for all hazard/risk/exposure/vulnerability layers and all climate indicators`,
+          active_map_group: getMapGroupLabel(forecastSelection),
+          displayed_map: getDisplayedMapLabel(forecastSelection),
           seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} ${getLeadLabel(forecastSelection.lead)}`,
           current_seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} forecast for ${getLeadLabel(forecastSelection.lead)}`,
           hazard_type: selectedPriorityArea?.hazard || getDefaultHazard(topAreas),
@@ -878,13 +916,24 @@ function AIMapInterpretation({
           <strong>{contextSummary.lead}</strong>
         </div>
         <div>
-          <span>Active map layer</span>
-          <strong>{contextSummary.activeLayer}</strong>
+          <span>Active map group</span>
+          <strong>{contextSummary.activeMapGroup}</strong>
         </div>
         <div>
-          <span>Active climate indicator</span>
-          <strong>{contextSummary.activeIndicator}</strong>
+          <span>Displayed map</span>
+          <strong>{contextSummary.displayedMap}</strong>
         </div>
+        {contextSummary.isClimateIndicatorMode ? (
+          <div>
+            <span>Active climate indicator</span>
+            <strong>{contextSummary.activeIndicator}</strong>
+          </div>
+        ) : (
+          <div>
+            <span>Active map layer</span>
+            <strong>{contextSummary.activeLayer}</strong>
+          </div>
+        )}
         <div>
           <span>Admin scope</span>
           <strong>{contextSummary.adminScope}</strong>
@@ -1046,8 +1095,17 @@ function AIMapInterpretation({
               <strong>Forecast window:</strong> {contextSummary.forecastScale} · {" "}
               <strong>Lead / horizon:</strong> {contextSummary.lead} · {" "}
               <strong>Admin scope:</strong> {contextSummary.adminScope} · {" "}
-              <strong>Active map layer:</strong> {contextSummary.activeLayer} · {" "}
-              <strong>Active climate indicator:</strong> {contextSummary.activeIndicator} · {" "}
+              <strong>Active map group:</strong> {contextSummary.activeMapGroup} · {" "}
+              <strong>Displayed map:</strong> {contextSummary.displayedMap} · {" "}
+              {contextSummary.isClimateIndicatorMode ? (
+                <>
+                  <strong>Active climate indicator:</strong> {contextSummary.activeIndicator} · {" "}
+                </>
+              ) : (
+                <>
+                  <strong>Active map layer:</strong> {contextSummary.activeLayer} · {" "}
+                </>
+              )}
               <strong>Output language:</strong> {contextSummary.language}
             </p>
             <p>{report.executive_summary}</p>

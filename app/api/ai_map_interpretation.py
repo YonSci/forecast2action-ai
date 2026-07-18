@@ -144,6 +144,10 @@ class ForecastSelection(BaseModel):
     lead: Optional[str] = "week_1"
     layer: Optional[str] = "risk_score"
     indicator: Optional[str] = "spi"
+    mapMode: Optional[str] = "hazard_layer"
+    activeMapGroup: Optional[str] = None
+    activeMapLabel: Optional[str] = None
+    activeDisplayKey: Optional[str] = None
 
 
 class AdminSelection(BaseModel):
@@ -162,6 +166,8 @@ class MapContext(BaseModel):
     hazard_type: Optional[str] = ""
     current_seasonal_context: Optional[str] = ""
     admin_scope: Optional[str] = ""
+    active_map_group: Optional[str] = ""
+    displayed_map: Optional[str] = ""
 
 
 class AIMapInterpretationRequest(BaseModel):
@@ -304,6 +310,32 @@ def title_case(value: Any) -> str:
     if not text:
         return "N/A"
     return " ".join(word[:1].upper() + word[1:].lower() for word in text.split())
+
+
+def get_map_group_label(forecast_selection: ForecastSelection) -> str:
+    if forecast_selection.activeMapGroup:
+        return str(forecast_selection.activeMapGroup)
+
+    if forecast_selection.mapMode == "climate_indicator":
+        return "Climate Indicator"
+
+    return "Hazard Map Layer"
+
+
+def get_displayed_map_label(forecast_selection: ForecastSelection) -> str:
+    if forecast_selection.activeMapLabel:
+        return str(forecast_selection.activeMapLabel)
+
+    if forecast_selection.mapMode == "climate_indicator":
+        return CLIMATE_INDICATOR_LABELS.get(
+            forecast_selection.indicator or "",
+            title_case(forecast_selection.indicator or "spi"),
+        )
+
+    return MAP_LAYER_LABELS.get(
+        forecast_selection.layer or "",
+        title_case(forecast_selection.layer or "hazard"),
+    )
 
 
 def safe_float(value: Any, default: Optional[float] = None) -> Optional[float]:
@@ -487,14 +519,25 @@ def build_user_prompt(request: AIMapInterpretationRequest, retrieved_guidance: L
     forecast_window = title_case(request.forecast_selection.forecastScale)
     lead = title_case(request.forecast_selection.lead)
     admin_scope = request.map_context.admin_scope or "Ethiopia"
-    active_layer = MAP_LAYER_LABELS.get(
-        request.forecast_selection.layer or "",
-        title_case(request.forecast_selection.layer or "hazard"),
+    is_climate_indicator_mode = request.forecast_selection.mapMode == "climate_indicator"
+    active_layer = (
+        "Not active for Climate Indicator tab"
+        if is_climate_indicator_mode
+        else MAP_LAYER_LABELS.get(
+            request.forecast_selection.layer or "",
+            title_case(request.forecast_selection.layer or "hazard"),
+        )
     )
-    active_indicator = CLIMATE_INDICATOR_LABELS.get(
-        request.forecast_selection.indicator or "",
-        title_case(request.forecast_selection.indicator or "spi"),
+    active_indicator = (
+        CLIMATE_INDICATOR_LABELS.get(
+            request.forecast_selection.indicator or "",
+            title_case(request.forecast_selection.indicator or "spi"),
+        )
+        if is_climate_indicator_mode
+        else "Not active for Hazard Map Layer tab"
     )
+    active_map_group = request.map_context.active_map_group or get_map_group_label(request.forecast_selection)
+    displayed_map = request.map_context.displayed_map or get_displayed_map_label(request.forecast_selection)
 
     payload = request.model_dump(exclude={"map_image_base64"})
 
@@ -507,11 +550,14 @@ The executive_summary must explicitly mention:
 - Forecast window: {forecast_window}
 - Lead / horizon: {lead}
 - Admin scope: {admin_scope}
+- Active map group: {active_map_group}
+- Displayed map: {displayed_map}
 - Active map layer: {active_layer}
 - Active climate indicator: {active_indicator}
 - Output language: {language_label}
 
 PRIMARY INTERPRETATION FOCUS:
+The user is currently viewing the {active_map_group} tab and the displayed map is {displayed_map}.
 This report must be country-level first. Focus on spatial distribution across Ethiopia:
 - where hotspots are found
 - where high values and low values are found
@@ -572,8 +618,19 @@ def fallback_report(
     forecast_window = title_case(request.forecast_selection.forecastScale)
     lead = title_case(request.forecast_selection.lead)
     admin_scope = request.map_context.admin_scope or "Ethiopia"
-    active_layer = MAP_LAYER_LABELS.get(request.forecast_selection.layer or "", title_case(request.forecast_selection.layer or "hazard"))
-    active_indicator = CLIMATE_INDICATOR_LABELS.get(request.forecast_selection.indicator or "", title_case(request.forecast_selection.indicator or "spi"))
+    is_climate_indicator_mode = request.forecast_selection.mapMode == "climate_indicator"
+    active_layer = (
+        "Not active for Climate Indicator tab"
+        if is_climate_indicator_mode
+        else MAP_LAYER_LABELS.get(request.forecast_selection.layer or "", title_case(request.forecast_selection.layer or "hazard"))
+    )
+    active_indicator = (
+        CLIMATE_INDICATOR_LABELS.get(request.forecast_selection.indicator or "", title_case(request.forecast_selection.indicator or "spi"))
+        if is_climate_indicator_mode
+        else "Not active for Hazard Map Layer tab"
+    )
+    active_map_group = request.map_context.active_map_group or get_map_group_label(request.forecast_selection)
+    displayed_map = request.map_context.displayed_map or get_displayed_map_label(request.forecast_selection)
 
     top_areas = request.top_admin_areas[:5] if request.top_admin_areas else []
     if top_areas:
@@ -615,6 +672,7 @@ def fallback_report(
         "target_language": language_label,
         "executive_summary": (
             f"Forecast window: {forecast_window}; Lead / horizon: {lead}; Admin scope: {admin_scope}; "
+            f"Active map group: {active_map_group}; Displayed map: {displayed_map}; "
             f"Active map layer: {active_layer}; Active climate indicator: {active_indicator}; "
             f"Output language: {language_label}. The report is using the rule-based fallback because no configured AI provider completed successfully."
         ),
