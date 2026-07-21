@@ -289,6 +289,22 @@ The CSV includes:
 
 ---
 
+### 4.12 Interactive Seasonal Climate Raster Maps
+
+The Climate Indicator tab of the Ethiopia Forecast Map Explorer renders real, pannable/zoomable raster maps (not static images) for:
+
+- rainfall total, SPI, CDD, CWD, dry spell probability (≥5 / ≥7 / ≥9 days), and rainfall percentile;
+- across June, July, August, September, and JJAS periods;
+- as Forecast, Climatology, or Anomaly products, including a side-by-side "Forecast vs Climatology vs Anomaly" compare view.
+
+Source rasters are GeoTIFF, NetCDF, or gridded CSV files under `data/maps/geotiff`, `data/maps/netcdf`, and `data/maps/csv`. The backend auto-detects indicator/period/product from filenames (or an optional `seasonal_raster_catalog.json`), converts non-GeoTIFF sources to a display GeoTIFF on first use, and serves Leaflet-compatible XYZ tiles with a colormap legend, per-pixel value inspection on click, and summary statistics (min/mean/max/percentiles). A static PNG map catalog (`data/maps/Seasonal`, `data/maps/Subseasonal`) is also served separately for simple image-based viewing.
+
+Converted GeoTIFFs are cached under `data/maps/cache/seasonal_raster` (evicted automatically once the cache exceeds `SEASONAL_RASTER_CACHE_MAX_MB`, default 512 MB). `POST /api/seasonal-raster/prewarm` pre-converts and caches every map so the first user to view any indicator/period/product isn't the one who pays the conversion cost; set `SEASONAL_RASTER_PREWARM_ON_STARTUP=true` to run it automatically once at backend startup.
+
+This feature requires the additional geospatial dependencies listed in `requirements.txt` (`rasterio`, `rio-tiler`, `pillow`, `matplotlib`, `xarray`, `rioxarray`, `netCDF4`, `h5netcdf`).
+
+---
+
 ## 5. Current Pilot Districts
 
 The prototype includes sample pilot districts:
@@ -313,6 +329,7 @@ The prototype includes sample pilot districts:
 - JSON-based local storage
 - CSV export
 - HTML / Markdown response generation
+- Rasterio, rio-tiler, xarray/rioxarray, Pillow, Matplotlib (interactive seasonal raster tile service)
 
 ### Frontend
 
@@ -339,7 +356,10 @@ forecast2action-ai/
 │
 ├── app/
 │   ├── api/
-│   │   └── main.py
+│   │   ├── main.py
+│   │   ├── seasonal_maps.py                 # static seasonal PNG map catalog
+│   │   ├── seasonal_raster_maps.py          # interactive GeoTIFF/NetCDF/CSV tile service
+│   │   └── seasonal_catalog_shared.py       # shared indicator/period/product vocabulary
 │   │
 │   ├── advisory/
 │   │   ├── __init__.py
@@ -356,6 +376,14 @@ forecast2action-ai/
 │   ├── knowledge/
 │   │   └── action_library.json
 │   │
+│   ├── maps/
+│   │   ├── Seasonal/            # static seasonal PNG maps
+│   │   ├── Subseasonal/         # static subseasonal PNG maps
+│   │   ├── geotiff/             # interactive raster sources (.tif)
+│   │   ├── netcdf/              # interactive raster sources (.nc)
+│   │   ├── csv/                 # interactive raster sources (gridded .csv)
+│   │   └── cache/               # generated display GeoTIFFs (not committed)
+│   │
 │   └── sample/
 │       ├── hazard_indicators.csv
 │       ├── chirps_district_rainfall_timeseries.csv
@@ -366,13 +394,19 @@ forecast2action-ai/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   └── RiskMap.jsx
+│   │   │   ├── RiskMap.jsx
+│   │   │   ├── ForecastLayerMap.jsx         # hazard/risk layers + seasonal raster map explorer
+│   │   │   └── AIMapInterpretation.jsx
+│   │   │
+│   │   ├── constants/
+│   │   │   └── climateIndicators.js         # shared indicator/period/product vocabulary
 │   │   │
 │   │   ├── pages/
 │   │   │   └── Dashboard.jsx
 │   │   │
 │   │   ├── styles/
-│   │   │   └── main.css
+│   │   │   ├── main.css
+│   │   │   └── mapSwitcher.css
 │   │   │
 │   │   ├── App.jsx
 │   │   └── main.jsx
@@ -493,6 +527,14 @@ http://localhost:5174
 | `/api/action-tracker/{district}/csv` | Exports action tracker as CSV                    |
 | `/api/bulletin/{district}`           | Generates HTML or Markdown bulletin              |
 | `/api/report-types`                  | Returns supported community report categories    |
+| `/api/seasonal-maps/catalog`         | Lists static seasonal PNG maps                   |
+| `/api/seasonal-raster/options`       | Lists available indicator/period/product combinations |
+| `/api/seasonal-raster/map`           | Returns one interactive raster map (tiles, legend, stats) |
+| `/api/seasonal-raster/compare`       | Returns Forecast/Climatology/Anomaly maps together |
+| `/api/seasonal-raster/tiles/{id}/{z}/{x}/{y}.png` | Serves XYZ raster tiles for Leaflet |
+| `/api/seasonal-raster/value/{id}`    | Reads the raster value at a clicked lat/lon      |
+| `/api/seasonal-raster/prewarm`       | Pre-converts and caches all raster maps          |
+| `/api/seasonal-raster/health`        | Diagnostics: discovered maps and source directories |
 
 ---
 
@@ -616,7 +658,8 @@ This is a hackathon MVP. Current limitations include:
 - community reports are stored in local JSON;
 - authentication and user roles are not yet implemented;
 - the tracker is file-based rather than database-backed;
-- SMS / WhatsApp integration is simulated through generated message text.
+- SMS / WhatsApp integration is simulated through generated message text;
+- the interactive seasonal raster tile service needs its geospatial dependencies installed (see `requirements.txt`) and needs `data/maps/geotiff` and `data/maps/netcdf` present on whatever host runs the backend -- these were previously gitignored by the project's blanket `*.tif`/`*.nc` rule and had no deploy-time sync step, so a deployed backend without them shows "no map found" for the Climate Indicator tab.
 
 ---
 

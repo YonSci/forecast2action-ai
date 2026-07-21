@@ -8,3 +8,13 @@ pyshp
 openai
 google-genai
 python-dotenv
+
+# Seasonal raster map service (app/api/seasonal_raster_maps.py)
+rasterio
+rio-tiler
+pillow
+matplotlib
+xarray
+rioxarray
+netCDF4
+h5netcdf

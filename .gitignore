@@ -219,3 +219,19 @@ forecast2action_action_tracker_*.csv
 !data/sample/*.csv
 !outputs/tables/
 !outputs/tables/*.csv
+
+# Seasonal raster map sources served by app/api/seasonal_raster_maps.py.
+# These are required at runtime (Render deploys from git, not from local disk),
+# so they must not be caught by the *.tif/*.nc rules above.
+!data/maps/
+!data/maps/geotiff/
+!data/maps/geotiff/**
+!data/maps/netcdf/
+!data/maps/netcdf/**
+!data/maps/csv/
+!data/maps/csv/**
+!data/maps/Seasonal/
+!data/maps/Seasonal/**
+!data/maps/Subseasonal/
+!data/maps/Subseasonal/**
+!data/maps/*.json

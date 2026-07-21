@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import html2canvas from "html2canvas";
 import { apiUrl } from "../config.js";
+import { CLIMATE_INDICATORS } from "../constants/climateIndicators.js";
 import "../styles/aiMapInterpretation.css";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const CACHE_VERSION = "v12-map-switcher-tabs-model-select";
+const CACHE_VERSION = "v16-shared-climate-indicator-constants";
 
 const MAP_LAYERS = [
   { key: "hazard", label: "Hazard map", rankingLayer: "risk_score" },
@@ -12,14 +13,6 @@ const MAP_LAYERS = [
   { key: "hazard_probability", label: "Hazard probability map", rankingLayer: "hazard_probability" },
   { key: "exposure", label: "Exposure map", rankingLayer: "exposure" },
   { key: "vulnerability", label: "Vulnerability map", rankingLayer: "vulnerability" },
-];
-
-const CLIMATE_INDICATORS = [
-  { key: "spi", label: "Standardized Precipitation Index" },
-  { key: "rainfall_anomaly_pct", label: "Rainfall anomaly" },
-  { key: "rainfall_percentile", label: "Rainfall percentile" },
-  { key: "cdd", label: "Consecutive dry days" },
-  { key: "cwd", label: "Consecutive wet days" },
 ];
 
 const LEAD_LABELS = {
@@ -36,6 +29,16 @@ const LEAD_LABELS = {
   month_4: "Month 4",
   month_5: "Month 5",
   month_6: "Month 6",
+  June: "June",
+  July: "July",
+  August: "August",
+  September: "September",
+  JJAS: "JJAS",
+  june: "June",
+  july: "July",
+  august: "August",
+  september: "September",
+  jjas: "JJAS",
 };
 
 const FORECAST_SCALE_LABELS = {
@@ -208,19 +211,19 @@ function getLayerLabel(value) {
 }
 
 function getIndicatorLabel(value) {
-  return CLIMATE_INDICATORS.find((item) => item.key === value)?.label || titleCase(value || "spi");
+  return CLIMATE_INDICATORS.find((item) => item.value === value)?.label || titleCase(value || "spi");
 }
 
+// Both the climate indicator maps section and the hazard/risk layers section
+// are always visible together on the dashboard (no tab switcher), so these
+// always describe both. ForecastLayerMap normally sends activeMapGroup /
+// activeMapLabel directly; these are only the fallback if that's missing.
 function getMapGroupLabel(forecastSelection = {}) {
   if (forecastSelection?.activeMapGroup) {
     return forecastSelection.activeMapGroup;
   }
 
-  if (forecastSelection?.mapMode === "climate_indicator") {
-    return "Climate Indicator";
-  }
-
-  return "Hazard Map Layer";
+  return "Climate Indicator Maps and Hazard/Risk Layers";
 }
 
 function getDisplayedMapLabel(forecastSelection = {}) {
@@ -228,11 +231,9 @@ function getDisplayedMapLabel(forecastSelection = {}) {
     return forecastSelection.activeMapLabel;
   }
 
-  if (forecastSelection?.mapMode === "climate_indicator") {
-    return getIndicatorLabel(forecastSelection.indicator);
-  }
-
-  return getLayerLabel(forecastSelection.layer);
+  const indicatorLabel = getIndicatorLabel(forecastSelection.seasonalIndicator || forecastSelection.indicator);
+  const layerLabel = getLayerLabel(forecastSelection.layer);
+  return `${indicatorLabel} (climate indicator) and ${layerLabel} (hazard/risk)`;
 }
 
 function getAdminScope(adminSelection) {
@@ -282,9 +283,15 @@ function buildCacheKey({
     cacheVersion: CACHE_VERSION,
     forecastScale: forecastSelection?.forecastScale || "subseasonal",
     lead: forecastSelection?.lead || "week_1",
-    mapMode: forecastSelection?.mapMode || "hazard_layer",
-    activeMapGroup: forecastSelection?.activeMapGroup || "Hazard Map Layer",
+    layer: forecastSelection?.layer || "risk_score",
+    activeMapGroup: forecastSelection?.activeMapGroup || "",
     activeMapLabel: forecastSelection?.activeMapLabel || "",
+    seasonalScale: forecastSelection?.seasonalScale || "seasonal",
+    seasonalIndicator: forecastSelection?.seasonalIndicator || forecastSelection?.indicator || "",
+    seasonalPeriod: forecastSelection?.seasonalPeriod || "",
+    seasonalProduct: forecastSelection?.seasonalProduct || "",
+    climateMapView: forecastSelection?.climateMapView || "",
+    seasonalMapId: forecastSelection?.seasonalMap?.id || "",
     admin: {
       regionId: adminSelection?.regionId || "",
       zoneId: adminSelection?.zoneId || "",
@@ -357,11 +364,15 @@ function normalizeArea(item = {}) {
     exposure: item.exposure,
     vulnerability: item.vulnerability,
     priority_score: item.priority_score,
+    rainfall_total: item.rainfall_total,
     spi: item.spi,
     rainfall_anomaly_pct: item.rainfall_anomaly_pct,
     rainfall_percentile: item.rainfall_percentile,
     cdd: item.cdd,
     cwd: item.cwd,
+    dryspell_prob_5d: item.dryspell_prob_5d,
+    dryspell_prob_7d: item.dryspell_prob_7d,
+    dryspell_prob_9d: item.dryspell_prob_9d,
   };
 }
 
@@ -385,14 +396,19 @@ async function fetchRanking({ forecastSelection, adminSelection, layer, indicato
     params.set("zone_id", adminSelection.zoneId);
   }
 
-  const response = await fetch(apiUrl(`/api/intervention-ranking?${params.toString()}`));
+  try {
+    const response = await fetch(apiUrl(`/api/intervention-ranking?${params.toString()}`));
 
-  if (!response.ok) {
-    throw new Error(`Ranking request failed: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`Ranking request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data?.ranking) ? data.ranking.map(normalizeArea) : [];
+  } catch (error) {
+    console.warn("Ranking summary unavailable", { layer, indicator, error });
+    return [];
   }
-
-  const data = await response.json();
-  return Array.isArray(data?.ranking) ? data.ranking.map(normalizeArea) : [];
 }
 
 function quantile(sortedValues, q) {
@@ -557,15 +573,15 @@ async function buildAllClimateIndicatorSummaries(forecastSelection, adminSelecti
         forecastSelection,
         adminSelection,
         layer: "risk_score",
-        indicator: indicator.key,
+        indicator: indicator.value,
         topN: 2500,
       });
       return [
-        indicator.key,
+        indicator.value,
         {
           label: indicator.label,
           ranking_layer_used: "risk_score",
-          ...summarizeRanking(ranking, indicator.key),
+          ...summarizeRanking(ranking, indicator.value),
         },
       ];
     })
@@ -741,20 +757,18 @@ function AIMapInterpretation({
   }, [cacheKey, normalizedLanguage]);
 
   const contextSummary = useMemo(() => {
-    const isClimateIndicatorMode = forecastSelection?.mapMode === "climate_indicator";
-
     return {
       forecastScale: getForecastScaleLabel(forecastSelection.forecastScale),
       lead: getLeadLabel(forecastSelection.lead),
       activeMapGroup: getMapGroupLabel(forecastSelection),
       displayedMap: getDisplayedMapLabel(forecastSelection),
-      activeLayer: isClimateIndicatorMode
-        ? "Not active for Climate Indicator tab"
-        : getLayerLabel(forecastSelection.layer),
-      activeIndicator: isClimateIndicatorMode
-        ? getIndicatorLabel(forecastSelection.indicator)
-        : "Not active for Hazard Map Layer tab",
-      isClimateIndicatorMode,
+      activeLayer: getLayerLabel(forecastSelection.layer),
+      activeIndicator: getIndicatorLabel(forecastSelection.seasonalIndicator || forecastSelection.indicator),
+      seasonalScale: forecastSelection?.seasonalScaleLabel || titleCase(forecastSelection?.seasonalScale || "seasonal"),
+      seasonalPeriod: forecastSelection?.seasonalPeriodLabel || forecastSelection?.seasonalPeriod || getLeadLabel(forecastSelection.lead),
+      seasonalProduct: forecastSelection?.seasonalProductLabel || forecastSelection?.seasonalProduct || "Forecast",
+      climateMapView: forecastSelection?.climateMapView === "compare" ? "Forecast vs Climatology vs Anomaly" : "Single map",
+      seasonalMap: forecastSelection?.seasonalMap || null,
       adminScope: getAdminScope(adminSelection),
       language: getLanguageLabel(normalizedLanguage),
       provider: selectedProviderConfig?.label || selectedProvider,
@@ -841,8 +855,19 @@ function AIMapInterpretation({
           metric_type: `Active map group: ${getMapGroupLabel(forecastSelection)}; displayed map: ${getDisplayedMapLabel(forecastSelection)}; Ethiopia-wide summaries for all hazard/risk/exposure/vulnerability layers and all climate indicators`,
           active_map_group: getMapGroupLabel(forecastSelection),
           displayed_map: getDisplayedMapLabel(forecastSelection),
-          seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} ${getLeadLabel(forecastSelection.lead)}`,
-          current_seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} forecast for ${getLeadLabel(forecastSelection.lead)}`,
+          seasonal_scale: forecastSelection?.seasonalScale || "",
+          seasonal_scale_label: forecastSelection?.seasonalScaleLabel || titleCase(forecastSelection?.seasonalScale || "seasonal"),
+          seasonal_indicator: forecastSelection?.seasonalIndicator || forecastSelection?.indicator || "",
+          seasonal_indicator_label: forecastSelection?.seasonalIndicatorLabel || getIndicatorLabel(forecastSelection?.indicator),
+          seasonal_period: forecastSelection?.seasonalPeriod || forecastSelection?.lead || "",
+          seasonal_period_label: forecastSelection?.seasonalPeriodLabel || getLeadLabel(forecastSelection?.lead),
+          seasonal_product: forecastSelection?.seasonalProduct || "",
+          seasonal_product_label: forecastSelection?.seasonalProductLabel || "",
+          climate_map_view: forecastSelection?.climateMapView || "",
+          seasonal_map_metadata: forecastSelection?.seasonalMap || null,
+          seasonal_compare_maps: forecastSelection?.seasonalCompareMaps || null,
+          seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} ${forecastSelection?.seasonalPeriodLabel || getLeadLabel(forecastSelection.lead)}`,
+          current_seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} forecast for ${forecastSelection?.seasonalPeriodLabel || getLeadLabel(forecastSelection.lead)}`,
           hazard_type: selectedPriorityArea?.hazard || getDefaultHazard(topAreas),
           admin_scope: getAdminScope(adminSelection),
         },
@@ -923,17 +948,30 @@ function AIMapInterpretation({
           <span>Displayed map</span>
           <strong>{contextSummary.displayedMap}</strong>
         </div>
-        {contextSummary.isClimateIndicatorMode ? (
-          <div>
-            <span>Active climate indicator</span>
-            <strong>{contextSummary.activeIndicator}</strong>
-          </div>
-        ) : (
-          <div>
-            <span>Active map layer</span>
-            <strong>{contextSummary.activeLayer}</strong>
-          </div>
-        )}
+        <div>
+          <span>Climate indicator scale</span>
+          <strong>{contextSummary.seasonalScale}</strong>
+        </div>
+        <div>
+          <span>Seasonal period</span>
+          <strong>{contextSummary.seasonalPeriod}</strong>
+        </div>
+        <div>
+          <span>Map product</span>
+          <strong>{contextSummary.seasonalProduct}</strong>
+        </div>
+        <div>
+          <span>View mode</span>
+          <strong>{contextSummary.climateMapView}</strong>
+        </div>
+        <div>
+          <span>Active climate indicator</span>
+          <strong>{contextSummary.activeIndicator}</strong>
+        </div>
+        <div>
+          <span>Active map layer</span>
+          <strong>{contextSummary.activeLayer}</strong>
+        </div>
         <div>
           <span>Admin scope</span>
           <strong>{contextSummary.adminScope}</strong>
@@ -959,7 +997,7 @@ function AIMapInterpretation({
         </div>
         <div>
           <span>Climate indicators used</span>
-          <strong>SPI · Rainfall anomaly · Rainfall percentile · CDD · CWD</strong>
+          <strong>Rainfall Total · SPI · CDD · CWD · dryspell ≥5/7/9 days · Rainfall Percentile</strong>
         </div>
       </div>
 
@@ -1097,15 +1135,11 @@ function AIMapInterpretation({
               <strong>Admin scope:</strong> {contextSummary.adminScope} · {" "}
               <strong>Active map group:</strong> {contextSummary.activeMapGroup} · {" "}
               <strong>Displayed map:</strong> {contextSummary.displayedMap} · {" "}
-              {contextSummary.isClimateIndicatorMode ? (
-                <>
-                  <strong>Active climate indicator:</strong> {contextSummary.activeIndicator} · {" "}
-                </>
-              ) : (
-                <>
-                  <strong>Active map layer:</strong> {contextSummary.activeLayer} · {" "}
-                </>
-              )}
+              <strong>Climate indicator scale:</strong> {contextSummary.seasonalScale} · {" "}
+              <strong>Seasonal period:</strong> {contextSummary.seasonalPeriod} · {" "}
+              <strong>Map product:</strong> {contextSummary.seasonalProduct} · {" "}
+              <strong>Active climate indicator:</strong> {contextSummary.activeIndicator} · {" "}
+              <strong>Active map layer:</strong> {contextSummary.activeLayer} · {" "}
               <strong>Output language:</strong> {contextSummary.language}
             </p>
             <p>{report.executive_summary}</p>

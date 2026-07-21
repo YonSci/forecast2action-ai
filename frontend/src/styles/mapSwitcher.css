@@ -1,66 +1,10 @@
-.map-mode-switcher {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0 1.1rem;
-  padding: 0.45rem;
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  border-radius: 1.2rem;
-  background: rgba(248, 250, 252, 0.88);
-}
-
-.map-mode-tab {
-  border: 1px solid transparent;
-  border-radius: 0.95rem;
-  padding: 0.85rem 1rem;
-  background: transparent;
-  color: #475569;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
-}
-
-.map-mode-tab span {
-  display: block;
-  font-weight: 800;
-  font-size: 0.98rem;
-  color: #334155;
-}
-
-.map-mode-tab small {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.78rem;
-  line-height: 1.25;
-  color: #64748b;
-}
-
-.map-mode-tab.active {
-  background: #ffffff;
-  border-color: rgba(37, 99, 235, 0.38);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.09);
-  color: #1d4ed8;
-}
-
-.map-mode-tab.active span {
-  color: #1d4ed8;
-}
-
-.forecast-layer-controls-with-tabs {
+.forecast-layer-controls {
   align-items: end;
 }
 
 .forecast-control-primary select {
   border-color: rgba(37, 99, 235, 0.32);
   background: #ffffff;
-}
-
-.forecast-control-context label {
-  color: #64748b;
-}
-
-.forecast-control-context select {
-  background: #f8fafc;
 }
 
 .forecast-map-wrapper-switcher {
@@ -103,13 +47,6 @@
   border-top: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-@media (max-width: 760px) {
-  .map-mode-switcher {
-    grid-template-columns: 1fr;
-  }
-}
-
-
 .forecast-control-active-only {
   min-width: min(100%, 260px);
 }
@@ -120,4 +57,474 @@
   color: #64748b;
   font-size: 0.76rem;
   line-height: 1.35;
+}
+
+.seasonal-view-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  background: transparent;
+  padding: 0.3rem 0;
+  cursor: pointer;
+}
+
+.seasonal-view-switch-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background 0.18s ease;
+}
+
+.seasonal-view-switch[aria-checked="true"] .seasonal-view-switch-track {
+  background: #2563eb;
+}
+
+.seasonal-view-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  transition: transform 0.18s ease;
+}
+
+.seasonal-view-switch[aria-checked="true"] .seasonal-view-switch-thumb {
+  transform: translateX(20px);
+}
+
+.seasonal-view-switch-labels {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-align: left;
+}
+
+.seasonal-view-switch-labels span.active {
+  color: #1d4ed8;
+}
+
+.seasonal-view-switch:focus-visible .seasonal-view-switch-track {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.seasonal-map-viewer {
+  position: relative;
+}
+
+.seasonal-loading {
+  z-index: 5;
+}
+
+.seasonal-single-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.seasonal-map-card {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.1rem;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.seasonal-map-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.seasonal-map-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.seasonal-map-card-header span {
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.seasonal-map-card img {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  max-height: 760px;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.seasonal-map-empty {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  font-weight: 700;
+}
+
+.seasonal-map-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  padding: 0.9rem 1rem 1rem;
+  background: rgba(248, 250, 252, 0.75);
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.seasonal-map-metadata-grid div {
+  min-width: 0;
+}
+
+.seasonal-map-metadata-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.seasonal-map-metadata-grid strong {
+  display: block;
+  margin-top: 0.15rem;
+  color: #0f172a;
+  font-size: 0.84rem;
+  word-break: break-word;
+}
+
+.seasonal-info-card .seasonal-map-metadata-grid {
+  grid-template-columns: 1fr;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  margin-top: 1rem;
+}
+
+.seasonal-compare-section {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.15rem;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.seasonal-compare-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.seasonal-compare-header h3 {
+  margin: 0 0 0.25rem;
+  color: #0f172a;
+}
+
+.seasonal-compare-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.seasonal-compare-header > span {
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.seasonal-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.seasonal-compare-grid .seasonal-map-card img,
+.seasonal-compare-grid .seasonal-map-empty {
+  min-height: 260px;
+  max-height: 460px;
+}
+
+.seasonal-compare-grid .seasonal-map-metadata-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 1100px) {
+  .seasonal-single-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .seasonal-compare-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* v15 interactive seasonal raster map additions */
+.seasonal-raster-card .seasonal-raster-map-frame {
+  position: relative;
+  min-height: 360px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #e5e7eb;
+}
+
+.seasonal-raster-card.compact .seasonal-raster-map-frame {
+  min-height: 280px;
+}
+
+.seasonal-raster-map {
+  width: 100%;
+  height: 360px;
+  min-height: 360px;
+  z-index: 1;
+}
+
+.seasonal-raster-card.compact .seasonal-raster-map {
+  height: 280px;
+  min-height: 280px;
+}
+
+.seasonal-raster-map-badge {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 450;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.28);
+}
+
+.seasonal-raster-click-value {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(14, 116, 144, 0.08);
+  border: 1px solid rgba(14, 116, 144, 0.22);
+  display: grid;
+  gap: 2px;
+}
+
+.seasonal-raster-click-value span,
+.seasonal-raster-stats-grid span {
+  color: #64748b;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.seasonal-raster-click-value strong {
+  color: #0f172a;
+  font-size: 0.96rem;
+}
+
+.seasonal-raster-click-value small {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.seasonal-raster-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.seasonal-raster-stats-grid > div {
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  display: grid;
+  gap: 2px;
+}
+
+.seasonal-raster-stats-grid strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.raster-legend-items {
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .seasonal-raster-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seasonal-raster-map,
+  .seasonal-raster-card.compact .seasonal-raster-map {
+    height: 300px;
+    min-height: 300px;
+  }
+
+  .seasonal-raster-card .seasonal-raster-map-frame,
+  .seasonal-raster-card.compact .seasonal-raster-map-frame {
+    min-height: 300px;
+  }
+}
+
+
+/* v19 rendering and interactivity improvements */
+.seasonal-raster-map-frame .leaflet-container {
+  background: #dbeafe;
+}
+
+.seasonal-raster-map-frame .leaflet-tile-pane {
+  filter: saturate(1.05) contrast(1.04);
+}
+
+/* Both the seasonal raster map and the hazard/risk grid map use a fractional
+   initial zoom (e.g. 5.6, 6.15, 6.25) together with zoomSnap=0.25 so the map
+   can start at a "nice" framing of Ethiopia. Leaflet CSS-scales 256px tile
+   images to match a non-integer zoom, and that scale factor leaves visible
+   hairline-to-several-pixel gaps between adjacent tiles (a well-known Leaflet
+   issue, e.g. leaflet/leaflet#3575) -- seen as a light/white seam or stripe
+   cutting across the map. Oversizing tile images by half a pixel covers the
+   gap without a visible seam or distortion. */
+.forecast-map .leaflet-tile,
+.seasonal-raster-map .leaflet-tile {
+  width: 256.5px !important;
+  height: 256.5px !important;
+}
+
+.seasonal-raster-map-frame .leaflet-control-zoom a {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.seasonal-raster-map-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 460;
+  width: min(230px, calc(100% - 24px));
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(8px);
+  display: grid;
+  gap: 7px;
+}
+
+.seasonal-raster-map-controls label {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.seasonal-raster-map-controls input[type="range"] {
+  width: 100%;
+  accent-color: #2563eb;
+}
+
+.seasonal-continuous-legend {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+.seasonal-continuous-legend-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.seasonal-continuous-legend-header strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.seasonal-continuous-legend-header span {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.seasonal-continuous-legend-bar {
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.seasonal-continuous-legend-ticks,
+.seasonal-continuous-range-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.seasonal-continuous-legend-ticks {
+  margin-top: 0.35rem;
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.seasonal-continuous-range-labels {
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.seasonal-raster-card.compact .seasonal-raster-map-controls {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .seasonal-raster-map-controls {
+    position: static;
+    width: auto;
+    margin: 10px;
+  }
+
+  .seasonal-raster-map-badge {
+    bottom: 78px;
+  }
 }

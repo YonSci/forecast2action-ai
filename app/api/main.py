@@ -1,42 +1,42 @@
+import asyncio
 import csv
 import io
 import json
+import os
 import re
 from datetime import datetime, timezone
+from functools import lru_cache
 from html import escape
 from pathlib import Path
+from typing import Any, Optional
 from uuid import uuid4
-
 
 import pandas as pd
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 from app.advisory.rag_engine import build_rag_advisory
 from app.ml.risk_scoring import score_districts
 
 from app.api.ai_map_interpretation import router as ai_map_interpretation_router
-
-from functools import lru_cache
-from fastapi.middleware.gzip import GZipMiddleware
-
-from functools import lru_cache
-from typing import Any, Optional
+from app.api.seasonal_maps import router as seasonal_maps_router
+from app.api.seasonal_raster_maps import prewarm_all_maps
+from app.api.seasonal_raster_maps import router as seasonal_raster_maps_router
 
 from app.data_pipeline.ethiopia_admin_boundary_pipeline import (
     OUTPUT_DIR as ADMIN_BOUNDARY_OUTPUT_DIR,
     run_ethiopia_admin_boundary_pipeline,
 )
 
-
 from app.data_pipeline.ethiopia_forecast_grid_pipeline import (
     FORECAST_LEADS,
     OUTPUT_PATH as ETHIOPIA_GRID_PATH,
     run_ethiopia_forecast_grid_pipeline,
 )
-
 
 
 app = FastAPI(
@@ -49,7 +49,22 @@ app = FastAPI(
     version="1.2.0",
 )
 
+app.include_router(seasonal_maps_router)
 app.include_router(ai_map_interpretation_router)
+app.include_router(seasonal_raster_maps_router)
+
+
+@app.on_event("startup")
+async def _prewarm_seasonal_raster_cache_on_startup() -> None:
+    """Optionally pre-convert seasonal raster maps so the first request is fast.
+
+    Off by default. Set SEASONAL_RASTER_PREWARM_ON_STARTUP=true (e.g. on the
+    deployed backend, after data/maps is populated) to build the GeoTIFF/tile
+    cache once at boot instead of on each map's first user request. Runs in a
+    background thread so it never delays the app from accepting requests.
+    """
+    if os.getenv("SEASONAL_RASTER_PREWARM_ON_STARTUP", "false").strip().lower() in {"1", "true", "yes"}:
+        asyncio.create_task(run_in_threadpool(prewarm_all_maps))
 
 allowed_origins = [
     "http://localhost:5173",

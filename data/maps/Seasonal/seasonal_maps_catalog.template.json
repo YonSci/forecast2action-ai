@@ -1,0 +1,26 @@
+{
+  "maps": [
+    {
+      "id": "rainfall_total_jjas_forecast",
+      "indicator": "rainfall_total",
+      "indicator_label": "Rainfall Total",
+      "period": "JJAS",
+      "period_label": "JJAS",
+      "product": "forecast",
+      "product_label": "Forecast",
+      "image_path": "data/maps/Seasonal/rainfall_total_jjas_forecast.png",
+      "geotiff_path": "data/maps/Seasonal/rainfall_total_jjas_forecast.tif",
+      "netcdf_path": "data/maps/Seasonal/rainfall_total_jjas_forecast.nc",
+      "bounds": { "south": 3.0, "west": 33.0, "north": 15.0, "east": 48.0 },
+      "units": "mm",
+      "init_date": "2026-05-01",
+      "valid_start": "2026-06-01",
+      "valid_end": "2026-09-30",
+      "forecast_source": "C3S seasonal forecast",
+      "forecast_system_version": "multi-model seasonal system",
+      "n_ensemble_members": 51,
+      "observation_dataset": "CHIRPS",
+      "climatology_period": "1991-2020"
+    }
+  ]
+}

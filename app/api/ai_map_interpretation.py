@@ -131,11 +131,15 @@ MAP_LAYER_LABELS = {
 }
 
 CLIMATE_INDICATOR_LABELS = {
+    "rainfall_total": "Rainfall Total",
     "spi": "Standardized Precipitation Index",
-    "rainfall_anomaly_pct": "Rainfall anomaly",
-    "rainfall_percentile": "Rainfall percentile",
     "cdd": "Consecutive dry days",
     "cwd": "Consecutive wet days",
+    "dryspell_prob_5d": "Dry spell probability ≥5 days",
+    "dryspell_prob_7d": "Dry spell probability ≥7 days",
+    "dryspell_prob_9d": "Dry spell probability ≥9 days",
+    "rainfall_percentile": "Rainfall percentile",
+    "rainfall_anomaly_pct": "Rainfall anomaly",
 }
 
 
@@ -144,10 +148,19 @@ class ForecastSelection(BaseModel):
     lead: Optional[str] = "week_1"
     layer: Optional[str] = "risk_score"
     indicator: Optional[str] = "spi"
-    mapMode: Optional[str] = "hazard_layer"
     activeMapGroup: Optional[str] = None
     activeMapLabel: Optional[str] = None
-    activeDisplayKey: Optional[str] = None
+    seasonalScale: Optional[str] = None
+    seasonalScaleLabel: Optional[str] = None
+    seasonalIndicator: Optional[str] = None
+    seasonalIndicatorLabel: Optional[str] = None
+    seasonalPeriod: Optional[str] = None
+    seasonalPeriodLabel: Optional[str] = None
+    seasonalProduct: Optional[str] = None
+    seasonalProductLabel: Optional[str] = None
+    climateMapView: Optional[str] = None
+    seasonalMap: Optional[Dict[str, Any]] = None
+    seasonalCompareMaps: Optional[Dict[str, Any]] = None
 
 
 class AdminSelection(BaseModel):
@@ -168,6 +181,17 @@ class MapContext(BaseModel):
     admin_scope: Optional[str] = ""
     active_map_group: Optional[str] = ""
     displayed_map: Optional[str] = ""
+    seasonal_scale: Optional[str] = ""
+    seasonal_scale_label: Optional[str] = ""
+    seasonal_indicator: Optional[str] = ""
+    seasonal_indicator_label: Optional[str] = ""
+    seasonal_period: Optional[str] = ""
+    seasonal_period_label: Optional[str] = ""
+    seasonal_product: Optional[str] = ""
+    seasonal_product_label: Optional[str] = ""
+    climate_map_view: Optional[str] = ""
+    seasonal_map_metadata: Optional[Dict[str, Any]] = None
+    seasonal_compare_maps: Optional[Dict[str, Any]] = None
 
 
 class AIMapInterpretationRequest(BaseModel):
@@ -313,29 +337,31 @@ def title_case(value: Any) -> str:
 
 
 def get_map_group_label(forecast_selection: ForecastSelection) -> str:
+    """Both the climate indicator maps section and the hazard/risk layers
+    section are always visible together on the dashboard now (no tab
+    switcher), so this always describes both rather than "whichever tab is
+    active". The frontend normally sends activeMapGroup explicitly; this is
+    only the fallback if that's missing.
+    """
     if forecast_selection.activeMapGroup:
         return str(forecast_selection.activeMapGroup)
 
-    if forecast_selection.mapMode == "climate_indicator":
-        return "Climate Indicator"
-
-    return "Hazard Map Layer"
+    return "Climate Indicator Maps and Hazard/Risk Layers"
 
 
 def get_displayed_map_label(forecast_selection: ForecastSelection) -> str:
     if forecast_selection.activeMapLabel:
         return str(forecast_selection.activeMapLabel)
 
-    if forecast_selection.mapMode == "climate_indicator":
-        return CLIMATE_INDICATOR_LABELS.get(
-            forecast_selection.indicator or "",
-            title_case(forecast_selection.indicator or "spi"),
-        )
-
-    return MAP_LAYER_LABELS.get(
+    indicator_label = CLIMATE_INDICATOR_LABELS.get(
+        forecast_selection.seasonalIndicator or forecast_selection.indicator or "",
+        title_case(forecast_selection.seasonalIndicator or forecast_selection.indicator or "spi"),
+    )
+    layer_label = MAP_LAYER_LABELS.get(
         forecast_selection.layer or "",
         title_case(forecast_selection.layer or "hazard"),
     )
+    return f"{indicator_label} (climate indicator) and {layer_label} (hazard/risk)"
 
 
 def safe_float(value: Any, default: Optional[float] = None) -> Optional[float]:
@@ -504,7 +530,7 @@ Important rules:
 - Use the optional map screenshot only as supporting visual context.
 - First explain the Ethiopia-wide spatial distribution, hotspots, low-value areas, high-value areas, and national patterns.
 - Interpret all hazard/risk layers: hazard, risk score, hazard probability, exposure, and vulnerability.
-- Interpret all climate indicators: SPI, rainfall anomaly, rainfall percentile, CDD, and CWD.
+- Interpret all seasonal climate indicators available in the payload: Rainfall Total, SPI, CDD, CWD, dry spell probability ≥5/7/9 days, and Rainfall Percentile.
 - Then explain why the listed priority intervention areas were selected.
 - Do not invent regions, zones, or woredas that are not present in the structured data.
 - Provide farmer/agro-pastoral advisory and humanitarian priorities.
@@ -519,25 +545,25 @@ def build_user_prompt(request: AIMapInterpretationRequest, retrieved_guidance: L
     forecast_window = title_case(request.forecast_selection.forecastScale)
     lead = title_case(request.forecast_selection.lead)
     admin_scope = request.map_context.admin_scope or "Ethiopia"
-    is_climate_indicator_mode = request.forecast_selection.mapMode == "climate_indicator"
-    active_layer = (
-        "Not active for Climate Indicator tab"
-        if is_climate_indicator_mode
-        else MAP_LAYER_LABELS.get(
-            request.forecast_selection.layer or "",
-            title_case(request.forecast_selection.layer or "hazard"),
-        )
+    active_layer = MAP_LAYER_LABELS.get(
+        request.forecast_selection.layer or "",
+        title_case(request.forecast_selection.layer or "hazard"),
     )
     active_indicator = (
-        CLIMATE_INDICATOR_LABELS.get(
-            request.forecast_selection.indicator or "",
-            title_case(request.forecast_selection.indicator or "spi"),
+        request.forecast_selection.seasonalIndicatorLabel
+        or request.map_context.seasonal_indicator_label
+        or CLIMATE_INDICATOR_LABELS.get(
+            request.forecast_selection.seasonalIndicator or request.forecast_selection.indicator or "",
+            title_case(request.forecast_selection.seasonalIndicator or request.forecast_selection.indicator or "spi"),
         )
-        if is_climate_indicator_mode
-        else "Not active for Hazard Map Layer tab"
     )
     active_map_group = request.map_context.active_map_group or get_map_group_label(request.forecast_selection)
     displayed_map = request.map_context.displayed_map or get_displayed_map_label(request.forecast_selection)
+    seasonal_scale = request.forecast_selection.seasonalScaleLabel or request.map_context.seasonal_scale_label or title_case(request.forecast_selection.seasonalScale or request.map_context.seasonal_scale or "seasonal")
+    seasonal_period = request.forecast_selection.seasonalPeriodLabel or request.map_context.seasonal_period_label or request.forecast_selection.seasonalPeriod or request.map_context.seasonal_period or lead
+    seasonal_product = request.forecast_selection.seasonalProductLabel or request.map_context.seasonal_product_label or request.forecast_selection.seasonalProduct or request.map_context.seasonal_product or "N/A"
+    climate_map_view = request.forecast_selection.climateMapView or request.map_context.climate_map_view or "single"
+    selected_seasonal_map = request.forecast_selection.seasonalMap or request.map_context.seasonal_map_metadata
 
     payload = request.model_dump(exclude={"map_image_base64"})
 
@@ -554,18 +580,26 @@ The executive_summary must explicitly mention:
 - Displayed map: {displayed_map}
 - Active map layer: {active_layer}
 - Active climate indicator: {active_indicator}
+- Climate indicator scale: {seasonal_scale}
+- Seasonal period: {seasonal_period}
+- Map product: {seasonal_product}
+- Climate map view: {climate_map_view}
 - Output language: {language_label}
 
 PRIMARY INTERPRETATION FOCUS:
-The user is currently viewing the {active_map_group} tab and the displayed map is {displayed_map}.
+The dashboard always shows two sections together, not a switchable tab: the Climate Indicator Maps section (displaying {active_indicator}, {seasonal_scale} scale, {seasonal_period} period, {seasonal_product} product) and the Hazard/Risk Layers section (displaying {active_layer}). Interpret both sections in this report.
+Use the seasonal map metadata, selected scale, period, product, and comparison maps to explain Forecast vs Historical Climatology vs Anomaly for the climate indicator section.
 This report must be country-level first. Focus on spatial distribution across Ethiopia:
 - where hotspots are found
 - where high values and low values are found
 - overall Ethiopia-wide pattern
 - layer-by-layer interpretation of Hazard / Risk Score / Hazard Probability / Exposure / Vulnerability
-- indicator-by-indicator interpretation of SPI / Rainfall anomaly / Rainfall percentile / CDD / CWD
+- indicator-by-indicator interpretation of Rainfall Total / SPI / CDD / CWD / dryspell_prob_5d / dryspell_prob_7d / dryspell_prob_9d / Rainfall Percentile
 
 Only after the country-level interpretation, explain why the Priority Intervention Areas and Action Queue areas were selected.
+
+SELECTED SEASONAL MAP METADATA:
+{compact_json(selected_seasonal_map, max_chars=6000)}
 
 TASK:
 1. Provide national_spatial_overview for Ethiopia-wide patterns.
@@ -618,19 +652,16 @@ def fallback_report(
     forecast_window = title_case(request.forecast_selection.forecastScale)
     lead = title_case(request.forecast_selection.lead)
     admin_scope = request.map_context.admin_scope or "Ethiopia"
-    is_climate_indicator_mode = request.forecast_selection.mapMode == "climate_indicator"
-    active_layer = (
-        "Not active for Climate Indicator tab"
-        if is_climate_indicator_mode
-        else MAP_LAYER_LABELS.get(request.forecast_selection.layer or "", title_case(request.forecast_selection.layer or "hazard"))
-    )
+    active_layer = MAP_LAYER_LABELS.get(request.forecast_selection.layer or "", title_case(request.forecast_selection.layer or "hazard"))
     active_indicator = (
-        CLIMATE_INDICATOR_LABELS.get(request.forecast_selection.indicator or "", title_case(request.forecast_selection.indicator or "spi"))
-        if is_climate_indicator_mode
-        else "Not active for Hazard Map Layer tab"
+        request.forecast_selection.seasonalIndicatorLabel
+        or request.map_context.seasonal_indicator_label
+        or CLIMATE_INDICATOR_LABELS.get(request.forecast_selection.seasonalIndicator or request.forecast_selection.indicator or "", title_case(request.forecast_selection.seasonalIndicator or request.forecast_selection.indicator or "spi"))
     )
     active_map_group = request.map_context.active_map_group or get_map_group_label(request.forecast_selection)
     displayed_map = request.map_context.displayed_map or get_displayed_map_label(request.forecast_selection)
+    seasonal_period = request.forecast_selection.seasonalPeriodLabel or request.map_context.seasonal_period_label or request.forecast_selection.seasonalPeriod or request.map_context.seasonal_period or lead
+    seasonal_product = request.forecast_selection.seasonalProductLabel or request.map_context.seasonal_product_label or request.forecast_selection.seasonalProduct or request.map_context.seasonal_product or "N/A"
 
     top_areas = request.top_admin_areas[:5] if request.top_admin_areas else []
     if top_areas:
@@ -674,6 +705,7 @@ def fallback_report(
             f"Forecast window: {forecast_window}; Lead / horizon: {lead}; Admin scope: {admin_scope}; "
             f"Active map group: {active_map_group}; Displayed map: {displayed_map}; "
             f"Active map layer: {active_layer}; Active climate indicator: {active_indicator}; "
+            f"Seasonal period: {seasonal_period}; Map product: {seasonal_product}; "
             f"Output language: {language_label}. The report is using the rule-based fallback because no configured AI provider completed successfully."
         ),
         "national_spatial_overview": [

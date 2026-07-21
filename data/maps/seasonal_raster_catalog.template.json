@@ -1,0 +1,53 @@
+{
+  "maps": [
+    {
+      "id": "spi_jjas_forecast",
+      "indicator": "spi",
+      "period": "JJAS",
+      "product": "forecast",
+      "source_path": "data/maps/geotiff/spi_jjas_forecast.tif",
+      "units": "standardized index",
+      "init_date": "2026-05-01",
+      "valid_start": "2026-06-01",
+      "valid_end": "2026-09-30",
+      "forecast_source": "C3S seasonal forecast",
+      "forecast_system_version": "multi-model seasonal forecast",
+      "n_ensemble_members": 51,
+      "observation_dataset": "CHIRPS",
+      "climatology_period": "1991-2020",
+      "vmin": -2.5,
+      "vmax": 2.5,
+      "cmap": "BrBG"
+    },
+    {
+      "id": "spi_jjas_climatology",
+      "indicator": "spi",
+      "period": "JJAS",
+      "product": "climatology",
+      "source_path": "data/maps/geotiff/spi_jjas_climatology.tif",
+      "units": "standardized index",
+      "observation_dataset": "CHIRPS",
+      "climatology_period": "1991-2020",
+      "vmin": -2.5,
+      "vmax": 2.5,
+      "cmap": "BrBG"
+    },
+    {
+      "id": "spi_jjas_anomaly",
+      "indicator": "spi",
+      "period": "JJAS",
+      "product": "anomaly",
+      "source_path": "data/maps/geotiff/spi_jjas_anomaly.tif",
+      "units": "standardized index",
+      "init_date": "2026-05-01",
+      "valid_start": "2026-06-01",
+      "valid_end": "2026-09-30",
+      "forecast_source": "C3S seasonal forecast",
+      "observation_dataset": "CHIRPS",
+      "climatology_period": "1991-2020",
+      "vmin": -2.5,
+      "vmax": 2.5,
+      "cmap": "BrBG"
+    }
+  ]
+}

@@ -87,7 +87,9 @@ The backend provides:
 - action tracker API;
 - persistent task status update API;
 - CSV export API;
-- HTML and Markdown bulletin generation API.
+- HTML and Markdown bulletin generation API;
+- static seasonal PNG map catalog API (`app/api/seasonal_maps.py`);
+- interactive seasonal raster tile service API (`app/api/seasonal_raster_maps.py`), see section 16.
 
 ---
 
@@ -719,7 +721,84 @@ This supports operational follow-up and sharing with coordination teams.
 
 ---
 
-## 16. Frontend State Flow
+## 16. Interactive Seasonal Climate Raster Map Architecture
+
+### 16.1 Purpose
+
+The Climate Indicator tab of the Ethiopia Forecast Map Explorer (`frontend/src/components/ForecastLayerMap.jsx`) renders real interactive raster maps -- pannable, zoomable Leaflet tile layers with a colormap legend and click-to-inspect values -- rather than static images. This is distinct from the static seasonal PNG catalog described below in 16.5.
+
+### 16.2 Backend Modules
+
+```text
+app/api/seasonal_catalog_shared.py   # shared indicator/period/product vocabulary and path-safety helpers
+app/api/seasonal_maps.py             # static PNG map catalog (prefix /api/seasonal-maps)
+app/api/seasonal_raster_maps.py      # interactive raster tile service (prefix /api/seasonal-raster)
+```
+
+`seasonal_catalog_shared.py` is the single source of truth for the indicator/period/product vocabulary (rainfall total, SPI, CDD, CWD, dry spell probability ≥5/7/9 days, rainfall percentile; June/July/August/September/JJAS; forecast/climatology/anomaly) and for filename-based inference of those fields when no explicit catalog entry exists. Both routers import from it instead of duplicating the lists. The frontend mirrors this vocabulary in `frontend/src/constants/climateIndicators.js`, consumed by both `ForecastLayerMap.jsx` (fallback options before `/api/seasonal-raster/options` resolves) and `AIMapInterpretation.jsx` (ranking summaries across all indicators).
+
+### 16.3 Data Sources
+
+```text
+data/maps/
+├── geotiff/    # .tif / .tiff source rasters
+├── netcdf/     # .nc / .nc4 / .netcdf source rasters
+├── csv/        # gridded lon/lat/value CSV source rasters
+├── cache/      # generated display GeoTIFFs (regenerable, not committed)
+└── seasonal_raster_catalog.json   # optional explicit metadata (falls back to filename inference)
+```
+
+Non-GeoTIFF sources are converted to a display GeoTIFF on first request (`ensure_geotiff`) and cached. GeoTIFFs with a flipped or missing CRS are additionally normalized to a north-up, Web-Mercator-friendly copy (`normalize_geotiff_for_tiles`). Both source directories and the generated `cache/` directory live under `data/maps`, which is deliberately carved out of the project's blanket `*.tif`/`*.nc` gitignore rules (see `.gitignore`) so the source rasters ship with the repo and are present on a fresh deploy; the `cache/` subfolder stays gitignored since it is always regenerable.
+
+### 16.4 Request Flow
+
+```text
+Frontend selects indicator + period + product
+        ↓
+GET /api/seasonal-raster/map (or /compare for all three products)
+        ↓
+Catalog lookup (catalog JSON, or auto-scanned geotiff/netcdf/csv files)
+        ↓
+ensure_geotiff(): convert to GeoTIFF + normalize orientation (cached)
+        ↓
+Raster statistics (min/mean/max/percentiles) + legend + bounds
+        ↓
+Leaflet requests XYZ tiles: GET /api/seasonal-raster/tiles/{id}/{z}/{x}/{y}.png
+        ↓
+Tile rendered with a Matplotlib colormap scaled to the statistics range
+        ↓
+Click-to-inspect: GET /api/seasonal-raster/value/{id}?lat=..&lon=..
+```
+
+### 16.5 Static Seasonal Map Catalog
+
+`app/api/seasonal_maps.py` separately serves pre-rendered PNG maps from `data/maps/Seasonal` and `data/maps/Subseasonal` (`GET /api/seasonal-maps/catalog`, `GET /api/seasonal-maps/image/{id}`). This is a simpler, non-interactive alternative image catalog and does not depend on the geospatial libraries the raster tile service needs.
+
+### 16.6 Path Safety
+
+Both routers resolve any catalog-supplied path (`image_path` in `seasonal_maps_catalog.json`, `source_path` in `seasonal_raster_catalog.json`) through `seasonal_catalog_shared.resolve_within()`, which rejects anything that does not resolve inside the maps directory. This exists so a crafted or mistaken catalog entry (e.g. a relative path with `../../`) cannot be used to read or serve an arbitrary file elsewhere in the project through these endpoints.
+
+### 16.7 Caching, Eviction, and Prewarming
+
+Converted GeoTIFFs accumulate in `data/maps/cache/seasonal_raster` as different indicator/period/product combinations are viewed. `enforce_cache_size_limit()` evicts the oldest files (by mtime) once the cache exceeds `SEASONAL_RASTER_CACHE_MAX_MB` (default 512 MB) -- cached files are cheap to regenerate, so no LRU bookkeeping is needed beyond mtime.
+
+`POST /api/seasonal-raster/prewarm` converts and caches every catalog map up front (`?wait=true` to run synchronously and get per-map results, otherwise it runs as a background task and returns immediately), so the first user to view any given map isn't the one who pays the NetCDF/CSV → GeoTIFF conversion cost. Setting `SEASONAL_RASTER_PREWARM_ON_STARTUP=true` runs this automatically once at backend startup, off the request path (via a background thread).
+
+### 16.8 Required Dependencies and Configuration
+
+The raster tile service needs `rasterio`, `rio-tiler`, `pillow`, `matplotlib`, and (for NetCDF sources) `xarray`, `rioxarray`, `netCDF4`, `h5netcdf` -- all listed in `requirements.txt`. Relevant environment variables (all optional, with sensible defaults resolved relative to `data/maps`):
+
+```text
+SEASONAL_RASTER_ROOT, SEASONAL_GEOTIFF_DIR, SEASONAL_NETCDF_DIR, SEASONAL_CSV_DIR
+SEASONAL_RASTER_CACHE_DIR, SEASONAL_RASTER_CATALOG
+SEASONAL_RASTER_CACHE_MAX_MB
+SEASONAL_RASTER_PREWARM_ON_STARTUP
+SEASONAL_AUTO_MASK_ZERO_STRIPES, SEASONAL_ZERO_STRIPE_FRACTION, SEASONAL_TILE_BOUNDS_BUFFER_DEGREES
+```
+
+---
+
+## 17. Frontend State Flow
 
 The dashboard stores and updates:
 
@@ -766,7 +845,7 @@ Update UI
 
 ---
 
-## 17. Backend API Summary
+## 18. Backend API Summary
 
 | Endpoint | Method | Purpose |
 |---|---|---|
@@ -782,10 +861,21 @@ Update UI
 | `/api/action-tracker/{district}/csv` | GET | Exports action tracker CSV |
 | `/api/bulletin/{district}` | GET | Exports HTML or Markdown bulletin |
 | `/api/report-types` | GET | Returns supported report categories |
+| `/api/seasonal-maps/catalog` | GET | Lists static seasonal PNG maps |
+| `/api/seasonal-maps/image/{id}` | GET | Serves a static seasonal PNG map |
+| `/api/seasonal-raster/options` | GET | Lists indicator/period/product combinations with data |
+| `/api/seasonal-raster/map` | GET | Returns one interactive raster map (tiles, legend, stats, bounds) |
+| `/api/seasonal-raster/compare` | GET | Returns Forecast/Climatology/Anomaly maps together |
+| `/api/seasonal-raster/tiles/{id}/{z}/{x}/{y}.png` | GET | Serves XYZ raster tiles for Leaflet |
+| `/api/seasonal-raster/value/{id}` | GET | Reads the raster value at a lat/lon |
+| `/api/seasonal-raster/statistics/{id}` | GET | Returns min/mean/max/percentile statistics for a map |
+| `/api/seasonal-raster/prewarm` | POST | Pre-converts and caches all raster maps |
+| `/api/seasonal-raster/refresh` | POST | Clears the in-memory catalog/statistics cache |
+| `/api/seasonal-raster/health` | GET | Diagnostics: discovered maps and source directories |
 
 ---
 
-## 18. Current Local Storage Design
+## 19. Current Local Storage Design
 
 The MVP uses lightweight file-based storage:
 
@@ -795,6 +885,8 @@ The MVP uses lightweight file-based storage:
 | `community_reports.json` | submitted community reports |
 | `action_task_status.json` | saved task status updates |
 | `action_library.json` | local advisory knowledge base |
+| `data/maps/geotiff`, `data/maps/netcdf`, `data/maps/csv` | seasonal raster map sources (see section 16) |
+| `data/maps/cache/seasonal_raster` | generated display GeoTIFFs, size-capped and regenerable |
 
 This is simple and transparent for a hackathon MVP.
 
@@ -806,7 +898,7 @@ PostgreSQL / PostGIS
 
 ---
 
-## 19. Production Architecture Roadmap
+## 20. Production Architecture Roadmap
 
 A production version could use the following architecture:
 
@@ -840,7 +932,7 @@ Potential production upgrades:
 
 ---
 
-## 20. Security and Governance Considerations
+## 21. Security and Governance Considerations
 
 For production use, the system should include:
 
@@ -858,7 +950,7 @@ Because early warning advisories can influence real-world decisions, AI-generate
 
 ---
 
-## 21. Scalability
+## 22. Scalability
 
 Forecast2Action AI is scalable because:
 
@@ -873,7 +965,7 @@ The architecture can support more countries and hazards with limited restructuri
 
 ---
 
-## 22. Summary
+## 23. Summary
 
 Forecast2Action AI is built around a practical operational chain:
 
