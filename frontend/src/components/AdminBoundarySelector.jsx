@@ -124,7 +124,10 @@ function AdminBoundarySelector({
     }
 
     return (adminOptions.zones || []).filter((item) => {
-      return item.region_id === selectedRegionId || item.regionId === selectedRegionId;
+      return (
+        item.region_id === selectedRegionId ||
+        item.regionId === selectedRegionId
+      );
     });
   }, [adminOptions.zones, selectedRegionId]);
 
@@ -173,7 +176,7 @@ function AdminBoundarySelector({
         if (error.name !== "AbortError") {
           console.error(error);
           setErrorMessage(
-            "Could not load Ethiopia administrative boundary options. Check the backend /api/admin-boundaries/options endpoint."
+            "Could not load Ethiopia administrative boundary options. Check the backend /api/admin-boundaries/options endpoint.",
           );
           setOptionsLoaded(false);
         }
@@ -200,7 +203,7 @@ function AdminBoundarySelector({
         const level = getBoundaryLevel(
           selectedRegionId,
           selectedZoneId,
-          selectedWoredaId
+          selectedWoredaId,
         );
 
         const params = new URLSearchParams();
@@ -220,7 +223,7 @@ function AdminBoundarySelector({
 
         const response = await fetch(
           apiUrl(`/api/admin-boundaries/geojson?${params.toString()}`),
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
@@ -250,7 +253,7 @@ function AdminBoundarySelector({
         if (error.name !== "AbortError") {
           console.error(error);
           setErrorMessage(
-            "Could not load selected administrative boundary. Check the backend /api/admin-boundaries/geojson endpoint."
+            "Could not load selected administrative boundary. Check the backend /api/admin-boundaries/geojson endpoint.",
           );
         }
       } finally {
@@ -314,10 +317,6 @@ function AdminBoundarySelector({
       <div className="admin-selector-header">
         <div>
           <h2>Administrative Area Selection</h2>
-          <p>
-            One shared Region, Zone and Woreda selector controls both the
-            Forecast Risk Layers and the Interactive Administrative Risk Map.
-          </p>
         </div>
 
         <div className="admin-selector-actions">

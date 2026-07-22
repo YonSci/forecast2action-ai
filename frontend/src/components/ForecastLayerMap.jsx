@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
-import { GeoJSON, ImageOverlay, MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import {
+  GeoJSON,
+  ImageOverlay,
+  MapContainer,
+  TileLayer,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
 import {
@@ -72,7 +79,9 @@ function pickValidSeasonalCombo(available, scale, indicator, period, product) {
     return { scale, indicator, period, product };
   }
 
-  const scoped = available.filter((item) => (item.scale || "seasonal") === scale);
+  const scoped = available.filter(
+    (item) => (item.scale || "seasonal") === scale,
+  );
   const pool = scoped.length ? scoped : available;
 
   const periodLower = String(period).toLowerCase();
@@ -80,7 +89,7 @@ function pickValidSeasonalCombo(available, scale, indicator, period, product) {
     (item) =>
       item.indicator === indicator &&
       String(item.period).toLowerCase() === periodLower &&
-      item.product === product
+      item.product === product,
   );
 
   if (isValid) {
@@ -89,12 +98,19 @@ function pickValidSeasonalCombo(available, scale, indicator, period, product) {
 
   const next =
     pool.find(
-      (item) => item.indicator === indicator && String(item.period).toLowerCase() === periodLower
+      (item) =>
+        item.indicator === indicator &&
+        String(item.period).toLowerCase() === periodLower,
     ) ||
     pool.find((item) => item.indicator === indicator) ||
     pool[0];
 
-  return { scale: next.scale || scale, indicator: next.indicator, period: next.period, product: next.product };
+  return {
+    scale: next.scale || scale,
+    indicator: next.indicator,
+    period: next.period,
+    product: next.product,
+  };
 }
 
 // Consolidates the climate indicator section's selection, fetched data, and
@@ -106,23 +122,55 @@ function pickValidSeasonalCombo(available, scale, indicator, period, product) {
 function seasonalReducer(state, action) {
   switch (action.type) {
     case "SET_OPTIONS": {
-      const available = Array.isArray(action.options.available) ? action.options.available : [];
-      const picked = pickValidSeasonalCombo(available, state.scale, state.indicator, state.period, state.product);
+      const available = Array.isArray(action.options.available)
+        ? action.options.available
+        : [];
+      const picked = pickValidSeasonalCombo(
+        available,
+        state.scale,
+        state.indicator,
+        state.period,
+        state.product,
+      );
       return { ...state, options: action.options, ...picked };
     }
     case "SET_SCALE": {
-      const available = Array.isArray(state.options.available) ? state.options.available : [];
-      const picked = pickValidSeasonalCombo(available, action.value, state.indicator, state.period, state.product);
+      const available = Array.isArray(state.options.available)
+        ? state.options.available
+        : [];
+      const picked = pickValidSeasonalCombo(
+        available,
+        action.value,
+        state.indicator,
+        state.period,
+        state.product,
+      );
       return { ...state, ...picked };
     }
     case "SET_INDICATOR": {
-      const available = Array.isArray(state.options.available) ? state.options.available : [];
-      const picked = pickValidSeasonalCombo(available, state.scale, action.value, state.period, state.product);
+      const available = Array.isArray(state.options.available)
+        ? state.options.available
+        : [];
+      const picked = pickValidSeasonalCombo(
+        available,
+        state.scale,
+        action.value,
+        state.period,
+        state.product,
+      );
       return { ...state, ...picked };
     }
     case "SET_PERIOD": {
-      const available = Array.isArray(state.options.available) ? state.options.available : [];
-      const picked = pickValidSeasonalCombo(available, state.scale, state.indicator, action.value, state.product);
+      const available = Array.isArray(state.options.available)
+        ? state.options.available
+        : [];
+      const picked = pickValidSeasonalCombo(
+        available,
+        state.scale,
+        state.indicator,
+        action.value,
+        state.product,
+      );
       return { ...state, ...picked };
     }
     case "SET_PRODUCT":
@@ -140,7 +188,13 @@ function seasonalReducer(state, action) {
         errorMessage: action.errorMessage || "",
       };
     case "FETCH_ERROR":
-      return { ...state, loading: false, selectedMap: null, compareMaps: {}, errorMessage: action.errorMessage };
+      return {
+        ...state,
+        loading: false,
+        selectedMap: null,
+        compareMaps: {},
+        errorMessage: action.errorMessage,
+      };
     default:
       return state;
   }
@@ -298,7 +352,11 @@ function normalizeUrl(url) {
     return "";
   }
 
-  if (String(url).startsWith("http://") || String(url).startsWith("https://") || String(url).startsWith("data:")) {
+  if (
+    String(url).startsWith("http://") ||
+    String(url).startsWith("https://") ||
+    String(url).startsWith("data:")
+  ) {
     return url;
   }
 
@@ -527,15 +585,20 @@ function SeasonalMetadataGrid({ map }) {
       <MetadataItem label="Valid start" value={map.valid_start} />
       <MetadataItem label="Valid end" value={map.valid_end} />
       <MetadataItem label="Forecast source" value={map.forecast_source} />
-      <MetadataItem label="System version" value={map.forecast_system_version} />
+      <MetadataItem
+        label="System version"
+        value={map.forecast_system_version}
+      />
       <MetadataItem label="Ensemble members" value={map.n_ensemble_members} />
-      <MetadataItem label="Observation dataset" value={map.observation_dataset} />
+      <MetadataItem
+        label="Observation dataset"
+        value={map.observation_dataset}
+      />
       <MetadataItem label="Climatology period" value={map.climatology_period} />
       <MetadataItem label="Units" value={map.units} />
     </div>
   );
 }
-
 
 function normalizeBounds(bounds) {
   let rawSouth = 3;
@@ -584,7 +647,7 @@ function FitSeasonalRasterBounds({ map, viewKey }) {
           padding: [8, 8],
           animate: true,
           duration: 0.4,
-        }
+        },
       );
     }
   }, [leafletMap, map?.id, viewKey]);
@@ -697,19 +760,32 @@ function RasterLegend({ map, indicator }) {
 
   if (legendItems.length) {
     const gradient = `linear-gradient(to right, ${legendItems.map((item) => item.color).join(", ")})`;
-    const tickIndexes = [0, Math.floor((legendItems.length - 1) / 2), legendItems.length - 1];
-    const ticks = tickIndexes.map((index) => legendItems[index]).filter(Boolean);
+    const tickIndexes = [
+      0,
+      Math.floor((legendItems.length - 1) / 2),
+      legendItems.length - 1,
+    ];
+    const ticks = tickIndexes
+      .map((index) => legendItems[index])
+      .filter(Boolean);
 
     return (
       <div className="seasonal-continuous-legend">
         <div className="seasonal-continuous-legend-header">
-          <strong>{map.legend.title || map.indicator_label || "Raster value"}</strong>
+          <strong>
+            {map.legend.title || map.indicator_label || "Raster value"}
+          </strong>
           {map.legend.units && <span>{map.legend.units}</span>}
         </div>
-        <div className="seasonal-continuous-legend-bar" style={{ background: gradient }} />
+        <div
+          className="seasonal-continuous-legend-bar"
+          style={{ background: gradient }}
+        />
         <div className="seasonal-continuous-legend-ticks">
           {ticks.map((item, index) => (
-            <span key={`${map.id}-continuous-legend-${index}`}>{item.label}</span>
+            <span key={`${map.id}-continuous-legend-${index}`}>
+              {item.label}
+            </span>
           ))}
         </div>
         <div className="forecast-gradient-labels forecast-indicator-range-labels seasonal-continuous-range-labels">
@@ -732,11 +808,26 @@ function RasterStatsSummary({ map }) {
 
   return (
     <div className="seasonal-raster-stats-grid">
-      <MetadataItem label="Min" value={stats.min !== undefined ? formatValue(stats.min, 2) : ""} />
-      <MetadataItem label="Mean" value={stats.mean !== undefined ? formatValue(stats.mean, 2) : ""} />
-      <MetadataItem label="Max" value={stats.max !== undefined ? formatValue(stats.max, 2) : ""} />
-      <MetadataItem label="P10" value={stats.p10 !== undefined ? formatValue(stats.p10, 2) : ""} />
-      <MetadataItem label="P90" value={stats.p90 !== undefined ? formatValue(stats.p90, 2) : ""} />
+      <MetadataItem
+        label="Min"
+        value={stats.min !== undefined ? formatValue(stats.min, 2) : ""}
+      />
+      <MetadataItem
+        label="Mean"
+        value={stats.mean !== undefined ? formatValue(stats.mean, 2) : ""}
+      />
+      <MetadataItem
+        label="Max"
+        value={stats.max !== undefined ? formatValue(stats.max, 2) : ""}
+      />
+      <MetadataItem
+        label="P10"
+        value={stats.p10 !== undefined ? formatValue(stats.p10, 2) : ""}
+      />
+      <MetadataItem
+        label="P90"
+        value={stats.p90 !== undefined ? formatValue(stats.p90, 2) : ""}
+      />
       <MetadataItem label="Valid cells" value={stats.valid_count} />
     </div>
   );
@@ -751,6 +842,7 @@ function SeasonalInteractiveMapCard({
   boundaryKey = "all",
   inspectPoint = null,
   onInspectPoint = null,
+  indicator = null,
 }) {
   const [clickedValue, setClickedValue] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
@@ -809,7 +901,11 @@ function SeasonalInteractiveMapCard({
     params.set("lon", String(inspectPoint.lon));
 
     fetch(apiUrl(`/api/seasonal-raster/value/${map.id}?${params.toString()}`))
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`status ${response.status}`))))
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error(`status ${response.status}`)),
+      )
       .then((data) => {
         if (cancelled) return;
         setClickedValue({
@@ -819,7 +915,8 @@ function SeasonalInteractiveMapCard({
           value: data.value,
           formatted_value: data.formatted_value,
           units: data.units,
-          message: data.formatted_value || "No value available at clicked point.",
+          message:
+            data.formatted_value || "No value available at clicked point.",
         });
       })
       .catch(() => {
@@ -839,7 +936,9 @@ function SeasonalInteractiveMapCard({
   }, [map?.id, inspectPoint]);
 
   return (
-    <article className={`seasonal-map-card seasonal-raster-card${compact ? " compact" : ""}`}>
+    <article
+      className={`seasonal-map-card seasonal-raster-card${compact ? " compact" : ""}`}
+    >
       <div className="seasonal-map-card-header">
         <h3>{title || map?.product_label || "Seasonal map"}</h3>
         {map?.period && <span>{map.period}</span>}
@@ -848,7 +947,10 @@ function SeasonalInteractiveMapCard({
       {imageUrl ? (
         <div className="seasonal-raster-map-frame">
           <MapContainer
-            center={[(bounds.south + bounds.north) / 2, (bounds.west + bounds.east) / 2]}
+            center={[
+              (bounds.south + bounds.north) / 2,
+              (bounds.west + bounds.east) / 2,
+            ]}
             zoom={compact ? 5.6 : 6.15}
             minZoom={4.75}
             maxZoom={10}
@@ -861,7 +963,7 @@ function SeasonalInteractiveMapCard({
             preferCanvas
           >
             <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
+              attribution="&copy; OpenStreetMap contributors"
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               keepBuffer={4}
             />
@@ -882,9 +984,14 @@ function SeasonalInteractiveMapCard({
             )}
             <BasemapPaneOpacity opacity={basemapOpacity} />
             <FitSeasonalRasterBounds map={map} viewKey={mapKey} />
-            <RasterValueClickHandler onClick={(latlng) => onInspectPoint?.(latlng)} />
+            <RasterValueClickHandler
+              onClick={(latlng) => onInspectPoint?.(latlng)}
+            />
             <RasterHoverHandler grid={valueGrid} onHover={setHoverInfo} />
-            <RasterInspectPosition latlng={inspectPoint} onPosition={setInspectMarkerPos} />
+            <RasterInspectPosition
+              latlng={inspectPoint}
+              onPosition={setInspectMarkerPos}
+            />
           </MapContainer>
 
           {hoverInfo && Number.isFinite(hoverInfo.value) ? (
@@ -899,16 +1006,24 @@ function SeasonalInteractiveMapCard({
 
           {inspectMarkerPos && (
             <>
-              <div className="seasonal-raster-inspect-marker" style={{ left: inspectMarkerPos.x, top: inspectMarkerPos.y }} />
-              {clickedValue && !clickedValue.loading && Number.isFinite(clickedValue.value) && (
-                <div
-                  className="seasonal-raster-hover-tooltip seasonal-raster-inspect-tooltip"
-                  style={{ left: inspectMarkerPos.x, top: inspectMarkerPos.y }}
-                >
-                  {formatValue(clickedValue.value, 2)}
-                  {clickedValue.units ? ` ${clickedValue.units}` : ""}
-                </div>
-              )}
+              <div
+                className="seasonal-raster-inspect-marker"
+                style={{ left: inspectMarkerPos.x, top: inspectMarkerPos.y }}
+              />
+              {clickedValue &&
+                !clickedValue.loading &&
+                Number.isFinite(clickedValue.value) && (
+                  <div
+                    className="seasonal-raster-hover-tooltip seasonal-raster-inspect-tooltip"
+                    style={{
+                      left: inspectMarkerPos.x,
+                      top: inspectMarkerPos.y,
+                    }}
+                  >
+                    {formatValue(clickedValue.value, 2)}
+                    {clickedValue.units ? ` ${clickedValue.units}` : ""}
+                  </div>
+                )}
             </>
           )}
 
@@ -916,7 +1031,10 @@ function SeasonalInteractiveMapCard({
             Hover or click map to inspect value
           </div>
           {!compact && (
-            <div className="seasonal-raster-map-controls" aria-label="Map opacity controls">
+            <div
+              className="seasonal-raster-map-controls"
+              aria-label="Map opacity controls"
+            >
               <label>
                 <span>Raster</span>
                 <input
@@ -925,7 +1043,9 @@ function SeasonalInteractiveMapCard({
                   max="1"
                   step="0.05"
                   value={rasterOpacity}
-                  onChange={(event) => setRasterOpacity(Number(event.target.value))}
+                  onChange={(event) =>
+                    setRasterOpacity(Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -936,7 +1056,9 @@ function SeasonalInteractiveMapCard({
                   max="1"
                   step="0.05"
                   value={basemapOpacity}
-                  onChange={(event) => setBasemapOpacity(Number(event.target.value))}
+                  onChange={(event) =>
+                    setBasemapOpacity(Number(event.target.value))
+                  }
                 />
               </label>
             </div>
@@ -950,16 +1072,19 @@ function SeasonalInteractiveMapCard({
         <div className="seasonal-raster-click-value">
           <span>Clicked value</span>
           <strong>{clickedValue.message}</strong>
-          {Number.isFinite(clickedValue.lat) && Number.isFinite(clickedValue.lon) && (
-            <small>
-              {formatValue(clickedValue.lat, 3)}, {formatValue(clickedValue.lon, 3)}
-            </small>
-          )}
+          {Number.isFinite(clickedValue.lat) &&
+            Number.isFinite(clickedValue.lon) && (
+              <small>
+                {formatValue(clickedValue.lat, 3)},{" "}
+                {formatValue(clickedValue.lon, 3)}
+              </small>
+            )}
         </div>
       )}
 
       {map && (
         <>
+          {compact && <RasterLegend map={map} indicator={indicator} />}
           <RasterStatsSummary map={map} />
           {!compact && <SeasonalMetadataGrid map={map} />}
         </>
@@ -976,7 +1101,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [seasonalState, dispatchSeasonal] = useReducer(seasonalReducer, INITIAL_SEASONAL_STATE);
+  const [seasonalState, dispatchSeasonal] = useReducer(
+    seasonalReducer,
+    INITIAL_SEASONAL_STATE,
+  );
   const {
     options: seasonalOptions,
     scale: seasonalScale,
@@ -994,7 +1122,9 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const [seasonalInspectPoint, setSeasonalInspectPoint] = useState(null);
 
   const filteredLeadOptions = useMemo(() => {
-    return OPTIONS.leads.filter((item) => item.forecast_scale === forecastScale);
+    return OPTIONS.leads.filter(
+      (item) => item.forecast_scale === forecastScale,
+    );
   }, [forecastScale]);
 
   const displayedGeojson = useMemo(() => {
@@ -1003,37 +1133,68 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
   const selectedLayerLabel = getOptionLabel(OPTIONS.layers, layer);
   const selectedLeadLabel = getOptionLabel(OPTIONS.leads, lead);
-  const selectedSeasonalScaleLabel = getOptionLabel(seasonalOptions.scales, seasonalScale);
-  const selectedSeasonalIndicatorLabel = getOptionLabel(seasonalOptions.indicators, seasonalIndicator);
-  const selectedSeasonalPeriodLabel = getOptionLabel(seasonalOptions.periods, seasonalPeriod);
-  const selectedSeasonalProductLabel = getOptionLabel(seasonalOptions.products, seasonalProduct);
+  const selectedSeasonalScaleLabel = getOptionLabel(
+    seasonalOptions.scales,
+    seasonalScale,
+  );
+  const selectedSeasonalIndicatorLabel = getOptionLabel(
+    seasonalOptions.indicators,
+    seasonalIndicator,
+  );
+  const selectedSeasonalPeriodLabel = getOptionLabel(
+    seasonalOptions.periods,
+    seasonalPeriod,
+  );
+  const selectedSeasonalProductLabel = getOptionLabel(
+    seasonalOptions.products,
+    seasonalProduct,
+  );
 
   const seasonalAvailableCombinations = Array.isArray(seasonalOptions.available)
     ? seasonalOptions.available
     : [];
 
   const seasonalIndicatorOptions = useMemo(() => {
-    const scoped = seasonalAvailableCombinations.filter((item) => (item.scale || "seasonal") === seasonalScale);
+    const scoped = seasonalAvailableCombinations.filter(
+      (item) => (item.scale || "seasonal") === seasonalScale,
+    );
     const pool = scoped.length ? scoped : seasonalAvailableCombinations;
     if (!pool.length) {
       return seasonalOptions.indicators;
     }
     const values = new Set(pool.map((item) => item.indicator));
     return seasonalOptions.indicators.filter((item) => values.has(item.value));
-  }, [seasonalOptions.indicators, seasonalAvailableCombinations, seasonalScale]);
+  }, [
+    seasonalOptions.indicators,
+    seasonalAvailableCombinations,
+    seasonalScale,
+  ]);
 
   const seasonalPeriodOptions = useMemo(() => {
-    const periodsForScale = seasonalOptions.periods.filter((item) => (item.scale || "seasonal") === seasonalScale);
+    const periodsForScale = seasonalOptions.periods.filter(
+      (item) => (item.scale || "seasonal") === seasonalScale,
+    );
     if (!seasonalAvailableCombinations.length) {
       return periodsForScale;
     }
     const values = new Set(
       seasonalAvailableCombinations
-        .filter((item) => item.indicator === seasonalIndicator && (item.scale || "seasonal") === seasonalScale)
-        .map((item) => String(item.period).toLowerCase())
+        .filter(
+          (item) =>
+            item.indicator === seasonalIndicator &&
+            (item.scale || "seasonal") === seasonalScale,
+        )
+        .map((item) => String(item.period).toLowerCase()),
     );
-    return periodsForScale.filter((item) => values.has(String(item.value).toLowerCase()));
-  }, [seasonalOptions.periods, seasonalAvailableCombinations, seasonalIndicator, seasonalScale]);
+    return periodsForScale.filter((item) =>
+      values.has(String(item.value).toLowerCase()),
+    );
+  }, [
+    seasonalOptions.periods,
+    seasonalAvailableCombinations,
+    seasonalIndicator,
+    seasonalScale,
+  ]);
 
   const seasonalProductOptions = useMemo(() => {
     if (!seasonalAvailableCombinations.length) {
@@ -1044,13 +1205,20 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         .filter(
           (item) =>
             item.indicator === seasonalIndicator &&
-            String(item.period).toLowerCase() === String(seasonalPeriod).toLowerCase() &&
-            (item.scale || "seasonal") === seasonalScale
+            String(item.period).toLowerCase() ===
+              String(seasonalPeriod).toLowerCase() &&
+            (item.scale || "seasonal") === seasonalScale,
         )
-        .map((item) => item.product)
+        .map((item) => item.product),
     );
     return seasonalOptions.products.filter((item) => values.has(item.value));
-  }, [seasonalOptions.products, seasonalAvailableCombinations, seasonalIndicator, seasonalPeriod, seasonalScale]);
+  }, [
+    seasonalOptions.products,
+    seasonalAvailableCombinations,
+    seasonalIndicator,
+    seasonalPeriod,
+    seasonalScale,
+  ]);
 
   const displayedClimateMapLabel = `${selectedSeasonalIndicatorLabel} · ${selectedSeasonalPeriodLabel} · ${selectedSeasonalProductLabel}`;
 
@@ -1117,7 +1285,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
   useEffect(() => {
     const leadsForScale = OPTIONS.leads.filter(
-      (item) => item.forecast_scale === forecastScale
+      (item) => item.forecast_scale === forecastScale,
     );
 
     if (
@@ -1138,24 +1306,37 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         });
 
         if (!response.ok) {
-          throw new Error(`Seasonal options request failed: ${response.status}`);
+          throw new Error(
+            `Seasonal options request failed: ${response.status}`,
+          );
         }
 
         const data = await response.json();
         dispatchSeasonal({
           type: "SET_OPTIONS",
           options: {
-            indicators: data.indicators?.length ? data.indicators : FALLBACK_SEASONAL_OPTIONS.indicators,
-            periods: data.periods?.length ? data.periods : FALLBACK_SEASONAL_OPTIONS.periods,
-            products: data.products?.length ? data.products : FALLBACK_SEASONAL_OPTIONS.products,
-            scales: data.scales?.length ? data.scales : FALLBACK_SEASONAL_OPTIONS.scales,
+            indicators: data.indicators?.length
+              ? data.indicators
+              : FALLBACK_SEASONAL_OPTIONS.indicators,
+            periods: data.periods?.length
+              ? data.periods
+              : FALLBACK_SEASONAL_OPTIONS.periods,
+            products: data.products?.length
+              ? data.products
+              : FALLBACK_SEASONAL_OPTIONS.products,
+            scales: data.scales?.length
+              ? data.scales
+              : FALLBACK_SEASONAL_OPTIONS.scales,
             available: Array.isArray(data.available) ? data.available : [],
           },
         });
       } catch (error) {
         if (error.name !== "AbortError") {
           console.warn(error);
-          dispatchSeasonal({ type: "SET_OPTIONS", options: FALLBACK_SEASONAL_OPTIONS });
+          dispatchSeasonal({
+            type: "SET_OPTIONS",
+            options: FALLBACK_SEASONAL_OPTIONS,
+          });
         }
       }
     }
@@ -1181,7 +1362,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
         const response = await fetch(
           apiUrl(`/api/map-layers/ethiopia?${params.toString()}`),
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
@@ -1195,7 +1376,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
           console.error(error);
           setGeojson(null);
           setErrorMessage(
-            "Could not load Ethiopia hazard/risk map layer. Check the backend /api/map-layers/ethiopia endpoint."
+            "Could not load Ethiopia hazard/risk map layer. Check the backend /api/map-layers/ethiopia endpoint.",
           );
         }
       } finally {
@@ -1225,20 +1406,30 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         compareParams.set("period", seasonalPeriod);
 
         const [selectedResponse, compareResponse] = await Promise.all([
-          fetch(apiUrl(`/api/seasonal-raster/map?${selectedParams.toString()}`), {
-            signal: controller.signal,
-          }),
-          fetch(apiUrl(`/api/seasonal-raster/compare?${compareParams.toString()}`), {
-            signal: controller.signal,
-          }),
+          fetch(
+            apiUrl(`/api/seasonal-raster/map?${selectedParams.toString()}`),
+            {
+              signal: controller.signal,
+            },
+          ),
+          fetch(
+            apiUrl(`/api/seasonal-raster/compare?${compareParams.toString()}`),
+            {
+              signal: controller.signal,
+            },
+          ),
         ]);
 
         if (!selectedResponse.ok) {
-          throw new Error(`Selected seasonal map request failed: ${selectedResponse.status}`);
+          throw new Error(
+            `Selected seasonal map request failed: ${selectedResponse.status}`,
+          );
         }
 
         const selectedData = await selectedResponse.json();
-        const compareData = compareResponse.ok ? await compareResponse.json() : { maps: {} };
+        const compareData = compareResponse.ok
+          ? await compareResponse.json()
+          : { maps: {} };
 
         dispatchSeasonal({
           type: "FETCH_SUCCESS",
@@ -1271,7 +1462,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     setForecastScale(nextScale);
 
     const firstLeadForScale = OPTIONS.leads.find(
-      (item) => item.forecast_scale === nextScale
+      (item) => item.forecast_scale === nextScale,
     );
 
     if (firstLeadForScale) {
@@ -1328,18 +1519,15 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       <section className="panel forecast-layer-section climate-indicator-section">
         <div className="forecast-layer-header">
           <div>
-            <h2>Subseasonal to Seasonal Climate Indicator Maps for Ethiopia</h2>
-            <p>
-              Interactive forecast, climatology, and anomaly raster maps for rainfall, SPI, dry/wet
-              spell, and dry-spell-probability indicators, across subseasonal (weekly) and seasonal
-              (monthly / JJAS) forecast windows.
-            </p>
+            <h2>Subseasonal to Seasonal Climate Indices</h2>
             <p className="map-selected-area">
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>
           </div>
 
-          <div className="forecast-domain-badge">Seasonal maps · Ethiopia domain</div>
+          <div className="forecast-domain-badge">
+            Seasonal maps · Ethiopia domain
+          </div>
         </div>
 
         <div className="forecast-layer-controls">
@@ -1348,7 +1536,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             <select
               id="seasonal-scale"
               value={seasonalScale}
-              onChange={(event) => dispatchSeasonal({ type: "SET_SCALE", value: event.target.value })}
+              onChange={(event) =>
+                dispatchSeasonal({
+                  type: "SET_SCALE",
+                  value: event.target.value,
+                })
+              }
             >
               {seasonalOptions.scales.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -1363,7 +1556,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             <select
               id="seasonal-period"
               value={seasonalPeriod}
-              onChange={(event) => dispatchSeasonal({ type: "SET_PERIOD", value: event.target.value })}
+              onChange={(event) =>
+                dispatchSeasonal({
+                  type: "SET_PERIOD",
+                  value: event.target.value,
+                })
+              }
             >
               {seasonalPeriodOptions.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -1378,7 +1576,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             <select
               id="seasonal-indicator"
               value={seasonalIndicator}
-              onChange={(event) => dispatchSeasonal({ type: "SET_INDICATOR", value: event.target.value })}
+              onChange={(event) =>
+                dispatchSeasonal({
+                  type: "SET_INDICATOR",
+                  value: event.target.value,
+                })
+              }
             >
               {seasonalIndicatorOptions.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -1393,7 +1596,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             <select
               id="seasonal-product"
               value={seasonalProduct}
-              onChange={(event) => dispatchSeasonal({ type: "SET_PRODUCT", value: event.target.value })}
+              onChange={(event) =>
+                dispatchSeasonal({
+                  type: "SET_PRODUCT",
+                  value: event.target.value,
+                })
+              }
               disabled={climateMapView === "compare"}
             >
               {seasonalProductOptions.map((item) => (
@@ -1423,8 +1631,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 <span className="seasonal-view-switch-thumb" />
               </span>
               <span className="seasonal-view-switch-labels">
-                <span className={climateMapView === "single" ? "active" : ""}>Single map</span>
-                <span className={climateMapView === "compare" ? "active" : ""}>Compare (3 maps)</span>
+                <span className={climateMapView === "single" ? "active" : ""}>
+                  Single map
+                </span>
+                <span className={climateMapView === "compare" ? "active" : ""}>
+                  Compare (3 maps)
+                </span>
               </span>
             </button>
           </div>
@@ -1452,11 +1664,15 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
           </div>
         </div>
 
-        {seasonalErrorMessage && <div className="error-banner">{seasonalErrorMessage}</div>}
+        {seasonalErrorMessage && (
+          <div className="error-banner">{seasonalErrorMessage}</div>
+        )}
 
         <div className="seasonal-map-viewer">
           {seasonalLoading && (
-            <div className="forecast-map-loading seasonal-loading">Loading seasonal climate map...</div>
+            <div className="forecast-map-loading seasonal-loading">
+              Loading seasonal climate map...
+            </div>
           )}
 
           {climateMapView === "single" ? (
@@ -1474,12 +1690,13 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               <aside className="forecast-legend-card seasonal-info-card">
                 <h3>Seasonal climate map</h3>
                 <p className="forecast-legend-mode">
-                  {selectedSeasonalIndicatorLabel}: <strong>{selectedSeasonalPeriodLabel}</strong>
+                  {selectedSeasonalIndicatorLabel}:{" "}
+                  <strong>{selectedSeasonalPeriodLabel}</strong>
                 </p>
-                <RasterLegend map={selectedSeasonalMap} indicator={seasonalIndicator} />
-                <p>
-                  Interactive map tiles are generated from <strong>GeoTIFF</strong>, <strong>NetCDF</strong>, or <strong>CSV</strong> files in data/maps/geotiff, data/maps/netcdf, and data/maps/csv.
-                </p>
+                <RasterLegend
+                  map={selectedSeasonalMap}
+                  indicator={seasonalIndicator}
+                />
                 <SeasonalMetadataGrid map={selectedSeasonalMap} />
               </aside>
             </div>
@@ -1489,10 +1706,15 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 <div>
                   <h3>Forecast vs Climatology vs Anomaly</h3>
                   <p>
-                    Compare what the seasonal forecast says, the climatology for the same period, and how different the forecast is from normal.
+                    Compare what the seasonal forecast says, the climatology for
+                    the same period, and how different the forecast is from
+                    normal.
                   </p>
                 </div>
-                <span>{selectedSeasonalIndicatorLabel} · {selectedSeasonalPeriodLabel}</span>
+                <span>
+                  {selectedSeasonalIndicatorLabel} ·{" "}
+                  {selectedSeasonalPeriodLabel}
+                </span>
               </div>
 
               <div className="seasonal-compare-grid">
@@ -1507,6 +1729,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                     boundaryKey={seasonalBoundaryKey}
                     inspectPoint={seasonalInspectPoint}
                     onInspectPoint={setSeasonalInspectPoint}
+                    indicator={seasonalIndicator}
                   />
                 ))}
               </div>
@@ -1519,15 +1742,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         <div className="forecast-layer-header">
           <div>
             <h2>Ethiopia Hazard / Risk Layers</h2>
-            <p>
-              Hazard, risk score, hazard probability, exposure, and vulnerability grid layers for
-              Ethiopia, by subseasonal or seasonal forecast lead time.
-            </p>
             <p className="map-selected-area">
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>
           </div>
-
           <div className="forecast-domain-badge">Lat 3–15°N · Lon 33–48°E</div>
         </div>
 
@@ -1598,7 +1816,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
         <div className="forecast-map-layout">
-          <div id="forecast-risk-map-hazard" className="forecast-map-wrapper forecast-map-wrapper-switcher">
+          <div
+            id="forecast-risk-map-hazard"
+            className="forecast-map-wrapper forecast-map-wrapper-switcher"
+          >
             <MapContainer
               center={ETHIOPIA_CENTER}
               zoom={6.25}
@@ -1612,7 +1833,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               className="forecast-map"
             >
               <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
+                attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
@@ -1682,7 +1903,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             )}
 
             <p>
-              The selected administrative boundary is used to filter the displayed forecast grid.
+              The selected administrative boundary is used to filter the
+              displayed forecast grid.
             </p>
           </div>
         </div>
