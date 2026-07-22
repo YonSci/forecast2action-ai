@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
-import { GeoJSON, MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { GeoJSON, ImageOverlay, MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
 import {
@@ -592,6 +592,65 @@ function FitSeasonalRasterBounds({ map, viewKey }) {
   return null;
 }
 
+function BasemapPaneOpacity({ opacity }) {
+  const leafletMap = useMap();
+
+  useEffect(() => {
+    // Applying opacity via the TileLayer's own `opacity` prop fades each
+    // tile <img> individually, which leaves faint seams visible along tile
+    // edges (a well-known Leaflet/Chromium compositing quirk). Fading the
+    // whole tile pane in one paint avoids that entirely.
+    const pane = leafletMap.getPane("tilePane");
+    if (pane) {
+      pane.style.opacity = String(opacity);
+    }
+  }, [leafletMap, opacity]);
+
+  return null;
+}
+
+function nearestIndex(values, target) {
+  let bestIndex = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < values.length; i += 1) {
+    const diff = Math.abs(values[i] - target);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIndex = i;
+    }
+  }
+  return bestIndex;
+}
+
+function nearestGridValue(grid, lat, lon) {
+  if (!grid?.lats?.length || !grid?.lons?.length) {
+    return null;
+  }
+  const row = grid.values[nearestIndex(grid.lats, lat)];
+  const value = row ? row[nearestIndex(grid.lons, lon)] : null;
+  return value === undefined ? null : value;
+}
+
+function RasterHoverHandler({ grid, onHover }) {
+  useMapEvents({
+    mousemove(event) {
+      if (!grid) {
+        return;
+      }
+      onHover({
+        x: event.containerPoint.x,
+        y: event.containerPoint.y,
+        value: nearestGridValue(grid, event.latlng.lat, event.latlng.lng),
+      });
+    },
+    mouseout() {
+      onHover(null);
+    },
+  });
+
+  return null;
+}
+
 function RasterValueClickHandler({ map, onValue }) {
   useMapEvents({
     async click(event) {
@@ -686,17 +745,40 @@ function RasterStatsSummary({ map }) {
   );
 }
 
-function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "Interactive map not found for this selection." }) {
+function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "Interactive map not found for this selection.", boundaryGeojson = null, boundaryKey = "all" }) {
   const [clickedValue, setClickedValue] = useState(null);
+  const [hoverInfo, setHoverInfo] = useState(null);
+  const [valueGrid, setValueGrid] = useState(null);
   const [rasterOpacity, setRasterOpacity] = useState(compact ? 0.74 : 0.68);
   const [basemapOpacity, setBasemapOpacity] = useState(0.86);
-  const tileUrl = map?.tile_url ? normalizeUrl(map.tile_url) : "";
+  const imageUrl = map?.image_url ? normalizeUrl(map.image_url) : "";
   const bounds = normalizeBounds(map?.bounds);
   const mapKey = `${map?.id || "missing"}-${title}`;
   const leafletBounds = [
     [bounds.south, bounds.west],
     [bounds.north, bounds.east],
   ];
+
+  useEffect(() => {
+    setValueGrid(null);
+    if (!map?.id || !map?.grid_url) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetch(apiUrl(map.grid_url))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setValueGrid({ ...data, units: map.units || data.units });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [map?.id, map?.grid_url, map?.units]);
 
   return (
     <article className={`seasonal-map-card seasonal-raster-card${compact ? " compact" : ""}`}>
@@ -705,7 +787,7 @@ function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "
         {map?.period && <span>{map.period}</span>}
       </div>
 
-      {tileUrl ? (
+      {imageUrl ? (
         <div className="seasonal-raster-map-frame">
           <MapContainer
             center={[(bounds.south + bounds.north) / 2, (bounds.west + bounds.east) / 2]}
@@ -723,25 +805,41 @@ function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "
             <TileLayer
               attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              opacity={basemapOpacity}
-              detectRetina
               keepBuffer={4}
             />
-            <TileLayer
+            <ImageOverlay
               key={`seasonal-raster-${mapKey}`}
               attribution={map?.attribution || "Seasonal climate raster"}
-              url={tileUrl}
+              url={imageUrl}
+              bounds={leafletBounds}
               opacity={rasterOpacity}
               zIndex={420}
-              keepBuffer={4}
-              updateWhenIdle
             />
+            {boundaryGeojson && (
+              <GeoJSON
+                key={`seasonal-boundary-${mapKey}-${boundaryKey}`}
+                data={boundaryGeojson}
+                style={getBoundaryOverlayStyle}
+              />
+            )}
+            <BasemapPaneOpacity opacity={basemapOpacity} />
             <FitSeasonalRasterBounds map={map} viewKey={mapKey} />
             <RasterValueClickHandler map={map} onValue={setClickedValue} />
+            <RasterHoverHandler grid={valueGrid} onHover={setHoverInfo} />
           </MapContainer>
 
+          {hoverInfo && Number.isFinite(hoverInfo.value) ? (
+            <div
+              className="seasonal-raster-hover-tooltip"
+              style={{ left: hoverInfo.x, top: hoverInfo.y }}
+            >
+              {formatValue(hoverInfo.value, 2)}
+              {valueGrid?.units ? ` ${valueGrid.units}` : ""}
+            </div>
+          ) : null}
+
           <div className="seasonal-raster-map-badge">
-            Click map to inspect value
+            Hover or click map to inspect value
           </div>
           {!compact && (
             <div className="seasonal-raster-map-controls" aria-label="Map opacity controls">
@@ -886,6 +984,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     adminSelection?.zoneLabel ||
     adminSelection?.regionLabel ||
     "All Ethiopia administrative areas";
+
+  const seasonalBoundaryKey = `${adminSelection?.regionId || "all"}-${adminSelection?.zoneId || "all"}-${adminSelection?.woredaId || "all"}`;
 
   // Both sections are always visible together (no tab switcher), so the
   // context sent to the AI interpretation workflow always describes both.
@@ -1290,6 +1390,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 map={selectedSeasonalMap}
                 title={displayedClimateMapLabel}
                 emptyText="No interactive raster map was found for this indicator, period, and product. Check data/maps/geotiff, data/maps/netcdf, data/maps/csv, or seasonal_raster_catalog.json."
+                boundaryGeojson={boundaryGeojson}
+                boundaryKey={seasonalBoundaryKey}
               />
 
               <aside className="forecast-legend-card seasonal-info-card">
@@ -1324,6 +1426,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                     title={item.label}
                     compact
                     emptyText={`${item.label} interactive map is not available for ${selectedSeasonalIndicatorLabel} ${selectedSeasonalPeriodLabel}.`}
+                    boundaryGeojson={boundaryGeojson}
+                    boundaryKey={seasonalBoundaryKey}
                   />
                 ))}
               </div>

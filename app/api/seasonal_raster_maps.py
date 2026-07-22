@@ -37,6 +37,13 @@ CSV_DIR = Path(os.getenv("SEASONAL_CSV_DIR", MAPS_ROOT / "csv")).resolve()
 CACHE_DIR = Path(os.getenv("SEASONAL_RASTER_CACHE_DIR", MAPS_ROOT / "cache" / "seasonal_raster")).resolve()
 CATALOG_PATH = Path(os.getenv("SEASONAL_RASTER_CATALOG", MAPS_ROOT / "seasonal_raster_catalog.json")).resolve()
 
+# Country outline used to clip rendered maps to Ethiopia's real border instead
+# of whatever rough rectangular footprint a source raster happens to have.
+# Same shapefile already used by app/data_pipeline/ethiopia_admin_boundary_pipeline.py.
+COUNTRY_BOUNDARY_PATH = Path(
+    os.getenv("SEASONAL_RASTER_COUNTRY_BOUNDARY", PROJECT_ROOT / "data" / "eth_shapefile" / "eth_admin0.shp")
+).resolve()
+
 # Converted GeoTIFFs accumulate in CACHE_DIR forever otherwise -- every distinct
 # indicator/period/product combination a user views adds another cached file.
 # This trims the oldest files (by mtime) once the cache exceeds a size budget.
@@ -48,6 +55,7 @@ SEASONAL_RASTER_CACHE_MAX_MB = float(os.getenv("SEASONAL_RASTER_CACHE_MAX_MB", "
 AUTO_MASK_ZERO_STRIPES = os.getenv("SEASONAL_AUTO_MASK_ZERO_STRIPES", "true").strip().lower() not in {"0", "false", "no"}
 ZERO_STRIPE_FRACTION = float(os.getenv("SEASONAL_ZERO_STRIPE_FRACTION", "0.92"))
 DEFAULT_TILE_BUFFER_DEGREES = float(os.getenv("SEASONAL_TILE_BOUNDS_BUFFER_DEGREES", "0.15"))
+FULL_IMAGE_MIN_LONG_SIDE = int(os.getenv("SEASONAL_FULL_IMAGE_MIN_LONG_SIDE", "480"))
 
 DEFAULT_BOUNDS = {"south": 3.0, "west": 33.0, "north": 15.0, "east": 48.0}
 
@@ -358,6 +366,168 @@ def clean_array_for_display(arr: Any, source_nodata: Any = None):
     return cleaned
 
 
+@lru_cache(maxsize=1)
+def load_country_geometries() -> Tuple[Dict[str, Any], ...]:
+    """Return Ethiopia's national boundary geometry (EPSG:4326) for raster clipping.
+
+    Falls back to an empty tuple (no clipping applied) if the shapefile or
+    geopandas is unavailable, so a missing optional dependency degrades to the
+    previous behavior instead of breaking map rendering entirely.
+    """
+    if not COUNTRY_BOUNDARY_PATH.exists():
+        return tuple()
+    try:
+        import geopandas as gpd
+    except Exception:
+        return tuple()
+
+    try:
+        gdf = gpd.read_file(COUNTRY_BOUNDARY_PATH)
+        if gdf.crs and str(gdf.crs).upper() not in {"EPSG:4326", "OGC:CRS84"}:
+            gdf = gdf.to_crs("EPSG:4326")
+        return tuple(geom.__geo_interface__ for geom in gdf.geometry if geom is not None)
+    except Exception:
+        return tuple()
+
+
+def rasterize_country_mask(shape: Tuple[int, int], transform: Any):
+    """Return a boolean array, True where a pixel (given shape/transform) is inside Ethiopia.
+
+    Rasterizing directly at the caller's resolution (rather than reusing a
+    mask computed at some other resolution and resampling it) is what keeps
+    the border crisp and accurate even when the caller asks at a much higher
+    resolution than the source forecast grid -- the national border is a
+    precise vector shape, independent of how coarse the climate data is.
+    """
+    import numpy as np
+
+    geometries = load_country_geometries()
+    if not geometries:
+        return np.ones(shape, dtype=bool)
+
+    try:
+        from rasterio.features import geometry_mask
+        return geometry_mask(geometries, out_shape=shape, transform=transform, invert=True)
+    except Exception:
+        return np.ones(shape, dtype=bool)
+
+
+def scaled_transform(transform: Any, scale_factor: float):
+    """Return a transform for the same origin/extent at scale_factor times the resolution."""
+    from rasterio import Affine
+
+    return Affine(
+        transform.a / scale_factor, transform.b, transform.c,
+        transform.d, transform.e / scale_factor, transform.f,
+    )
+
+
+def clip_array_to_country(arr: Any, transform: Any):
+    """Set every pixel outside Ethiopia's real border to NaN.
+
+    Source rasters only carry a rough rectangular/blocky footprint (whatever
+    NaN pattern the forecast export happened to have), which lets the map
+    visibly bleed into neighboring countries. This masks against the actual
+    admin0 polygon instead.
+    """
+    import numpy as np
+
+    inside = rasterize_country_mask(arr.shape, transform)
+    clipped = arr.astype("float32", copy=True)
+    clipped[~inside] = np.nan
+    return clipped
+
+
+def mercator_y_from_lat(lat_deg: float) -> float:
+    lat_rad = math.radians(max(min(lat_deg, 89.9), -89.9))
+    return math.log(math.tan(math.pi / 4 + lat_rad / 2))
+
+
+def remap_rows_equirect_to_mercator(arr: Any, south: float, north: float, order: int = 1):
+    """Resample rows so a linear stretch between (south, north) matches Web Mercator.
+
+    `arr`'s rows are assumed evenly spaced in latitude, north (row 0) to south
+    (last row) -- the natural convention for our north-up display arrays.
+    Leaflet's ImageOverlay always stretches an image linearly between two
+    lat/lng corners onto the map's Web Mercator projection, which is linear in
+    Mercator Y but not in latitude. Without this remap, the raster visibly
+    drifts away from the true basemap geography away from the image's
+    vertical center -- small per degree of latitude, but clearly visible over
+    Ethiopia's ~12 degree span.
+    """
+    import numpy as np
+    from scipy import ndimage
+
+    height = arr.shape[0]
+    if height < 2 or south == north:
+        return arr
+
+    merc_north = mercator_y_from_lat(north)
+    merc_south = mercator_y_from_lat(south)
+
+    row_fracs = np.linspace(0.0, 1.0, height)
+    target_merc_y = merc_north + row_fracs * (merc_south - merc_north)
+    target_lat = np.degrees(2 * np.arctan(np.exp(target_merc_y)) - np.pi / 2)
+
+    # Each output row needs the value from wherever that latitude falls in
+    # the source's linear-latitude row spacing.
+    source_row_index = (north - target_lat) / (north - south) * (height - 1)
+    col_index = np.arange(arr.shape[1])
+    row_grid, col_grid = np.meshgrid(source_row_index, col_index, indexing="ij")
+
+    return ndimage.map_coordinates(arr, [row_grid, col_grid], order=order, mode="nearest")
+
+
+def upsample_value_array(arr: Any, scale_factor: float) -> Tuple[Any, Any]:
+    """NaN-safe smooth upsample of a 2D array. Returns (values, valid_fraction).
+
+    Plain interpolation propagates NaN outward from every missing cell, so
+    NaNs are first filled from their nearest valid neighbor (this only feeds
+    the interpolation -- validity itself is tracked and upsampled separately
+    in valid_fraction, so still-invalid areas end up transparent regardless
+    of what value was used to fill them for interpolation purposes).
+    """
+    import numpy as np
+    from scipy import ndimage
+
+    valid = np.isfinite(arr)
+    if not valid.any():
+        empty_shape = (round(arr.shape[0] * scale_factor), round(arr.shape[1] * scale_factor))
+        return np.full(empty_shape, np.nan, dtype="float32"), np.zeros(empty_shape, dtype="float32")
+
+    filled = arr.astype("float32", copy=True)
+    if not valid.all():
+        _, indices = ndimage.distance_transform_edt(~valid, return_distances=True, return_indices=True)
+        filled = filled[tuple(indices)]
+
+    upsampled_values = ndimage.zoom(filled, scale_factor, order=3, mode="nearest")
+    upsampled_valid = ndimage.zoom(valid.astype("float32"), scale_factor, order=1, mode="nearest")
+    return upsampled_values.astype("float32"), upsampled_valid
+
+
+def load_display_array(record: Dict[str, Any]) -> Tuple[Any, Any, Dict[str, float]]:
+    """Return (clipped array, affine transform, EPSG:4326 bounds) for a map record.
+
+    This is the single shared source of truth for "what should render/count as
+    data" -- used by the full-image endpoint, the client hover value grid, and
+    statistics, so all three agree on the same country-clipped footprint.
+    """
+    import numpy as np
+    import rasterio
+
+    path = ensure_geotiff(record)
+    with rasterio.open(path) as src:
+        arr = src.read(1, masked=True).astype("float32")
+        arr = arr.filled(np.nan)
+        transform = src.transform
+        nodata = src.nodata
+
+    bounds = get_raster_bounds(path)
+    arr = clean_array_for_display(arr, source_nodata=nodata)
+    arr = clip_array_to_country(arr, transform)
+    return arr, transform, bounds
+
+
 def normalize_geotiff_for_tiles(record: Dict[str, Any], source_path: Path) -> Path:
     """Return a CRS-aware north-up GeoTIFF suitable for Web Mercator tiling.
 
@@ -569,38 +739,31 @@ def convert_csv_to_geotiff(record: Dict[str, Any], source_path: Path, cache_path
     return cache_path
 
 
-def calculate_statistics_from_path(path: Path) -> Dict[str, Any]:
-    try:
-        import numpy as np
-        import rasterio
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Raster statistics require rasterio and numpy.") from exc
+def calculate_statistics_from_array(arr: Any) -> Dict[str, Any]:
+    import numpy as np
 
-    with rasterio.open(path) as src:
-        data = src.read(1, masked=True).astype("float64")
-        values = data.compressed()
-        values = values[np.isfinite(values)]
-        if values.size == 0:
-            return {"valid_count": 0}
-        return {
-            "min": float(np.min(values)),
-            "max": float(np.max(values)),
-            "mean": float(np.mean(values)),
-            "median": float(np.median(values)),
-            "std": float(np.std(values)),
-            "p10": float(np.percentile(values, 10)),
-            "p25": float(np.percentile(values, 25)),
-            "p75": float(np.percentile(values, 75)),
-            "p90": float(np.percentile(values, 90)),
-            "valid_count": int(values.size),
-        }
+    values = arr[np.isfinite(arr)].astype("float64")
+    if values.size == 0:
+        return {"valid_count": 0}
+    return {
+        "min": float(np.min(values)),
+        "max": float(np.max(values)),
+        "mean": float(np.mean(values)),
+        "median": float(np.median(values)),
+        "std": float(np.std(values)),
+        "p10": float(np.percentile(values, 10)),
+        "p25": float(np.percentile(values, 25)),
+        "p75": float(np.percentile(values, 75)),
+        "p90": float(np.percentile(values, 90)),
+        "valid_count": int(values.size),
+    }
 
 
 @lru_cache(maxsize=256)
 def get_map_statistics_cached(map_id: str) -> Dict[str, Any]:
     record = require_map(map_id)
-    path = ensure_geotiff(record)
-    return calculate_statistics_from_path(path)
+    arr, _transform, _bounds = load_display_array(record)
+    return calculate_statistics_from_array(arr)
 
 
 def get_raster_bounds(path: Path) -> Dict[str, float]:
@@ -696,6 +859,34 @@ def get_matplotlib_cmap(cmap_name: str):
     return None
 
 
+def render_array_to_rgba(band: Any, valid_mask: Any, vmin: float, vmax: float, cmap_name: str):
+    """Colormap a float array into an RGBA uint8 array, alpha=0 outside valid_mask.
+
+    Shared by the XYZ tile endpoint and the full-extent image endpoint so both
+    render identically (same clip/scale/colormap/fallback behavior).
+    """
+    import numpy as np
+
+    scaled = np.zeros_like(band, dtype="float32")
+    if float(vmax) != float(vmin):
+        scaled = np.clip((band - vmin) / (vmax - vmin), 0, 1)
+    scaled = np.nan_to_num(scaled, nan=0.0, posinf=1.0, neginf=0.0)
+
+    colormap = get_matplotlib_cmap(cmap_name)
+    if colormap is not None:
+        rgba = (colormap(scaled) * 255).astype("uint8")
+    else:
+        # Safe fallback if Matplotlib colormap lookup is unavailable.
+        rgba = np.zeros((scaled.shape[0], scaled.shape[1], 4), dtype="uint8")
+        rgba[:, :, 0] = (scaled * 245).astype("uint8")
+        rgba[:, :, 1] = (80 + scaled * 135).astype("uint8")
+        rgba[:, :, 2] = (245 - scaled * 180).astype("uint8")
+        rgba[:, :, 3] = 255
+
+    rgba[:, :, 3] = np.where(valid_mask, rgba[:, :, 3], 0).astype("uint8")
+    return rgba
+
+
 def build_legend(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     config = get_render_config(record, stats)
     vmin = config["vmin"]
@@ -726,6 +917,8 @@ def public_map_record(record: Dict[str, Any], include_statistics: bool = True) -
     output = dict(record)
     map_id = record["id"]
     output["tile_url"] = f"/api/seasonal-raster/tiles/{map_id}/{{z}}/{{x}}/{{y}}.png"
+    output["image_url"] = f"/api/seasonal-raster/image/{map_id}.png"
+    output["grid_url"] = f"/api/seasonal-raster/grid/{map_id}"
     output["value_url"] = f"/api/seasonal-raster/value/{map_id}?lat={{lat}}&lon={{lon}}"
     output["statistics_url"] = f"/api/seasonal-raster/statistics/{map_id}"
     try:
@@ -989,29 +1182,100 @@ async def get_tile(map_id: str, z: int, x: int, y: int) -> Response:
     mask = tile.mask
     valid_mask = (mask > 0) & np.isfinite(band)
 
-    scaled = np.zeros_like(band, dtype="float32")
-    if float(vmax) != float(vmin):
-        scaled = np.clip((band - vmin) / (vmax - vmin), 0, 1)
-    scaled = np.nan_to_num(scaled, nan=0.0, posinf=1.0, neginf=0.0)
-
-    colormap = get_matplotlib_cmap(config["cmap"])
-
-    if colormap is not None:
-        rgba = (colormap(scaled) * 255).astype("uint8")
-    else:
-        # Safe fallback if Matplotlib colormap lookup is unavailable.
-        # This still returns a transparent PNG tile so the dashboard remains usable.
-        rgba = np.zeros((scaled.shape[0], scaled.shape[1], 4), dtype="uint8")
-        rgba[:, :, 0] = (scaled * 245).astype("uint8")
-        rgba[:, :, 1] = (80 + scaled * 135).astype("uint8")
-        rgba[:, :, 2] = (245 - scaled * 180).astype("uint8")
-        rgba[:, :, 3] = 255
-
-    rgba[:, :, 3] = np.where(valid_mask, rgba[:, :, 3], 0).astype("uint8")
+    rgba = render_array_to_rgba(band, valid_mask, vmin, vmax, config["cmap"])
     image = Image.fromarray(rgba, mode="RGBA")
     buffer = BytesIO()
     image.save(buffer, format="PNG", optimize=True)
     return Response(content=buffer.getvalue(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/image/{map_id}.png")
+async def get_full_image(map_id: str) -> Response:
+    """Render the entire map as a single PNG, clipped to Ethiopia's border.
+
+    Used by the frontend as a Leaflet ImageOverlay instead of an XYZ tile
+    pyramid. For a small, fixed-extent raster like this, tiling is unnecessary
+    machinery that introduces its own rendering seams (see mapSwitcher.css
+    history); one image avoids that entirely and lets the browser's normal
+    image scaling smooth the coarse source grid for free.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Raster image rendering requires pillow, rasterio, numpy, and matplotlib.") from exc
+
+    record = require_map(map_id)
+    arr, transform, bounds = load_display_array(record)
+    stats = get_map_statistics_cached(map_id)
+    config = get_render_config(record, stats)
+
+    # Source grids are extremely coarse (often ~48x60 px for all of Ethiopia).
+    # Smoothly upsampling the *values* -- while rasterizing the country border
+    # mask directly at the upsampled resolution, rather than stretching the
+    # coarse one -- gives a clean gradient with a crisp, accurate border. A
+    # naive post-hoc resize of the whole colored+masked image (tried first)
+    # instead revealed the coarse mask's own blocky edges as visible ringing.
+    long_side = max(arr.shape)
+    scale_factor = max(1.0, FULL_IMAGE_MIN_LONG_SIDE / long_side) if long_side else 1.0
+
+    if scale_factor > 1.0:
+        render_arr, upsampled_valid_fraction = upsample_value_array(arr, scale_factor)
+        high_res_transform = scaled_transform(transform, scale_factor)
+        country_mask = rasterize_country_mask(render_arr.shape, high_res_transform)
+        valid_mask = (upsampled_valid_fraction > 0.5) & country_mask
+    else:
+        render_arr = arr
+        valid_mask = np.isfinite(arr)
+
+    # The frontend displays this image with a plain Leaflet ImageOverlay,
+    # which stretches it linearly between lat/lng corners onto the map's Web
+    # Mercator projection. Our rows are evenly spaced in latitude, which is
+    # NOT linear in Mercator Y, so without this the raster visibly drifts
+    # away from the true basemap geography away from the vertical center.
+    render_arr = remap_rows_equirect_to_mercator(render_arr, bounds["south"], bounds["north"], order=1)
+    valid_mask = remap_rows_equirect_to_mercator(valid_mask.astype("float32"), bounds["south"], bounds["north"], order=0) > 0.5
+
+    rgba = render_array_to_rgba(render_arr, valid_mask, config["vmin"], config["vmax"], config["cmap"])
+    image = Image.fromarray(rgba, mode="RGBA")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG", optimize=True)
+    # This endpoint's rendering logic is still actively changing during
+    # development; a long max-age here previously meant fixes silently didn't
+    # show up in an already-open tab until the browser's HTTP cache expired.
+    # ImageOverlay only fetches this once per map view anyway (unlike XYZ
+    # tiles), so there's no real caching benefit worth trading for that.
+    return Response(content=buffer.getvalue(), media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+@router.get("/grid/{map_id}")
+async def get_value_grid(map_id: str) -> Dict[str, Any]:
+    """Return the map's clipped values as a compact native-resolution grid.
+
+    Lets the frontend look up a value under the cursor instantly on hover
+    (nearest-cell lookup, client side) instead of calling /value on every
+    mousemove. The source forecast grids are coarse (tens of cells per side),
+    so this payload stays small even though it is the full array.
+    """
+    record = require_map(map_id)
+    arr, transform, bounds = load_display_array(record)
+    height, width = arr.shape
+
+    lons = [transform.c + (col + 0.5) * transform.a for col in range(width)]
+    lats = [transform.f + (row + 0.5) * transform.e for row in range(height)]
+    values = [
+        [None if not math.isfinite(value) else round(float(value), 4) for value in row]
+        for row in arr.tolist()
+    ]
+
+    return {
+        "map_id": map_id,
+        "bounds": bounds,
+        "lons": lons,
+        "lats": lats,
+        "values": values,
+        "units": record.get("units", ""),
+    }
 
 
 @router.post("/refresh")

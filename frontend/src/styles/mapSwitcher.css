@@ -165,7 +165,11 @@
   font-weight: 800;
 }
 
-.seasonal-map-card img {
+/* Excludes Leaflet's own tile/overlay <img> elements -- they live inside the
+   same .seasonal-map-card as the static preview image this rule targets, and
+   forcing a min-height onto individual basemap tiles breaks their 1:1 square
+   tiling grid, producing visible seams between tiles. */
+.seasonal-map-card img:not(.leaflet-tile):not(.leaflet-image-layer) {
   display: block;
   width: 100%;
   min-height: 360px;
@@ -265,7 +269,7 @@
   gap: 1rem;
 }
 
-.seasonal-compare-grid .seasonal-map-card img,
+.seasonal-compare-grid .seasonal-map-card img:not(.leaflet-tile):not(.leaflet-image-layer),
 .seasonal-compare-grid .seasonal-map-empty {
   min-height: 260px;
   max-height: 460px;
@@ -324,6 +328,21 @@
   font-size: 0.76rem;
   font-weight: 700;
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.28);
+}
+
+.seasonal-raster-hover-tooltip {
+  position: absolute;
+  z-index: 460;
+  transform: translate(-50%, calc(-100% - 10px));
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.3);
 }
 
 .seasonal-raster-click-value {
