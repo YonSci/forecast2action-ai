@@ -345,6 +345,23 @@
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.3);
 }
 
+.seasonal-raster-inspect-marker {
+  position: absolute;
+  z-index: 455;
+  width: 11px;
+  height: 11px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: #2563eb;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.45), 0 4px 10px rgba(15, 23, 42, 0.35);
+  pointer-events: none;
+}
+
+.seasonal-raster-inspect-tooltip {
+  background: rgba(29, 78, 216, 0.94);
+}
+
 .seasonal-raster-click-value {
   margin-top: 12px;
   padding: 10px 12px;

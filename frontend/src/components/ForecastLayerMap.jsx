@@ -651,46 +651,43 @@ function RasterHoverHandler({ grid, onHover }) {
   return null;
 }
 
-function RasterValueClickHandler({ map, onValue }) {
+function RasterValueClickHandler({ onClick }) {
   useMapEvents({
-    async click(event) {
-      if (!map?.id) {
-        return;
-      }
-
-      try {
-        onValue({ loading: true, message: "Reading raster value..." });
-        const params = new URLSearchParams();
-        params.set("lat", String(event.latlng.lat));
-        params.set("lon", String(event.latlng.lng));
-        const response = await fetch(apiUrl(`/api/seasonal-raster/value/${map.id}?${params.toString()}`));
-
-        if (!response.ok) {
-          throw new Error(`Raster value request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        onValue({
-          loading: false,
-          lat: event.latlng.lat,
-          lon: event.latlng.lng,
-          value: data.value,
-          formatted_value: data.formatted_value,
-          units: data.units,
-          message: data.formatted_value || "No value available at clicked point.",
-        });
-      } catch (error) {
-        console.warn(error);
-        onValue({
-          loading: false,
-          lat: event.latlng.lat,
-          lon: event.latlng.lng,
-          value: null,
-          message: "Could not read raster value at this point.",
-        });
-      }
+    click(event) {
+      onClick({ lat: event.latlng.lat, lon: event.latlng.lng });
     },
   });
+
+  return null;
+}
+
+// Tracks where a shared (possibly cross-map) inspected lat/lon falls on THIS
+// particular map instance's screen, so the compare view's three independent
+// Leaflet maps can each show their own tooltip at the same geographic point
+// clicked on any one of them, not just the one the user actually clicked.
+function RasterInspectPosition({ latlng, onPosition }) {
+  const leafletMap = useMap();
+
+  useEffect(() => {
+    if (!latlng) {
+      onPosition(null);
+      return undefined;
+    }
+
+    const update = () => {
+      const point = leafletMap.latLngToContainerPoint([latlng.lat, latlng.lon]);
+      onPosition({ x: point.x, y: point.y });
+    };
+
+    update();
+    leafletMap.on("move", update);
+    leafletMap.on("zoom", update);
+
+    return () => {
+      leafletMap.off("move", update);
+      leafletMap.off("zoom", update);
+    };
+  }, [leafletMap, latlng, onPosition]);
 
   return null;
 }
@@ -745,10 +742,20 @@ function RasterStatsSummary({ map }) {
   );
 }
 
-function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "Interactive map not found for this selection.", boundaryGeojson = null, boundaryKey = "all" }) {
+function SeasonalInteractiveMapCard({
+  map,
+  title,
+  compact = false,
+  emptyText = "Interactive map not found for this selection.",
+  boundaryGeojson = null,
+  boundaryKey = "all",
+  inspectPoint = null,
+  onInspectPoint = null,
+}) {
   const [clickedValue, setClickedValue] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
   const [valueGrid, setValueGrid] = useState(null);
+  const [inspectMarkerPos, setInspectMarkerPos] = useState(null);
   const [rasterOpacity, setRasterOpacity] = useState(compact ? 0.74 : 0.68);
   const [basemapOpacity, setBasemapOpacity] = useState(0.86);
   const imageUrl = map?.image_url ? normalizeUrl(map.image_url) : "";
@@ -779,6 +786,57 @@ function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "
       cancelled = true;
     };
   }, [map?.id, map?.grid_url, map?.units]);
+
+  // Re-reads this card's own raster whenever the shared inspect point moves,
+  // so clicking any one of the compare-mode maps looks up and displays the
+  // value at that same lat/lon on every map, not just the one clicked.
+  useEffect(() => {
+    if (!inspectPoint || !map?.id) {
+      setClickedValue(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setClickedValue({
+      loading: true,
+      message: "Reading raster value...",
+      lat: inspectPoint.lat,
+      lon: inspectPoint.lon,
+    });
+
+    const params = new URLSearchParams();
+    params.set("lat", String(inspectPoint.lat));
+    params.set("lon", String(inspectPoint.lon));
+
+    fetch(apiUrl(`/api/seasonal-raster/value/${map.id}?${params.toString()}`))
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`status ${response.status}`))))
+      .then((data) => {
+        if (cancelled) return;
+        setClickedValue({
+          loading: false,
+          lat: inspectPoint.lat,
+          lon: inspectPoint.lon,
+          value: data.value,
+          formatted_value: data.formatted_value,
+          units: data.units,
+          message: data.formatted_value || "No value available at clicked point.",
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setClickedValue({
+          loading: false,
+          lat: inspectPoint.lat,
+          lon: inspectPoint.lon,
+          value: null,
+          message: "Could not read raster value at this point.",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [map?.id, inspectPoint]);
 
   return (
     <article className={`seasonal-map-card seasonal-raster-card${compact ? " compact" : ""}`}>
@@ -824,8 +882,9 @@ function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "
             )}
             <BasemapPaneOpacity opacity={basemapOpacity} />
             <FitSeasonalRasterBounds map={map} viewKey={mapKey} />
-            <RasterValueClickHandler map={map} onValue={setClickedValue} />
+            <RasterValueClickHandler onClick={(latlng) => onInspectPoint?.(latlng)} />
             <RasterHoverHandler grid={valueGrid} onHover={setHoverInfo} />
+            <RasterInspectPosition latlng={inspectPoint} onPosition={setInspectMarkerPos} />
           </MapContainer>
 
           {hoverInfo && Number.isFinite(hoverInfo.value) ? (
@@ -837,6 +896,21 @@ function SeasonalInteractiveMapCard({ map, title, compact = false, emptyText = "
               {valueGrid?.units ? ` ${valueGrid.units}` : ""}
             </div>
           ) : null}
+
+          {inspectMarkerPos && (
+            <>
+              <div className="seasonal-raster-inspect-marker" style={{ left: inspectMarkerPos.x, top: inspectMarkerPos.y }} />
+              {clickedValue && !clickedValue.loading && Number.isFinite(clickedValue.value) && (
+                <div
+                  className="seasonal-raster-hover-tooltip seasonal-raster-inspect-tooltip"
+                  style={{ left: inspectMarkerPos.x, top: inspectMarkerPos.y }}
+                >
+                  {formatValue(clickedValue.value, 2)}
+                  {clickedValue.units ? ` ${clickedValue.units}` : ""}
+                </div>
+              )}
+            </>
+          )}
 
           <div className="seasonal-raster-map-badge">
             Hover or click map to inspect value
@@ -917,6 +991,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   } = seasonalState;
 
   const boundaryGeojson = adminSelection?.boundaryGeojson || null;
+  const [seasonalInspectPoint, setSeasonalInspectPoint] = useState(null);
 
   const filteredLeadOptions = useMemo(() => {
     return OPTIONS.leads.filter((item) => item.forecast_scale === forecastScale);
@@ -1392,6 +1467,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 emptyText="No interactive raster map was found for this indicator, period, and product. Check data/maps/geotiff, data/maps/netcdf, data/maps/csv, or seasonal_raster_catalog.json."
                 boundaryGeojson={boundaryGeojson}
                 boundaryKey={seasonalBoundaryKey}
+                inspectPoint={seasonalInspectPoint}
+                onInspectPoint={setSeasonalInspectPoint}
               />
 
               <aside className="forecast-legend-card seasonal-info-card">
@@ -1428,6 +1505,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                     emptyText={`${item.label} interactive map is not available for ${selectedSeasonalIndicatorLabel} ${selectedSeasonalPeriodLabel}.`}
                     boundaryGeojson={boundaryGeojson}
                     boundaryKey={seasonalBoundaryKey}
+                    inspectPoint={seasonalInspectPoint}
+                    onInspectPoint={setSeasonalInspectPoint}
                   />
                 ))}
               </div>

@@ -235,3 +235,11 @@ forecast2action_action_tracker_*.csv
 !data/maps/Subseasonal/
 !data/maps/Subseasonal/**
 !data/maps/*.json
+
+# Ethiopia admin boundary shapefile used by seasonal_raster_maps.py to clip
+# rendered maps to the real country border, and by the admin boundary
+# selector API. Also required at runtime on Render -- without it, deploys
+# silently fall back to unclipped (rectangular) rasters instead of erroring,
+# so this was easy to miss against the *.shp/*.dbf/*.shx/*.prj rules above.
+!data/eth_shapefile/
+!data/eth_shapefile/**
