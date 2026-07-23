@@ -61,6 +61,8 @@ PRODUCTS = [
     {"value": "forecast", "label": "Forecast"},
     {"value": "climatology", "label": "Climatology"},
     {"value": "anomaly", "label": "Anomaly"},
+    {"value": "drought_probability", "label": "Drought Probability"},
+    {"value": "wet_probability", "label": "Wet Probability"},
 ]
 
 INDICATOR_BY_VALUE = {item["value"]: item for item in INDICATORS}
@@ -68,13 +70,47 @@ PERIOD_BY_VALUE = {item["value"].lower(): item for item in ALL_PERIODS}
 PRODUCT_BY_VALUE = {item["value"]: item for item in PRODUCTS}
 PRODUCT_ORDER = ["forecast", "climatology", "anomaly"]
 
+# SPI's 3-map compare view shows different content than other indicators: the
+# median forecast, P(SPI <= -1.0) drought probability, and P(SPI >= +1.0) wet
+# probability, instead of Forecast/Climatology/Anomaly (SPI has no
+# climatology/anomaly rasters at all -- it's a standardized index, not a raw
+# quantity with a "normal" to compare against). Indicators not listed here
+# keep the default Forecast/Climatology/Anomaly triplet.
+INDICATOR_COMPARE_PRODUCTS = {
+    "spi": ["forecast", "drought_probability", "wet_probability"],
+}
+
+PROBABILITY_PRODUCTS = {
+    "drought_probability": {
+        "cmap": "YlOrRd",
+        "vmin": 0.0,
+        "vmax": 1.0,
+        "low_label": "Low drought probability",
+        "high_label": "High drought probability",
+    },
+    "wet_probability": {
+        "cmap": "Blues",
+        "vmin": 0.0,
+        "vmax": 1.0,
+        "low_label": "Low wet probability",
+        "high_label": "High wet probability",
+    },
+}
+
+
+def compare_products_for_indicator(indicator: str) -> List[str]:
+    return INDICATOR_COMPARE_PRODUCTS.get(indicator, PRODUCT_ORDER)
+
 INDICATOR_PATTERNS = [
     ("dryspell_prob_9d", ["dryspell_prob_9d", "dryspellprob9d", "dryspell_9d", "dry_spell_9d", "9d_dryspell", "dryspell9"]),
     ("dryspell_prob_7d", ["dryspell_prob_7d", "dryspellprob7d", "dryspell_7d", "dry_spell_7d", "7d_dryspell", "dryspell7"]),
     ("dryspell_prob_5d", ["dryspell_prob_5d", "dryspellprob5d", "dryspell_5d", "dry_spell_5d", "5d_dryspell", "dryspell5"]),
     ("rainfall_percentile", ["rainfall_percentile", "rainfallpercentile", "rain_percentile", "rf_percentile", "percentile", "rpercentile"]),
-    ("rainfall_total", ["rainfall_total", "rainfalltotal", "rain_total", "rf_total", "precip_total", "precipitation_total", "pr_total", "rainfall", "precip", "pr"]),
+    # spi must be checked before rainfall_total: rainfall_total's bare "pr"
+    # substring pattern would otherwise false-match filenames like
+    # "..._spi_prob_drought" (contains "pr" from "prob") and "..._spi_prob_wet".
     ("spi", ["spi"]),
+    ("rainfall_total", ["rainfall_total", "rainfalltotal", "rain_total", "rf_total", "precip_total", "precipitation_total", "pr_total", "rainfall", "precip", "pr"]),
     ("cdd", ["cdd", "consecutive_dry_days"]),
     ("cwd", ["cwd", "consecutive_wet_days"]),
 ]
@@ -105,6 +141,8 @@ SUBSEASONAL_PERIOD_PATTERNS = [
 PRODUCT_PATTERNS = [
     ("climatology", ["historical_climatology", "climatology", "climatological", "hist_clim", "histclim", "clim", "normal"]),
     ("anomaly", ["anomaly", "anom", "difference", "departure"]),
+    ("drought_probability", ["prob_drought", "drought_probability", "droughtprob", "prob_dry"]),
+    ("wet_probability", ["prob_wet", "wet_probability", "wetprob"]),
     ("forecast", ["forecast", "fcst", "model", "prediction", "pred"]),
 ]
 

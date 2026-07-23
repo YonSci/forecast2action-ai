@@ -14,11 +14,12 @@ from app.api.seasonal_catalog_shared import (
     INDICATOR_BY_VALUE,
     INDICATORS,
     PERIOD_BY_VALUE,
+    PROBABILITY_PRODUCTS,
     PRODUCT_BY_VALUE,
-    PRODUCT_ORDER,
     PRODUCTS,
     PROJECT_ROOT,
     SCALES,
+    compare_products_for_indicator,
     infer_indicator,
     infer_period,
     infer_product,
@@ -145,7 +146,7 @@ def enrich_record(record: Dict[str, Any], source_path: Optional[Path] = None) ->
         "source_path": safe_rel_path(source_path) if source_path else "",
         "variable": record.get("variable") or record.get("variable_name") or "",
         "bounds": bounds,
-        "units": record.get("units") or indicator_meta.get("units") or "",
+        "units": record.get("units") or ("probability" if product in PROBABILITY_PRODUCTS else indicator_meta.get("units")) or "",
         "init_date": record.get("init_date", ""),
         "valid_start": record.get("valid_start", ""),
         "valid_end": record.get("valid_end", ""),
@@ -198,6 +199,24 @@ def scan_raster_files() -> List[Dict[str, Any]]:
     return records
 
 
+# When a period/indicator has both a "_mean.tif" and a "_median.tif" forecast
+# raster (e.g. rainfall_total), they represent different statistics of the
+# same ensemble and are NOT interchangeable: climatology/anomaly rasters here
+# are built against the median. Preferring median on a tie keeps the
+# displayed Forecast consistent with Climatology and Anomaly (Anomaly =
+# Forecast - Climatology only holds when Forecast is the same statistic the
+# anomaly was derived from).
+STAT_TOKEN_PRIORITY = {"median": 0, "mean": 1}
+
+
+def stat_token_priority(record: Dict[str, Any]) -> int:
+    stem = str(record.get("source_path", "")).lower()
+    for token, rank in STAT_TOKEN_PRIORITY.items():
+        if token in stem:
+            return rank
+    return 2
+
+
 @lru_cache(maxsize=1)
 def load_catalog_cached() -> Tuple[Dict[str, Dict[str, Any]], ...]:
     records = load_catalog_file() + scan_raster_files()
@@ -207,10 +226,16 @@ def load_catalog_cached() -> Tuple[Dict[str, Dict[str, Any]], ...]:
     for record in records:
         key = (record["indicator"], str(record["period"]).lower(), record["product"])
         existing = by_key.get(key)
-        record_priority = 0 if record.get("source_type") == "catalog" else priority.get(record.get("source_format", "unknown"), 9)
-        existing_priority = 99
+        record_priority = (
+            0 if record.get("source_type") == "catalog" else priority.get(record.get("source_format", "unknown"), 9),
+            stat_token_priority(record),
+        )
+        existing_priority = (99, 99)
         if existing:
-            existing_priority = 0 if existing.get("source_type") == "catalog" else priority.get(existing.get("source_format", "unknown"), 9)
+            existing_priority = (
+                0 if existing.get("source_type") == "catalog" else priority.get(existing.get("source_format", "unknown"), 9),
+                stat_token_priority(existing),
+            )
         if existing is None or record_priority < existing_priority:
             by_key[key] = record
 
@@ -791,34 +816,88 @@ def get_render_config(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = 
     indicator = record.get("indicator", "spi")
     product = record.get("product", "forecast")
     defaults = INDICATOR_RENDERING.get(indicator, INDICATOR_RENDERING["spi"])
-    cmap_name = record.get("cmap") or defaults["cmap"]
+    probability_defaults = PROBABILITY_PRODUCTS.get(product)
+
+    cmap_name = record.get("cmap") or (probability_defaults["cmap"] if probability_defaults else defaults["cmap"])
+    # Most indicators here are "wetness" quantities (higher = wetter: rainfall
+    # total, CWD/consecutive wet days), where RdBu's natural low=red/high=blue
+    # already matches this app's drought=red/wet=blue convention (see
+    # HAZARD_COLORS on the frontend). CDD (consecutive DRY days) and the dry
+    # spell probabilities are the opposite -- higher means DRIER -- so using
+    # plain RdBu there would paint "more dry days than normal" blue and "fewer
+    # dry days than normal" red, backwards from every other drought signal in
+    # the app. Flip to RdBu_r for those so red always means "drier than normal"
+    # everywhere, regardless of which raw quantity is being measured.
+    dryness_oriented = indicator in {"cdd", "dryspell_prob_5d", "dryspell_prob_7d", "dryspell_prob_9d"}
     if product == "anomaly" and not record.get("cmap") and indicator not in {"spi", "rainfall_percentile"}:
-        cmap_name = "RdBu"
+        cmap_name = "RdBu_r" if dryness_oriented else "RdBu"
 
     stats = stats or {}
     vmin = record.get("vmin")
     vmax = record.get("vmax")
-    if vmin is None:
-        vmin = defaults.get("default_vmin")
-    if vmax is None:
-        vmax = defaults.get("default_vmax")
-    if vmin is None and stats.get("p10") is not None:
-        vmin = stats.get("p10")
-    if vmax is None and stats.get("p90") is not None:
-        vmax = stats.get("p90")
-    if vmin is None and stats.get("min") is not None:
-        vmin = stats.get("min")
-    if vmax is None and stats.get("max") is not None:
-        vmax = stats.get("max")
+
+    # Drought/wet probability rasters are bounded [0, 1] by construction
+    # (P(SPI <= -1.0) / P(SPI >= +1.0)), so the color scale is always fixed to
+    # the full 0-1 range instead of being derived from this map's own
+    # min/max/percentiles -- deriving it from the data would make a 65% chance
+    # of drought in one period render as "maximum red" while a 90% chance in
+    # another period renders the same, losing the actual probability scale.
+    if probability_defaults:
+        if vmin is None:
+            vmin = probability_defaults["vmin"]
+        if vmax is None:
+            vmax = probability_defaults["vmax"]
+    else:
+        if vmin is None:
+            vmin = defaults.get("default_vmin")
+        if vmax is None:
+            vmax = defaults.get("default_vmax")
+        if vmin is None and stats.get("p10") is not None:
+            vmin = stats.get("p10")
+        if vmax is None and stats.get("p90") is not None:
+            vmax = stats.get("p90")
+        if vmin is None and stats.get("min") is not None:
+            vmin = stats.get("min")
+        if vmax is None and stats.get("max") is not None:
+            vmax = stats.get("max")
     if vmin is None or vmax is None or float(vmin) == float(vmax):
         vmin, vmax = 0.0, 1.0
 
+    vmin = float(vmin)
+    vmax = float(vmax)
+
+    # Anomaly rasters are a deviation from climatology (forecast - climatology),
+    # so zero is the meaningful midpoint. Without forcing a symmetric range, an
+    # asymmetric min/max (typical when derived from data percentiles) would
+    # shift the diverging colormap's neutral color away from true zero,
+    # making equal-magnitude dry/wet anomalies look like different intensities.
+    is_diverging_anomaly = product == "anomaly" and cmap_name in {"RdBu", "RdBu_r"}
+    if is_diverging_anomaly and not (
+        record.get("vmin") is not None and record.get("vmax") is not None
+    ):
+        max_abs = max(abs(vmin), abs(vmax))
+        if max_abs > 0:
+            vmin, vmax = -max_abs, max_abs
+
+    if probability_defaults:
+        low_label = probability_defaults["low_label"]
+        high_label = probability_defaults["high_label"]
+    elif is_diverging_anomaly and dryness_oriented:
+        low_label = "Wetter than normal"
+        high_label = "Drier than normal"
+    elif is_diverging_anomaly:
+        low_label = "Drier than normal"
+        high_label = "Wetter than normal"
+    else:
+        low_label = defaults.get("low_label", "Low")
+        high_label = defaults.get("high_label", "High")
+
     return {
         "cmap": cmap_name,
-        "vmin": float(vmin),
-        "vmax": float(vmax),
-        "low_label": defaults.get("low_label", "Low"),
-        "high_label": defaults.get("high_label", "High"),
+        "vmin": vmin,
+        "vmax": vmax,
+        "low_label": low_label,
+        "high_label": high_label,
     }
 
 
@@ -901,8 +980,19 @@ def build_legend(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = None)
         fallback_colors = ["#b42318", "#f79009", "#fec84b", "#12b76a", "#0e9384", "#1570ef"]
         items = [{"value": value, "label": f"{value:.2f}", "color": fallback_colors[i]} for i, value in enumerate(values)]
 
+    indicator_label = record.get("indicator_label", "Raster value")
+    product = record.get("product")
+    if product == "anomaly":
+        title = f"{indicator_label} Anomaly"
+    elif product == "drought_probability":
+        title = "Drought Probability (SPI ≤ -1.0)"
+    elif product == "wet_probability":
+        title = "Wet Probability (SPI ≥ +1.0)"
+    else:
+        title = indicator_label
+
     return {
-        "title": record.get("indicator_label", "Raster value"),
+        "title": title,
         "units": record.get("units", ""),
         "vmin": vmin,
         "vmax": vmax,
@@ -1051,11 +1141,24 @@ async def get_raster_compare(
     indicator: str = Query("spi"),
     period: str = Query("JJAS"),
 ) -> Dict[str, Any]:
+    products = compare_products_for_indicator(indicator)
     maps: Dict[str, Any] = {}
-    for product in PRODUCT_ORDER:
+    for product in products:
         record = find_map_record(indicator, period, product)
         maps[product] = public_map_record(record, include_statistics=True) if record else None
-    return {"indicator": indicator, "period": period, "products": PRODUCT_ORDER, "maps": maps}
+
+    # SPI's compare view reuses the "forecast" slot to show the median SPI
+    # raster (there's no separate "median" product key -- see
+    # STAT_TOKEN_PRIORITY, which already makes "forecast" resolve to the
+    # _median file for SPI). Relabel just the display text here so the panel
+    # reads "Median" instead of the generic "Forecast" the rest of the app uses.
+    if indicator == "spi" and maps.get("forecast"):
+        relabeled = dict(maps["forecast"])
+        relabeled["product_label"] = "Median"
+        relabeled["title"] = f"{relabeled.get('indicator_label', 'SPI')} · {relabeled.get('period_label', period)} · Median"
+        maps["forecast"] = relabeled
+
+    return {"indicator": indicator, "period": period, "products": products, "maps": maps}
 
 
 @router.get("/statistics/{map_id}")

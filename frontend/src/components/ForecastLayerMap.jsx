@@ -59,13 +59,14 @@ const PRODUCT_ORDER = SEASONAL_PRODUCT_ORDER;
 
 const INITIAL_SEASONAL_STATE = {
   options: FALLBACK_SEASONAL_OPTIONS,
-  scale: "subseasonal",
+  scale: "seasonal",
   indicator: "rainfall_total",
-  period: "week_1",
+  period: "June",
   product: "forecast",
   view: "single",
   selectedMap: null,
   compareMaps: {},
+  compareProducts: PRODUCT_ORDER,
   loading: false,
   errorMessage: "",
 };
@@ -185,6 +186,7 @@ function seasonalReducer(state, action) {
         loading: false,
         selectedMap: action.selectedMap,
         compareMaps: action.compareMaps,
+        compareProducts: action.compareProducts,
         errorMessage: action.errorMessage || "",
       };
     case "FETCH_ERROR":
@@ -193,6 +195,7 @@ function seasonalReducer(state, action) {
         loading: false,
         selectedMap: null,
         compareMaps: {},
+        compareProducts: PRODUCT_ORDER,
         errorMessage: action.errorMessage,
       };
     default:
@@ -1114,6 +1117,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     view: climateMapView,
     selectedMap: selectedSeasonalMap,
     compareMaps: compareSeasonalMaps,
+    compareProducts: seasonalCompareProducts,
     loading: seasonalLoading,
     errorMessage: seasonalErrorMessage,
   } = seasonalState;
@@ -1153,6 +1157,13 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const seasonalAvailableCombinations = Array.isArray(seasonalOptions.available)
     ? seasonalOptions.available
     : [];
+
+  // Subseasonal climate-indicator maps are temporarily hidden until their
+  // climatology/anomaly rasters are backfilled (see conversation with data
+  // owner) -- only the seasonal scale is offered for now.
+  const seasonalScaleOptions = useMemo(() => {
+    return seasonalOptions.scales.filter((item) => item.value !== "subseasonal");
+  }, [seasonalOptions.scales]);
 
   const seasonalIndicatorOptions = useMemo(() => {
     const scoped = seasonalAvailableCombinations.filter(
@@ -1429,12 +1440,16 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         const selectedData = await selectedResponse.json();
         const compareData = compareResponse.ok
           ? await compareResponse.json()
-          : { maps: {} };
+          : { maps: {}, products: [] };
 
         dispatchSeasonal({
           type: "FETCH_SUCCESS",
           selectedMap: selectedData.map || null,
           compareMaps: compareData.maps || {},
+          compareProducts:
+            Array.isArray(compareData.products) && compareData.products.length
+              ? compareData.products
+              : PRODUCT_ORDER,
           errorMessage: selectedData.map
             ? ""
             : selectedData.message ||
@@ -1505,7 +1520,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     leafletLayer.bindPopup(popupHtml);
   }
 
-  const compareCards = PRODUCT_ORDER.map((product) => {
+  const compareProductOrder = seasonalCompareProducts?.length
+    ? seasonalCompareProducts
+    : PRODUCT_ORDER;
+  const compareCards = compareProductOrder.map((product) => {
     const fallbackLabel = getOptionLabel(seasonalOptions.products, product);
     return {
       product,
@@ -1519,7 +1537,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       <section className="panel forecast-layer-section climate-indicator-section">
         <div className="forecast-layer-header">
           <div>
-            <h2>Subseasonal to Seasonal Climate Indices</h2>
+            <h2>Seasonal Climate Indices</h2>
             <p className="map-selected-area">
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>
@@ -1543,7 +1561,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 })
               }
             >
-              {seasonalOptions.scales.map((item) => (
+              {seasonalScaleOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
@@ -1704,11 +1722,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             <div className="seasonal-compare-section">
               <div className="seasonal-compare-header">
                 <div>
-                  <h3>Forecast vs Climatology vs Anomaly</h3>
+                  <h3>{compareCards.map((item) => item.label).join(" vs ")}</h3>
                   <p>
-                    Compare what the seasonal forecast says, the climatology for
-                    the same period, and how different the forecast is from
-                    normal.
+                    {compareProductOrder.join(",") ===
+                    PRODUCT_ORDER.join(",")
+                      ? "Compare what the seasonal forecast says, the climatology for the same period, and how different the forecast is from normal."
+                      : `Compare these three ${selectedSeasonalIndicatorLabel} views for the same period.`}
                   </p>
                 </div>
                 <span>

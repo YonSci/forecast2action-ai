@@ -50,6 +50,8 @@ export const SEASONAL_PRODUCTS = [
   { value: "forecast", label: "Forecast" },
   { value: "climatology", label: "Climatology" },
   { value: "anomaly", label: "Anomaly" },
+  { value: "drought_probability", label: "Drought Probability" },
+  { value: "wet_probability", label: "Wet Probability" },
 ];
 
 export const SEASONAL_PRODUCT_ORDER = SEASONAL_PRODUCTS.map((item) => item.value);
