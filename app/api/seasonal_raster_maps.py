@@ -883,11 +883,11 @@ def get_render_config(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = 
         low_label = probability_defaults["low_label"]
         high_label = probability_defaults["high_label"]
     elif is_diverging_anomaly and dryness_oriented:
-        low_label = "Wetter than normal"
-        high_label = "Drier than normal"
+        low_label = "Fewer than normal"
+        high_label = "Longer than normal"
     elif is_diverging_anomaly:
-        low_label = "Drier than normal"
-        high_label = "Wetter than normal"
+        low_label = "Fewer than normal"
+        high_label = "Longer than normal"
     else:
         low_label = defaults.get("low_label", "Low")
         high_label = defaults.get("high_label", "High")

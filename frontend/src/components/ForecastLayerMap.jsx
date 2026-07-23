@@ -57,6 +57,15 @@ const FALLBACK_SEASONAL_OPTIONS = {
 
 const PRODUCT_ORDER = SEASONAL_PRODUCT_ORDER;
 
+// Hidden from the Climate indicator dropdown for now -- removed by request,
+// not because the data is missing.
+const HIDDEN_CLIMATE_INDICATORS = new Set([
+  "dryspell_prob_5d",
+  "dryspell_prob_7d",
+  "dryspell_prob_9d",
+  "rainfall_percentile",
+]);
+
 const INITIAL_SEASONAL_STATE = {
   options: FALLBACK_SEASONAL_OPTIONS,
   scale: "seasonal",
@@ -1166,15 +1175,18 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   }, [seasonalOptions.scales]);
 
   const seasonalIndicatorOptions = useMemo(() => {
+    const visibleIndicators = seasonalOptions.indicators.filter(
+      (item) => !HIDDEN_CLIMATE_INDICATORS.has(item.value),
+    );
     const scoped = seasonalAvailableCombinations.filter(
       (item) => (item.scale || "seasonal") === seasonalScale,
     );
     const pool = scoped.length ? scoped : seasonalAvailableCombinations;
     if (!pool.length) {
-      return seasonalOptions.indicators;
+      return visibleIndicators;
     }
     const values = new Set(pool.map((item) => item.indicator));
-    return seasonalOptions.indicators.filter((item) => values.has(item.value));
+    return visibleIndicators.filter((item) => values.has(item.value));
   }, [
     seasonalOptions.indicators,
     seasonalAvailableCombinations,
