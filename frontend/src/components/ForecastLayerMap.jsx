@@ -47,6 +47,49 @@ const OPTIONS = {
   ],
 };
 
+// The Hazard/Risk Layers panel no longer has its own Forecast window / Lead
+// selectors -- it reuses whatever forecast window + time period is already
+// selected in the Seasonal Climate Indices panel, so the two panels stay in
+// sync instead of asking the user to pick the same thing twice. The two
+// panels use different period vocabularies though (seasonal climate periods
+// are calendar months / "JJAS"; hazard leads are "month_1".."month_6"), so
+// this maps one onto the other. JJAS is a 4-month aggregate with no single
+// hazard lead equivalent, and week_1_3/week_2_4 don't exist in the hazard
+// lead list either -- both fall back to the nearest lead.
+const SEASONAL_PERIOD_TO_HAZARD_LEAD = {
+  june: "month_1",
+  july: "month_2",
+  august: "month_3",
+  september: "month_4",
+  jjas: "month_1",
+};
+
+const SUBSEASONAL_PERIOD_TO_HAZARD_LEAD = {
+  week_1: "week_1",
+  week_2: "week_2",
+  week_3: "week_3",
+  week_4: "week_4",
+  week_1_2: "week_1_2",
+  week_2_3: "week_2_3",
+  week_3_4: "week_3_4",
+  week_1_3: "week_1_2",
+  week_2_4: "week_2_3",
+};
+
+function deriveHazardLeadFromSeasonal(scale, period) {
+  const periodKey = String(period).toLowerCase();
+  if (scale === "subseasonal") {
+    return {
+      forecastScale: "subseasonal",
+      lead: SUBSEASONAL_PERIOD_TO_HAZARD_LEAD[periodKey] || "week_1",
+    };
+  }
+  return {
+    forecastScale: "seasonal",
+    lead: SEASONAL_PERIOD_TO_HAZARD_LEAD[periodKey] || "month_1",
+  };
+}
+
 const FALLBACK_SEASONAL_OPTIONS = {
   indicators: CLIMATE_INDICATORS,
   periods: ALL_SEASONAL_PERIODS,
@@ -58,12 +101,14 @@ const FALLBACK_SEASONAL_OPTIONS = {
 const PRODUCT_ORDER = SEASONAL_PRODUCT_ORDER;
 
 // Hidden from the Climate indicator dropdown for now -- removed by request,
-// not because the data is missing.
+// not because the data is missing. rainfall_percentile was previously hidden
+// here too, but is no longer: it now has real forecast + climatology rasters
+// (see data/maps/geotiff/*_percentile_median.tif / *_percentile_climatology_mean.tif),
+// not just the single forecast-only netcdf/csv it used to have.
 const HIDDEN_CLIMATE_INDICATORS = new Set([
   "dryspell_prob_5d",
   "dryspell_prob_7d",
   "dryspell_prob_9d",
-  "rainfall_percentile",
 ]);
 
 const INITIAL_SEASONAL_STATE = {
@@ -266,6 +311,28 @@ const INDICATOR_LEGENDS = {
       { label: "High", color: "#1570EF" },
     ],
   },
+  rx1day: {
+    title: "Rx1day (max 1-day rainfall)",
+    lowLabel: "Low max 1-day rainfall",
+    highLabel: "High max 1-day rainfall",
+    items: [
+      { label: "Low", color: "#F79009" },
+      { label: "Moderate", color: "#FEC84B" },
+      { label: "High", color: "#0E9384" },
+      { label: "Very high", color: "#1570EF" },
+    ],
+  },
+  rx5day: {
+    title: "Rx5day (max 5-day rainfall)",
+    lowLabel: "Low max 5-day rainfall",
+    highLabel: "High max 5-day rainfall",
+    items: [
+      { label: "Low", color: "#F79009" },
+      { label: "Moderate", color: "#FEC84B" },
+      { label: "High", color: "#0E9384" },
+      { label: "Very high", color: "#1570EF" },
+    ],
+  },
   cdd: {
     title: "Consecutive dry days",
     lowLabel: "Few dry days",
@@ -375,6 +442,32 @@ function normalizeUrl(url) {
   return apiUrl(url);
 }
 
+// Single source of truth for both the map fill color AND the legend swatches
+// below (NumericLayerLegend) -- previously the legend was a separate static
+// CSS gradient bar with its own hardcoded stop positions that didn't match
+// these thresholds (and didn't distinguish risk_score's 4-color/magenta
+// scheme from the other layers' 5-color scheme at all), so the legend never
+// actually matched what was painted on the map. Buckets are ordered
+// highest-min-first; getNumericColor/legend both walk the same list.
+const RISK_SCORE_BUCKETS = [
+  { min: 0.8, color: "#D92D20", label: "Trigger (≥ 0.80)" },
+  { min: 0.6, color: "#C11574", label: "Warning (0.60–0.79)" },
+  { min: 0.35, color: "#F79009", label: "Watch (0.35–0.59)" },
+  { min: -Infinity, color: "#12B76A", label: "No alert (< 0.35)" },
+];
+
+const GENERIC_NUMERIC_BUCKETS = [
+  { min: 0.8, color: "#7F1D1D", label: "≥ 0.80" },
+  { min: 0.65, color: "#B42318", label: "0.65–0.79" },
+  { min: 0.5, color: "#F79009", label: "0.50–0.64" },
+  { min: 0.35, color: "#FEC84B", label: "0.35–0.49" },
+  { min: -Infinity, color: "#12B76A", label: "< 0.35" },
+];
+
+function getNumericBuckets(layer) {
+  return layer === "risk_score" ? RISK_SCORE_BUCKETS : GENERIC_NUMERIC_BUCKETS;
+}
+
 function getNumericColor(value, layer) {
   const numberValue = Number(value);
 
@@ -382,18 +475,10 @@ function getNumericColor(value, layer) {
     return "#CBD5E1";
   }
 
-  if (layer === "risk_score") {
-    if (numberValue >= 0.8) return "#D92D20";
-    if (numberValue >= 0.6) return "#C11574";
-    if (numberValue >= 0.35) return "#F79009";
-    return "#12B76A";
-  }
+  const buckets = getNumericBuckets(layer);
+  const bucket = buckets.find((item) => numberValue >= item.min);
 
-  if (numberValue >= 0.8) return "#7F1D1D";
-  if (numberValue >= 0.65) return "#B42318";
-  if (numberValue >= 0.5) return "#F79009";
-  if (numberValue >= 0.35) return "#FEC84B";
-  return "#12B76A";
+  return bucket ? bucket.color : buckets[buckets.length - 1].color;
 }
 
 function getFillColor(properties, layer) {
@@ -402,6 +487,21 @@ function getFillColor(properties, layer) {
   }
 
   return getNumericColor(properties[layer], layer);
+}
+
+function NumericLayerLegend({ layer }) {
+  const buckets = getNumericBuckets(layer);
+
+  return (
+    <div className="forecast-hazard-legend">
+      {buckets.map((bucket) => (
+        <span key={bucket.label}>
+          <i style={{ background: bucket.color }} />
+          {bucket.label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function getLayerValue(properties, layer) {
@@ -1106,8 +1206,6 @@ function SeasonalInteractiveMapCard({
 }
 
 function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
-  const [forecastScale, setForecastScale] = useState("subseasonal");
-  const [lead, setLead] = useState("week_1");
   const [layer, setLayer] = useState("hazard");
   const [geojson, setGeojson] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1134,11 +1232,14 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const boundaryGeojson = adminSelection?.boundaryGeojson || null;
   const [seasonalInspectPoint, setSeasonalInspectPoint] = useState(null);
 
-  const filteredLeadOptions = useMemo(() => {
-    return OPTIONS.leads.filter(
-      (item) => item.forecast_scale === forecastScale,
-    );
-  }, [forecastScale]);
+  // Forecast window + Lead/horizon for the Hazard/Risk Layers panel are no
+  // longer independently selectable -- they follow whatever is already
+  // selected in the Seasonal Climate Indices panel above (see
+  // deriveHazardLeadFromSeasonal for the period-vocabulary mapping).
+  const { forecastScale, lead } = useMemo(
+    () => deriveHazardLeadFromSeasonal(seasonalScale, seasonalPeriod),
+    [seasonalScale, seasonalPeriod],
+  );
 
   const displayedGeojson = useMemo(() => {
     return filterGridByBoundaryBoundingBox(geojson, boundaryGeojson);
@@ -1171,7 +1272,9 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   // climatology/anomaly rasters are backfilled (see conversation with data
   // owner) -- only the seasonal scale is offered for now.
   const seasonalScaleOptions = useMemo(() => {
-    return seasonalOptions.scales.filter((item) => item.value !== "subseasonal");
+    return seasonalOptions.scales.filter(
+      (item) => item.value !== "subseasonal",
+    );
   }, [seasonalOptions.scales]);
 
   const seasonalIndicatorOptions = useMemo(() => {
@@ -1306,18 +1409,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     onForecastSelectionChange,
   ]);
 
-  useEffect(() => {
-    const leadsForScale = OPTIONS.leads.filter(
-      (item) => item.forecast_scale === forecastScale,
-    );
-
-    if (
-      leadsForScale.length > 0 &&
-      !leadsForScale.some((item) => item.value === lead)
-    ) {
-      setLead(leadsForScale[0].value);
-    }
-  }, [forecastScale, lead]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1483,19 +1574,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
     return () => controller.abort();
   }, [seasonalIndicator, seasonalPeriod, seasonalProduct]);
-
-  function handleForecastScaleChange(event) {
-    const nextScale = event.target.value;
-    setForecastScale(nextScale);
-
-    const firstLeadForScale = OPTIONS.leads.find(
-      (item) => item.forecast_scale === nextScale,
-    );
-
-    if (firstLeadForScale) {
-      setLead(firstLeadForScale.value);
-    }
-  }
 
   function styleFeature(feature) {
     const properties = feature.properties || {};
@@ -1735,12 +1813,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               <div className="seasonal-compare-header">
                 <div>
                   <h3>{compareCards.map((item) => item.label).join(" vs ")}</h3>
-                  <p>
+                  {/* <p>
                     {compareProductOrder.join(",") ===
                     PRODUCT_ORDER.join(",")
                       ? "Compare what the seasonal forecast says, the climatology for the same period, and how different the forecast is from normal."
                       : `Compare these three ${selectedSeasonalIndicatorLabel} views for the same period.`}
-                  </p>
+                  </p> */}
                 </div>
                 <span>
                   {selectedSeasonalIndicatorLabel} ·{" "}
@@ -1781,36 +1859,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         </div>
 
         <div className="forecast-layer-controls">
-          <div className="forecast-control">
-            <label htmlFor="forecast-scale">Forecast window</label>
-            <select
-              id="forecast-scale"
-              value={forecastScale}
-              onChange={handleForecastScaleChange}
-            >
-              {OPTIONS.forecast_scales.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="forecast-control">
-            <label htmlFor="forecast-lead">Lead / horizon</label>
-            <select
-              id="forecast-lead"
-              value={lead}
-              onChange={(event) => setLead(event.target.value)}
-            >
-              {filteredLeadOptions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="forecast-control forecast-control-primary">
             <label htmlFor="forecast-layer">Hazard map layer</label>
             <select
@@ -1830,17 +1878,12 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         <div className="forecast-layer-summary">
           <div>
             <span>Forecast horizon</span>
-            <strong>{selectedLeadLabel}</strong>
+            <strong>{selectedSeasonalPeriodLabel}</strong>
           </div>
 
           <div>
             <span>Hazard map layer</span>
             <strong>{selectedLayerLabel}</strong>
-          </div>
-
-          <div>
-            <span>Grid cells shown</span>
-            <strong>{displayedGeojson?.metadata?.feature_count || 0}</strong>
           </div>
         </div>
 
@@ -1923,14 +1966,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 </span>
               </div>
             ) : (
-              <div className="forecast-gradient-legend">
-                <div className="forecast-gradient-bar" />
-                <div className="forecast-gradient-labels">
-                  <span>Low</span>
-                  <span>Moderate</span>
-                  <span>High</span>
-                </div>
-              </div>
+              <NumericLayerLegend layer={layer} />
             )}
 
             <p>

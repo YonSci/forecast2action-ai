@@ -20,6 +20,8 @@ INDICATORS = [
     {"value": "spi", "label": "SPI", "units": "standardized index"},
     {"value": "cdd", "label": "CDD", "units": "days"},
     {"value": "cwd", "label": "CWD", "units": "days"},
+    {"value": "rx1day", "label": "Rx1day (Max 1-day Rainfall)", "units": "mm"},
+    {"value": "rx5day", "label": "Rx5day (Max 5-day Rainfall)", "units": "mm"},
     {"value": "dryspell_prob_5d", "label": "Dry spell probability ≥5 days", "units": "probability"},
     {"value": "dryspell_prob_7d", "label": "Dry spell probability ≥7 days", "units": "probability"},
     {"value": "dryspell_prob_9d", "label": "Dry spell probability ≥9 days", "units": "probability"},
@@ -105,7 +107,14 @@ INDICATOR_PATTERNS = [
     ("dryspell_prob_9d", ["dryspell_prob_9d", "dryspellprob9d", "dryspell_9d", "dry_spell_9d", "9d_dryspell", "dryspell9"]),
     ("dryspell_prob_7d", ["dryspell_prob_7d", "dryspellprob7d", "dryspell_7d", "dry_spell_7d", "7d_dryspell", "dryspell7"]),
     ("dryspell_prob_5d", ["dryspell_prob_5d", "dryspellprob5d", "dryspell_5d", "dry_spell_5d", "5d_dryspell", "dryspell5"]),
-    ("rainfall_percentile", ["rainfall_percentile", "rainfallpercentile", "rain_percentile", "rf_percentile", "percentile", "rpercentile"]),
+    # "percent_anomaly"/"pctanomaly" are this app's naming for rainfall
+    # percentile's Anomaly product (see the pre-existing static PNG catalog's
+    # "..._percentile_pctanomaly.png" convention) -- it's the %-anomaly of
+    # rainfall, shown as percentile's anomaly view, not a literal
+    # "percentile of a percentile". Filenames like
+    # "ethiopia_June_2026-05-01_percent_anomaly.tif" contain "percent" but
+    # not "percentile", so they need their own token here.
+    ("rainfall_percentile", ["rainfall_percentile", "rainfallpercentile", "rain_percentile", "rf_percentile", "percentile", "rpercentile", "percent_anomaly", "percentanomaly", "pctanomaly", "pct_anomaly"]),
     # spi must be checked before rainfall_total: rainfall_total's bare "pr"
     # substring pattern would otherwise false-match filenames like
     # "..._spi_prob_drought" (contains "pr" from "prob") and "..._spi_prob_wet".
@@ -113,6 +122,13 @@ INDICATOR_PATTERNS = [
     ("rainfall_total", ["rainfall_total", "rainfalltotal", "rain_total", "rf_total", "precip_total", "precipitation_total", "pr_total", "rainfall", "precip", "pr"]),
     ("cdd", ["cdd", "consecutive_dry_days"]),
     ("cwd", ["cwd", "consecutive_wet_days"]),
+    # rx5day must be checked before rx1day: "rx1day" is not a substring of
+    # "rx5day" so order doesn't strictly matter here, but keeping the more
+    # specific/longer token first matches the convention used above (dryspell
+    # 9d/7d/5d checked longest-first) in case similarly-named variants are
+    # added later.
+    ("rx5day", ["rx5day", "rx_5day", "rx5_day", "max_5day_rainfall", "max5day"]),
+    ("rx1day", ["rx1day", "rx_1day", "rx1_day", "max_1day_rainfall", "max1day"]),
 ]
 
 PERIOD_PATTERNS = [

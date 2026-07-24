@@ -13,6 +13,8 @@ export const CLIMATE_INDICATORS = [
   { value: "spi", label: "SPI" },
   { value: "cdd", label: "CDD" },
   { value: "cwd", label: "CWD" },
+  { value: "rx1day", label: "Rx1day (Max 1-day Rainfall)" },
+  { value: "rx5day", label: "Rx5day (Max 5-day Rainfall)" },
   { value: "dryspell_prob_5d", label: "Dry spell probability ≥5 days" },
   { value: "dryspell_prob_7d", label: "Dry spell probability ≥7 days" },
   { value: "dryspell_prob_9d", label: "Dry spell probability ≥9 days" },

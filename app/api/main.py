@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from app.advisory.rag_engine import build_rag_advisory
-from app.ml.risk_scoring import score_districts
+from app.ml.risk_scoring import classify_risk, score_districts
 
 from app.api.ai_map_interpretation import router as ai_map_interpretation_router
 from app.api.seasonal_maps import router as seasonal_maps_router
@@ -330,13 +330,7 @@ def point_in_bbox(lon: float, lat: float, bbox: dict) -> bool:
 
 def classify_priority_level(value: float, layer: str) -> str:
     if layer == "risk_score":
-        if value >= 0.80:
-            return "trigger"
-        if value >= 0.60:
-            return "warning"
-        if value >= 0.35:
-            return "watch"
-        return "no_alert"
+        return classify_risk(value)
 
     if value >= 0.70:
         return "high"
@@ -464,16 +458,7 @@ def most_common_value(values: list, default: str = "no_alert") -> str:
 
 
 def classify_area_risk_level(risk_score: float) -> str:
-    if risk_score >= 0.80:
-        return "trigger"
-
-    if risk_score >= 0.60:
-        return "warning"
-
-    if risk_score >= 0.35:
-        return "watch"
-
-    return "no_alert"
+    return classify_risk(risk_score)
 
 
 def infer_area_hazard(hazards: list, risk_level: str) -> str:

@@ -2,11 +2,23 @@ from __future__ import annotations
 
 import json
 import math
+from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+
+from app.ml.risk_scoring import calculate_risk_score, classify_risk
 
 
 OUTPUT_PATH = Path("data/sample/ethiopia_forecast_grid_layers.geojson")
+
+# Precomputed real-data grids, built by exposure_data_pipeline.py and
+# vulnerability_data_pipeline.py respectively (both import GRID_RESOLUTION/
+# LAT_*/LON_* from this module so their cell keys line up exactly with the
+# cells iterated below). Defined here rather than in those modules to avoid
+# a circular import (they already depend on this module for the shared grid
+# definition).
+EXPOSURE_GRID_PATH = Path("data/processed/ethiopia_exposure_grid.json")
+VULNERABILITY_GRID_PATH = Path("data/processed/ethiopia_vulnerability_grid.json")
 
 LAT_MIN = 3.0
 LAT_MAX = 15.0
@@ -51,27 +63,9 @@ def clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min(value, max_value), min_value)
 
 
-def classify_risk(score: float) -> str:
-    if score < 0.35:
-        return "no_alert"
-
-    if score < 0.60:
-        return "watch"
-
-    if score < 0.80:
-        return "warning"
-
-    return "trigger"
-
-
-def calculate_exposure(lat_center: float, lon_center: float) -> float:
-    """
-    Prototype exposure surface.
-
-    Higher exposure is assigned to lowland / eastern and southeastern parts
-    of the Ethiopia domain. Replace later with population, cropland, livestock,
-    infrastructure, and settlement exposure layers.
-    """
+def _synthetic_exposure_fallback(lat_center: float, lon_center: float) -> float:
+    """Original placeholder formula. Only used if EXPOSURE_GRID_PATH is missing
+    (e.g. exposure_data_pipeline.py hasn't been run yet in this environment)."""
 
     east_component = (lon_center - LON_MIN) / (LON_MAX - LON_MIN)
     lowland_component = 1.0 - ((lat_center - LAT_MIN) / (LAT_MAX - LAT_MIN))
@@ -82,14 +76,9 @@ def calculate_exposure(lat_center: float, lon_center: float) -> float:
     return round(clamp(exposure, 0.05, 0.95), 3)
 
 
-def calculate_vulnerability(lat_center: float, lon_center: float) -> float:
-    """
-    Prototype vulnerability surface.
-
-    Replace later with real vulnerability indicators such as poverty,
-    livelihood sensitivity, adaptive capacity, water access, food security,
-    livestock dependency, and health vulnerability.
-    """
+def _synthetic_vulnerability_fallback(lat_center: float, lon_center: float) -> float:
+    """Original placeholder formula. Only used if VULNERABILITY_GRID_PATH is
+    missing (e.g. vulnerability_data_pipeline.py hasn't been run yet)."""
 
     south_component = 1.0 - ((lat_center - LAT_MIN) / (LAT_MAX - LAT_MIN))
     east_component = (lon_center - LON_MIN) / (LON_MAX - LON_MIN)
@@ -100,72 +89,193 @@ def calculate_vulnerability(lat_center: float, lon_center: float) -> float:
     return round(clamp(vulnerability, 0.05, 0.95), 3)
 
 
-def calculate_forecast_indicators(
-    lat_center: float,
-    lon_center: float,
-    lead: Dict,
-) -> Dict:
+@lru_cache(maxsize=None)
+def load_precomputed_grid(path: Path) -> Optional[Dict]:
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data.get("cells", {})
+    except Exception:
+        return None
+
+
+def calculate_exposure(lat_center: float, lon_center: float) -> float:
     """
-    Prototype gridded forecast indicators.
-
-    These are synthetic but deterministic values for dashboard demonstration.
-    In production, replace this with real subseasonal and seasonal forecast
-    fields, hindcast climatology, bias correction, and ensemble probabilities.
+    Real exposure value for this grid cell, from exposure_data_pipeline.py's
+    WorldPop population + FAO GLW livestock composite (data/processed/
+    ethiopia_exposure_grid.json). Falls back to the original synthetic
+    lat/lon placeholder only if that file hasn't been generated yet.
     """
 
-    lead_index = lead["index"]
-    scale = lead["forecast_scale"]
+    cells = load_precomputed_grid(EXPOSURE_GRID_PATH)
+    if cells is None:
+        return _synthetic_exposure_fallback(lat_center, lon_center)
 
-    spatial_wave = math.sin((lat_center - 8.0) * 0.8) + math.cos((lon_center - 39.0) * 0.65)
-    east_west_gradient = (lon_center - 40.0) / 8.0
-    north_south_gradient = (lat_center - 9.0) / 6.0
+    cell = cells.get(f"{lat_center}_{lon_center}")
+    if cell is None:
+        return _synthetic_exposure_fallback(lat_center, lon_center)
 
-    if scale == "subseasonal":
-        lead_factor = math.sin(lead_index * 0.75)
-        rainfall_anomaly_pct = (
-            -12
-            + 18 * spatial_wave
-            - 10 * east_west_gradient
-            + 8 * north_south_gradient
-            + 10 * lead_factor
-        )
-    else:
-        lead_factor = math.cos(lead_index * 0.45)
-        rainfall_anomaly_pct = (
-            -8
-            + 16 * spatial_wave
-            - 8 * east_west_gradient
-            + 6 * north_south_gradient
-            + 8 * lead_factor
-        )
+    return cell["exposure"]
 
-    rainfall_anomaly_pct = round(clamp(rainfall_anomaly_pct, -70, 70), 1)
 
-    spi = round(clamp(rainfall_anomaly_pct / 25.0, -2.8, 2.8), 2)
+def calculate_vulnerability(lat_center: float, lon_center: float) -> float:
+    """
+    Real vulnerability value for this grid cell, from
+    vulnerability_data_pipeline.py's IPC/FEWS NET food-insecurity composite
+    (data/processed/ethiopia_vulnerability_grid.json). Falls back to the
+    original synthetic lat/lon placeholder only if that file hasn't been
+    generated yet.
+    """
 
-    rainfall_percentile = round(
-        clamp(50 + rainfall_anomaly_pct * 0.65 + 8 * math.sin(lat_center + lead_index), 1, 99),
-        1,
-    )
+    cells = load_precomputed_grid(VULNERABILITY_GRID_PATH)
+    if cells is None:
+        return _synthetic_vulnerability_fallback(lat_center, lon_center)
 
-    dry_signal = max(0.0, -rainfall_anomaly_pct)
-    wet_signal = max(0.0, rainfall_anomaly_pct)
+    cell = cells.get(f"{lat_center}_{lon_center}")
+    if cell is None:
+        return _synthetic_vulnerability_fallback(lat_center, lon_center)
 
-    cdd = int(round(clamp(4 + dry_signal / 4.2 + 3 * math.sin(lon_center + lead_index), 0, 35)))
-    cwd = int(round(clamp(2 + wet_signal / 5.0 + 2 * math.cos(lat_center + lead_index), 0, 24)))
+    return cell["vulnerability"]
+
+
+# Maps each seasonal hazard lead onto the real forecast raster catalog's
+# period token (app/api/seasonal_catalog_shared.py: "June".."September"/"JJAS").
+# Subseasonal leads need no such table -- their lead values ("week_1".."week_3_4")
+# already match catalog period tokens 1:1. There is no real raster beyond
+# September (the catalog only carries June-September + the JJAS aggregate), so
+# month_5/month_6 fall back to the nearest available period, September --
+# same "fall back to nearest" rule the frontend already applies for
+# unmapped seasonal-period combinations.
+LEAD_TO_SEASONAL_CATALOG_PERIOD = {
+    "month_1": "June",
+    "month_2": "July",
+    "month_3": "August",
+    "month_4": "September",
+    "month_5": "September",
+    "month_6": "September",
+}
+
+
+def resolve_catalog_period(lead: Dict) -> str:
+    if lead["forecast_scale"] == "subseasonal":
+        return lead["value"]
+    return LEAD_TO_SEASONAL_CATALOG_PERIOD.get(lead["value"], "September")
+
+
+def load_raster_layer(indicator: str, period: str, product: str):
+    """Load one real forecast raster's clipped array + transform, or None if unavailable.
+
+    Reuses app/api/seasonal_raster_maps.py's existing catalog lookup, NetCDF/CSV
+    -> GeoTIFF conversion, and Ethiopia border clipping (load_display_array) --
+    the same pipeline the interactive seasonal climate maps already rely on --
+    instead of re-implementing raster loading here.
+    """
+
+    from app.api.seasonal_raster_maps import find_map_record, load_display_array
+
+    record = find_map_record(indicator, period, product)
+    if not record:
+        return None
+
+    try:
+        arr, transform, _bounds = load_display_array(record)
+        return arr, transform
+    except Exception:
+        return None
+
+
+def build_lead_raster_context(lead: Dict) -> Dict:
+    """Load every real raster this lead's hazard calculation needs, once.
+
+    Loaded once per lead and reused across every grid cell for that lead
+    (~900 cells) instead of re-opening/re-converting the same raster file
+    per cell.
+    """
+
+    period = resolve_catalog_period(lead)
 
     return {
-        "spi": spi,
-        "rainfall_anomaly_pct": rainfall_anomaly_pct,
-        "rainfall_percentile": rainfall_percentile,
-        "cdd": cdd,
-        "cwd": cwd,
+        "spi": load_raster_layer("spi", period, "forecast"),
+        "rainfall_total": load_raster_layer("rainfall_total", period, "forecast"),
+        "rainfall_percentile": load_raster_layer("rainfall_percentile", period, "forecast"),
+        "cdd": load_raster_layer("cdd", period, "forecast"),
+        "cwd": load_raster_layer("cwd", period, "forecast"),
+        # Real ensemble-derived probabilities. drought_probability/wet_probability
+        # (P(SPI<=-1)/P(SPI>=1)) only exist for seasonal periods in the current
+        # catalog; dryspell_prob_7d exists for both scales and is used as the
+        # real-data probability for dry_spell hazard, and as a drought-probability
+        # stand-in at subseasonal lead where no SPI-probability raster exists.
+        "drought_probability": load_raster_layer("spi", period, "drought_probability"),
+        "wet_probability": load_raster_layer("spi", period, "wet_probability"),
+        "dryspell_prob_7d": load_raster_layer("dryspell_prob_7d", period, "forecast"),
     }
 
 
-def calculate_hazard(indicators: Dict) -> Tuple[str, float]:
+def sample_layer(layer, lat: float, lon: float) -> Optional[float]:
+    if layer is None:
+        return None
+
+    from rasterio.transform import rowcol
+
+    arr, transform = layer
+    row, col = rowcol(transform, lon, lat)
+
+    if row < 0 or col < 0 or row >= arr.shape[0] or col >= arr.shape[1]:
+        return None
+
+    value = arr[row, col]
+    if not math.isfinite(value):
+        return None
+
+    return float(value)
+
+
+def calculate_forecast_indicators(
+    lat_center: float,
+    lon_center: float,
+    context: Dict,
+) -> Dict:
+    """
+    Real gridded forecast indicators, sampled from the same forecast rasters
+    (data/maps/geotiff|netcdf|csv, served by app/api/seasonal_raster_maps.py)
+    the interactive seasonal climate maps already display.
+
+    A cell/period without a valid raster reading (e.g. right at the coarse
+    source grid's masked border, or if a raster is entirely missing) falls
+    back to a neutral "no signal" reading so the pipeline always produces a
+    complete grid instead of a hole.
+    """
+
+    spi = sample_layer(context.get("spi"), lat_center, lon_center)
+    rainfall_total = sample_layer(context.get("rainfall_total"), lat_center, lon_center)
+    rainfall_percentile = sample_layer(context.get("rainfall_percentile"), lat_center, lon_center)
+    cdd = sample_layer(context.get("cdd"), lat_center, lon_center)
+    cwd = sample_layer(context.get("cwd"), lat_center, lon_center)
+
+    spi = spi if spi is not None else 0.0
+    rainfall_total = rainfall_total if rainfall_total is not None else 0.0
+    rainfall_percentile = rainfall_percentile if rainfall_percentile is not None else 50.0
+    cdd = cdd if cdd is not None else 5.0
+    cwd = cwd if cwd is not None else 3.0
+
+    return {
+        "spi": round(spi, 2),
+        # Legacy field, kept for API compatibility with the (currently unused)
+        # "indicator" dropdown -- approximated from SPI rather than sampled
+        # from a dedicated raster, since real %-anomaly rasters only exist
+        # for seasonal (not subseasonal) periods. Not used in hazard
+        # classification below; SPI is used directly there instead.
+        "rainfall_anomaly_pct": round(clamp(spi * 25.0, -70, 70), 1),
+        "rainfall_total": round(rainfall_total, 1),
+        "rainfall_percentile": round(rainfall_percentile, 1),
+        "cdd": int(round(cdd)),
+        "cwd": int(round(cwd)),
+    }
+
+
+def calculate_hazard(indicators: Dict, context: Dict, lat_center: float, lon_center: float) -> Tuple[str, float]:
     spi = indicators["spi"]
-    rainfall_anomaly_pct = indicators["rainfall_anomaly_pct"]
     rainfall_percentile = indicators["rainfall_percentile"]
     cdd = indicators["cdd"]
     cwd = indicators["cwd"]
@@ -173,41 +283,58 @@ def calculate_hazard(indicators: Dict) -> Tuple[str, float]:
     drought_evidence = 0.0
     wet_evidence = 0.0
 
+    # Weights renormalized from the original 4-signal split (spi/anomaly%/
+    # percentile/cdd-cwd at 0.35/0.25/0.20/0.20) after dropping the %-anomaly
+    # term, which isn't available at subseasonal lead -- SPI already is a
+    # standardized anomaly, so this isn't a loss of signal, just of
+    # redundancy.
     if spi <= -1.0:
-        drought_evidence += min(abs(spi) / 2.5, 1.0) * 0.35
-
-    if rainfall_anomaly_pct <= -20:
-        drought_evidence += min(abs(rainfall_anomaly_pct) / 60.0, 1.0) * 0.25
+        drought_evidence += min(abs(spi) / 2.5, 1.0) * 0.45
 
     if rainfall_percentile <= 20:
-        drought_evidence += min((20 - rainfall_percentile) / 20.0, 1.0) * 0.20
+        drought_evidence += min((20 - rainfall_percentile) / 20.0, 1.0) * 0.30
 
     if cdd >= 10:
-        drought_evidence += min((cdd - 10) / 20.0, 1.0) * 0.20
+        drought_evidence += min((cdd - 10) / 20.0, 1.0) * 0.25
 
     if spi >= 1.0:
-        wet_evidence += min(spi / 2.5, 1.0) * 0.35
-
-    if rainfall_anomaly_pct >= 20:
-        wet_evidence += min(rainfall_anomaly_pct / 60.0, 1.0) * 0.25
+        wet_evidence += min(spi / 2.5, 1.0) * 0.45
 
     if rainfall_percentile >= 80:
-        wet_evidence += min((rainfall_percentile - 80) / 20.0, 1.0) * 0.20
+        wet_evidence += min((rainfall_percentile - 80) / 20.0, 1.0) * 0.30
 
     if cwd >= 7:
-        wet_evidence += min((cwd - 7) / 15.0, 1.0) * 0.20
+        wet_evidence += min((cwd - 7) / 15.0, 1.0) * 0.25
 
-    drought_probability = clamp(0.25 + drought_evidence, 0.05, 0.95)
-    wet_probability = clamp(0.25 + wet_evidence, 0.05, 0.95)
+    drought_probability_real = sample_layer(context.get("drought_probability"), lat_center, lon_center)
+    wet_probability_real = sample_layer(context.get("wet_probability"), lat_center, lon_center)
+    dryspell_prob_7d_real = sample_layer(context.get("dryspell_prob_7d"), lat_center, lon_center)
 
     if drought_evidence >= wet_evidence and drought_evidence >= 0.25:
-        return "drought", round(drought_probability, 3)
+        # drought_probability (P(SPI<=-1)) and dryspell_prob_7d measure
+        # related but distinct things (standardized seasonal rainfall deficit
+        # vs. a specific dry-spell length), and can legitimately disagree --
+        # e.g. a location whose CDD alone triggered "drought" here may still
+        # show low SPI-drought probability if its dry season is climatologically
+        # normal. Averaging whichever real signals are available uses more of
+        # the real data than picking one arbitrarily.
+        real_estimates = [value for value in (drought_probability_real, dryspell_prob_7d_real) if value is not None]
+        probability = sum(real_estimates) / len(real_estimates) if real_estimates else None
+        if probability is None:
+            probability = clamp(0.25 + drought_evidence, 0.05, 0.95)
+        return "drought", round(probability, 3)
 
     if wet_evidence > drought_evidence and wet_evidence >= 0.25:
-        return "heavy_rainfall", round(wet_probability, 3)
+        probability = wet_probability_real
+        if probability is None:
+            probability = clamp(0.25 + wet_evidence, 0.05, 0.95)
+        return "heavy_rainfall", round(probability, 3)
 
     if cdd >= 12:
-        return "dry_spell", round(clamp(0.35 + (cdd - 12) / 25.0, 0.05, 0.85), 3)
+        probability = dryspell_prob_7d_real
+        if probability is None:
+            probability = clamp(0.35 + (cdd - 12) / 25.0, 0.05, 0.85)
+        return "dry_spell", round(probability, 3)
 
     if cwd >= 8:
         return "wet_spell", round(clamp(0.35 + (cwd - 8) / 18.0, 0.05, 0.85), 3)
@@ -228,17 +355,17 @@ def create_grid_cell_polygon(lon: float, lat: float, resolution: float) -> List[
     ]
 
 
-def create_feature(lon: float, lat: float, lead: Dict) -> Dict:
+def create_feature(lon: float, lat: float, lead: Dict, context: Dict) -> Dict:
     lat_center = round(lat + GRID_RESOLUTION / 2.0, 6)
     lon_center = round(lon + GRID_RESOLUTION / 2.0, 6)
 
     indicators = calculate_forecast_indicators(
         lat_center=lat_center,
         lon_center=lon_center,
-        lead=lead,
+        context=context,
     )
 
-    hazard, hazard_probability = calculate_hazard(indicators)
+    hazard, hazard_probability = calculate_hazard(indicators, context, lat_center, lon_center)
     exposure = calculate_exposure(lat_center, lon_center)
     vulnerability = calculate_vulnerability(lat_center, lon_center)
 
@@ -246,16 +373,11 @@ def create_feature(lon: float, lat: float, lead: Dict) -> Dict:
     if lead["value"] in ["month_4", "month_5", "month_6"]:
         confidence = 0.58
 
-    risk_score = round(
-        clamp(
-            0.40 * hazard_probability
-            + 0.25 * exposure
-            + 0.25 * vulnerability
-            + 0.10 * confidence,
-            0.0,
-            1.0,
-        ),
-        3,
+    risk_score = calculate_risk_score(
+        hazard_probability=hazard_probability,
+        exposure=exposure,
+        vulnerability=vulnerability,
+        confidence=confidence,
     )
 
     risk_level = classify_risk(risk_score)
@@ -289,8 +411,11 @@ def create_feature(lon: float, lat: float, lead: Dict) -> Dict:
             "cdd": indicators["cdd"],
             "cwd": indicators["cwd"],
             "data_note": (
-                "Prototype gridded Ethiopia forecast layer. Replace with real "
-                "subseasonal and seasonal ensemble forecast data for operations."
+                "Hazard and hazard probability are sampled from real subseasonal/"
+                "seasonal forecast rasters (SPI, rainfall, CDD/CWD, and ensemble "
+                "drought/wet/dry-spell probabilities). Exposure and vulnerability "
+                "are still prototype placeholder surfaces -- see "
+                "calculate_exposure()/calculate_vulnerability()."
             ),
         },
     }
@@ -303,9 +428,10 @@ def build_feature_collection() -> Dict:
     lons = frange(LON_MIN, LON_MAX, GRID_RESOLUTION)
 
     for lead in FORECAST_LEADS:
+        context = build_lead_raster_context(lead)
         for lat in lats:
             for lon in lons:
-                features.append(create_feature(lon=lon, lat=lat, lead=lead))
+                features.append(create_feature(lon=lon, lat=lat, lead=lead, context=context))
 
     return {
         "type": "FeatureCollection",
@@ -334,8 +460,11 @@ def build_feature_collection() -> Dict:
                 {"value": "cwd", "label": "Consecutive wet days"},
             ],
             "data_note": (
-                "Synthetic deterministic prototype data for dashboard testing. "
-                "The production version should ingest real forecast and hindcast datasets."
+                "Hazard and Hazard Probability are derived from real ingested "
+                "subseasonal/seasonal forecast rasters (see app/api/seasonal_raster_maps.py "
+                "and data/maps/{geotiff,netcdf,csv}). Exposure and Vulnerability "
+                "are still prototype placeholder surfaces pending real population/"
+                "livestock/food-security data ingestion."
             ),
         },
         "features": features,

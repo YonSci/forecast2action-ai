@@ -1,0 +1,5054 @@
+{
+  "metadata": {
+    "title": "Ethiopia Exposure Grid",
+    "sources": [
+      "WorldPop Ethiopia 2020 population count, 1km (data.worldpop.org)",
+      "FAO Gridded Livestock of the World v4 (2015) cattle/sheep/goats, 5 arcmin (Harvard Dataverse, dataverse.harvard.edu/dataverse/glw_4)"
+    ],
+    "method": "Population and TLU-weighted livestock headcount summed per 0.5-degree grid cell, then log1p + 95th-percentile normalized to 0-1 and combined 50/50 into `exposure`.",
+    "resolution_degrees": 0.5,
+    "cell_count": 720
+  },
+  "cells": {
+    "3.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 52165.0,
+      "livestock_norm": 0.387,
+      "exposure": 0.194
+    },
+    "3.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 510547.5,
+      "livestock_norm": 0.948,
+      "exposure": 0.474
+    },
+    "3.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 606758.8,
+      "livestock_norm": 0.99,
+      "exposure": 0.495
+    },
+    "3.25_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 29731.8,
+      "livestock_norm": 0.249,
+      "exposure": 0.124
+    },
+    "3.25_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 19128.2,
+      "livestock_norm": 0.14,
+      "exposure": 0.07
+    },
+    "3.25_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 21046.2,
+      "livestock_norm": 0.164,
+      "exposure": 0.082
+    },
+    "3.25_36.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 5582.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.25_36.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 7098.6,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.25_37.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 10057.8,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.25_37.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 16132.4,
+      "livestock_norm": 0.099,
+      "exposure": 0.049
+    },
+    "3.25_38.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 19553.8,
+      "livestock_norm": 0.146,
+      "exposure": 0.073
+    },
+    "3.25_38.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 22936.5,
+      "livestock_norm": 0.185,
+      "exposure": 0.093
+    },
+    "3.25_39.25": {
+      "population_total": 44120.3,
+      "population_norm": 0.504,
+      "livestock_tlu": 62925.0,
+      "livestock_norm": 0.433,
+      "exposure": 0.469
+    },
+    "3.25_39.75": {
+      "population_total": 25518.8,
+      "population_norm": 0.411,
+      "livestock_tlu": 136912.9,
+      "livestock_norm": 0.624,
+      "exposure": 0.518
+    },
+    "3.25_40.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 256388.5,
+      "livestock_norm": 0.778,
+      "exposure": 0.389
+    },
+    "3.25_40.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 230619.4,
+      "livestock_norm": 0.752,
+      "exposure": 0.376
+    },
+    "3.25_41.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 265761.7,
+      "livestock_norm": 0.787,
+      "exposure": 0.394
+    },
+    "3.25_41.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 12679.7,
+      "livestock_norm": 0.039,
+      "exposure": 0.02
+    },
+    "3.25_42.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 4974.2,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.25_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 7049.9,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.25_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14218.2,
+      "livestock_norm": 0.068,
+      "exposure": 0.034
+    },
+    "3.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14422.0,
+      "livestock_norm": 0.071,
+      "exposure": 0.036
+    },
+    "3.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 15034.1,
+      "livestock_norm": 0.081,
+      "exposure": 0.041
+    },
+    "3.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 31798.0,
+      "livestock_norm": 0.265,
+      "exposure": 0.133
+    },
+    "3.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 105877.1,
+      "livestock_norm": 0.561,
+      "exposure": 0.28
+    },
+    "3.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 102827.1,
+      "livestock_norm": 0.554,
+      "exposure": 0.277
+    },
+    "3.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 29678.8,
+      "livestock_norm": 0.248,
+      "exposure": 0.124
+    },
+    "3.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 24686.4,
+      "livestock_norm": 0.203,
+      "exposure": 0.102
+    },
+    "3.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 45895.0,
+      "livestock_norm": 0.356,
+      "exposure": 0.178
+    },
+    "3.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 179206.5,
+      "livestock_norm": 0.69,
+      "exposure": 0.345
+    },
+    "3.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 326588.0,
+      "livestock_norm": 0.838,
+      "exposure": 0.419
+    },
+    "3.75_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 49384.9,
+      "livestock_norm": 0.374,
+      "exposure": 0.187
+    },
+    "3.75_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 38568.4,
+      "livestock_norm": 0.313,
+      "exposure": 0.156
+    },
+    "3.75_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 22374.7,
+      "livestock_norm": 0.179,
+      "exposure": 0.089
+    },
+    "3.75_36.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 4497.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.75_36.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 10593.1,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.75_37.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 12556.2,
+      "livestock_norm": 0.037,
+      "exposure": 0.019
+    },
+    "3.75_37.75": {
+      "population_total": 2399.6,
+      "population_norm": 0.009,
+      "livestock_tlu": 18170.6,
+      "livestock_norm": 0.128,
+      "exposure": 0.068
+    },
+    "3.75_38.25": {
+      "population_total": 20791.1,
+      "population_norm": 0.376,
+      "livestock_tlu": 44617.7,
+      "livestock_norm": 0.349,
+      "exposure": 0.362
+    },
+    "3.75_38.75": {
+      "population_total": 85108.2,
+      "population_norm": 0.616,
+      "livestock_tlu": 99236.2,
+      "livestock_norm": 0.545,
+      "exposure": 0.581
+    },
+    "3.75_39.25": {
+      "population_total": 69403.0,
+      "population_norm": 0.581,
+      "livestock_tlu": 71968.7,
+      "livestock_norm": 0.466,
+      "exposure": 0.524
+    },
+    "3.75_39.75": {
+      "population_total": 47456.8,
+      "population_norm": 0.517,
+      "livestock_tlu": 166962.4,
+      "livestock_norm": 0.673,
+      "exposure": 0.595
+    },
+    "3.75_40.25": {
+      "population_total": 2267.3,
+      "population_norm": 0.0,
+      "livestock_tlu": 358771.3,
+      "livestock_norm": 0.861,
+      "exposure": 0.43
+    },
+    "3.75_40.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 180174.0,
+      "livestock_norm": 0.692,
+      "exposure": 0.346
+    },
+    "3.75_41.25": {
+      "population_total": 28600.7,
+      "population_norm": 0.431,
+      "livestock_tlu": 324772.7,
+      "livestock_norm": 0.836,
+      "exposure": 0.634
+    },
+    "3.75_41.75": {
+      "population_total": 12946.0,
+      "population_norm": 0.296,
+      "livestock_tlu": 247980.7,
+      "livestock_norm": 0.77,
+      "exposure": 0.533
+    },
+    "3.75_42.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 6696.1,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.75_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 3350.8,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "3.75_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 29228.1,
+      "livestock_norm": 0.245,
+      "exposure": 0.122
+    },
+    "3.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 22884.3,
+      "livestock_norm": 0.185,
+      "exposure": 0.092
+    },
+    "3.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 27313.1,
+      "livestock_norm": 0.228,
+      "exposure": 0.114
+    },
+    "3.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 38173.2,
+      "livestock_norm": 0.31,
+      "exposure": 0.155
+    },
+    "3.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 66983.0,
+      "livestock_norm": 0.448,
+      "exposure": 0.224
+    },
+    "3.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 74774.2,
+      "livestock_norm": 0.475,
+      "exposure": 0.238
+    },
+    "3.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 60581.4,
+      "livestock_norm": 0.424,
+      "exposure": 0.212
+    },
+    "3.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 44933.7,
+      "livestock_norm": 0.35,
+      "exposure": 0.175
+    },
+    "3.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 12059.4,
+      "livestock_norm": 0.027,
+      "exposure": 0.014
+    },
+    "3.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "4.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 98760.4,
+      "livestock_norm": 0.544,
+      "exposure": 0.272
+    },
+    "4.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 131717.2,
+      "livestock_norm": 0.615,
+      "exposure": 0.307
+    },
+    "4.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 83492.1,
+      "livestock_norm": 0.503,
+      "exposure": 0.251
+    },
+    "4.25_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 34443.8,
+      "livestock_norm": 0.285,
+      "exposure": 0.142
+    },
+    "4.25_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 42940.8,
+      "livestock_norm": 0.339,
+      "exposure": 0.17
+    },
+    "4.25_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 34609.1,
+      "livestock_norm": 0.286,
+      "exposure": 0.143
+    },
+    "4.25_36.25": {
+      "population_total": 2289.6,
+      "population_norm": 0.001,
+      "livestock_tlu": 30720.5,
+      "livestock_norm": 0.257,
+      "exposure": 0.129
+    },
+    "4.25_36.75": {
+      "population_total": 1673.3,
+      "population_norm": 0.0,
+      "livestock_tlu": 20647.5,
+      "livestock_norm": 0.159,
+      "exposure": 0.08
+    },
+    "4.25_37.25": {
+      "population_total": 10156.4,
+      "population_norm": 0.254,
+      "livestock_tlu": 27680.0,
+      "livestock_norm": 0.231,
+      "exposure": 0.243
+    },
+    "4.25_37.75": {
+      "population_total": 15494.4,
+      "population_norm": 0.326,
+      "livestock_tlu": 41043.3,
+      "livestock_norm": 0.328,
+      "exposure": 0.327
+    },
+    "4.25_38.25": {
+      "population_total": 51054.4,
+      "population_norm": 0.529,
+      "livestock_tlu": 68538.4,
+      "livestock_norm": 0.454,
+      "exposure": 0.492
+    },
+    "4.25_38.75": {
+      "population_total": 29867.9,
+      "population_norm": 0.438,
+      "livestock_tlu": 47451.1,
+      "livestock_norm": 0.364,
+      "exposure": 0.401
+    },
+    "4.25_39.25": {
+      "population_total": 12958.1,
+      "population_norm": 0.296,
+      "livestock_tlu": 35096.6,
+      "livestock_norm": 0.29,
+      "exposure": 0.293
+    },
+    "4.25_39.75": {
+      "population_total": 42869.6,
+      "population_norm": 0.499,
+      "livestock_tlu": 27574.3,
+      "livestock_norm": 0.23,
+      "exposure": 0.365
+    },
+    "4.25_40.25": {
+      "population_total": 61866.7,
+      "population_norm": 0.562,
+      "livestock_tlu": 194886.5,
+      "livestock_norm": 0.711,
+      "exposure": 0.636
+    },
+    "4.25_40.75": {
+      "population_total": 45392.6,
+      "population_norm": 0.509,
+      "livestock_tlu": 219732.7,
+      "livestock_norm": 0.74,
+      "exposure": 0.625
+    },
+    "4.25_41.25": {
+      "population_total": 23238.1,
+      "population_norm": 0.395,
+      "livestock_tlu": 45287.2,
+      "livestock_norm": 0.352,
+      "exposure": 0.374
+    },
+    "4.25_41.75": {
+      "population_total": 55483.3,
+      "population_norm": 0.543,
+      "livestock_tlu": 73152.1,
+      "livestock_norm": 0.47,
+      "exposure": 0.507
+    },
+    "4.25_42.25": {
+      "population_total": 48544.4,
+      "population_norm": 0.521,
+      "livestock_tlu": 21446.4,
+      "livestock_norm": 0.169,
+      "exposure": 0.345
+    },
+    "4.25_42.75": {
+      "population_total": 11185.6,
+      "population_norm": 0.271,
+      "livestock_tlu": 16154.4,
+      "livestock_norm": 0.099,
+      "exposure": 0.185
+    },
+    "4.25_43.25": {
+      "population_total": 148.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 37187.6,
+      "livestock_norm": 0.304,
+      "exposure": 0.152
+    },
+    "4.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 41141.0,
+      "livestock_norm": 0.329,
+      "exposure": 0.164
+    },
+    "4.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 36589.7,
+      "livestock_norm": 0.3,
+      "exposure": 0.15
+    },
+    "4.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 38349.1,
+      "livestock_norm": 0.311,
+      "exposure": 0.156
+    },
+    "4.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 46687.5,
+      "livestock_norm": 0.36,
+      "exposure": 0.18
+    },
+    "4.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 46599.1,
+      "livestock_norm": 0.359,
+      "exposure": 0.18
+    },
+    "4.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 42883.6,
+      "livestock_norm": 0.339,
+      "exposure": 0.169
+    },
+    "4.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 27675.7,
+      "livestock_norm": 0.231,
+      "exposure": 0.116
+    },
+    "4.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 24751.8,
+      "livestock_norm": 0.204,
+      "exposure": 0.102
+    },
+    "4.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 15187.6,
+      "livestock_norm": 0.084,
+      "exposure": 0.042
+    },
+    "4.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 102684.4,
+      "livestock_norm": 0.553,
+      "exposure": 0.277
+    },
+    "4.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 103549.6,
+      "livestock_norm": 0.556,
+      "exposure": 0.278
+    },
+    "4.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 60502.2,
+      "livestock_norm": 0.423,
+      "exposure": 0.212
+    },
+    "4.75_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 19556.9,
+      "livestock_norm": 0.146,
+      "exposure": 0.073
+    },
+    "4.75_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 19303.1,
+      "livestock_norm": 0.143,
+      "exposure": 0.071
+    },
+    "4.75_35.75": {
+      "population_total": 23394.1,
+      "population_norm": 0.396,
+      "livestock_tlu": 350650.3,
+      "livestock_norm": 0.855,
+      "exposure": 0.626
+    },
+    "4.75_36.25": {
+      "population_total": 70629.5,
+      "population_norm": 0.584,
+      "livestock_tlu": 797015.3,
+      "livestock_norm": 1.0,
+      "exposure": 0.792
+    },
+    "4.75_36.75": {
+      "population_total": 26050.9,
+      "population_norm": 0.415,
+      "livestock_tlu": 124976.0,
+      "livestock_norm": 0.602,
+      "exposure": 0.508
+    },
+    "4.75_37.25": {
+      "population_total": 24362.8,
+      "population_norm": 0.403,
+      "livestock_tlu": 47178.3,
+      "livestock_norm": 0.362,
+      "exposure": 0.383
+    },
+    "4.75_37.75": {
+      "population_total": 26258.7,
+      "population_norm": 0.416,
+      "livestock_tlu": 56445.2,
+      "livestock_norm": 0.406,
+      "exposure": 0.411
+    },
+    "4.75_38.25": {
+      "population_total": 87637.7,
+      "population_norm": 0.621,
+      "livestock_tlu": 67996.5,
+      "livestock_norm": 0.452,
+      "exposure": 0.537
+    },
+    "4.75_38.75": {
+      "population_total": 35635.3,
+      "population_norm": 0.468,
+      "livestock_tlu": 17578.5,
+      "livestock_norm": 0.12,
+      "exposure": 0.294
+    },
+    "4.75_39.25": {
+      "population_total": 19464.9,
+      "population_norm": 0.365,
+      "livestock_tlu": 26695.9,
+      "livestock_norm": 0.222,
+      "exposure": 0.294
+    },
+    "4.75_39.75": {
+      "population_total": 42038.3,
+      "population_norm": 0.496,
+      "livestock_tlu": 29706.7,
+      "livestock_norm": 0.249,
+      "exposure": 0.372
+    },
+    "4.75_40.25": {
+      "population_total": 53991.1,
+      "population_norm": 0.539,
+      "livestock_tlu": 18275.7,
+      "livestock_norm": 0.129,
+      "exposure": 0.334
+    },
+    "4.75_40.75": {
+      "population_total": 62181.2,
+      "population_norm": 0.563,
+      "livestock_tlu": 24017.4,
+      "livestock_norm": 0.196,
+      "exposure": 0.38
+    },
+    "4.75_41.25": {
+      "population_total": 34258.8,
+      "population_norm": 0.461,
+      "livestock_tlu": 23217.5,
+      "livestock_norm": 0.188,
+      "exposure": 0.325
+    },
+    "4.75_41.75": {
+      "population_total": 58653.7,
+      "population_norm": 0.553,
+      "livestock_tlu": 32229.4,
+      "livestock_norm": 0.269,
+      "exposure": 0.411
+    },
+    "4.75_42.25": {
+      "population_total": 61462.4,
+      "population_norm": 0.561,
+      "livestock_tlu": 30590.4,
+      "livestock_norm": 0.256,
+      "exposure": 0.408
+    },
+    "4.75_42.75": {
+      "population_total": 23498.0,
+      "population_norm": 0.397,
+      "livestock_tlu": 29218.3,
+      "livestock_norm": 0.245,
+      "exposure": 0.321
+    },
+    "4.75_43.25": {
+      "population_total": 10773.8,
+      "population_norm": 0.264,
+      "livestock_tlu": 27474.3,
+      "livestock_norm": 0.229,
+      "exposure": 0.247
+    },
+    "4.75_43.75": {
+      "population_total": 2370.5,
+      "population_norm": 0.007,
+      "livestock_tlu": 24351.1,
+      "livestock_norm": 0.2,
+      "exposure": 0.103
+    },
+    "4.75_44.25": {
+      "population_total": 2280.8,
+      "population_norm": 0.0,
+      "livestock_tlu": 25741.3,
+      "livestock_norm": 0.213,
+      "exposure": 0.107
+    },
+    "4.75_44.75": {
+      "population_total": 4871.6,
+      "population_norm": 0.129,
+      "livestock_tlu": 37624.6,
+      "livestock_norm": 0.307,
+      "exposure": 0.218
+    },
+    "4.75_45.25": {
+      "population_total": 1033.2,
+      "population_norm": 0.0,
+      "livestock_tlu": 48354.7,
+      "livestock_norm": 0.368,
+      "exposure": 0.184
+    },
+    "4.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 36104.5,
+      "livestock_norm": 0.297,
+      "exposure": 0.148
+    },
+    "4.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 23856.5,
+      "livestock_norm": 0.195,
+      "exposure": 0.097
+    },
+    "4.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 21814.6,
+      "livestock_norm": 0.173,
+      "exposure": 0.086
+    },
+    "4.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 31648.5,
+      "livestock_norm": 0.264,
+      "exposure": 0.132
+    },
+    "4.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 95870.1,
+      "livestock_norm": 0.537,
+      "exposure": 0.268
+    },
+    "5.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 77121.9,
+      "livestock_norm": 0.483,
+      "exposure": 0.242
+    },
+    "5.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 71697.0,
+      "livestock_norm": 0.465,
+      "exposure": 0.233
+    },
+    "5.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 55027.0,
+      "livestock_norm": 0.4,
+      "exposure": 0.2
+    },
+    "5.25_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 46594.0,
+      "livestock_norm": 0.359,
+      "exposure": 0.18
+    },
+    "5.25_35.25": {
+      "population_total": 1109.1,
+      "population_norm": 0.0,
+      "livestock_tlu": 31122.5,
+      "livestock_norm": 0.26,
+      "exposure": 0.13
+    },
+    "5.25_35.75": {
+      "population_total": 10276.3,
+      "population_norm": 0.256,
+      "livestock_tlu": 313046.5,
+      "livestock_norm": 0.827,
+      "exposure": 0.542
+    },
+    "5.25_36.25": {
+      "population_total": 40182.7,
+      "population_norm": 0.488,
+      "livestock_tlu": 379334.4,
+      "livestock_norm": 0.875,
+      "exposure": 0.682
+    },
+    "5.25_36.75": {
+      "population_total": 79686.2,
+      "population_norm": 0.605,
+      "livestock_tlu": 213568.2,
+      "livestock_norm": 0.733,
+      "exposure": 0.669
+    },
+    "5.25_37.25": {
+      "population_total": 374236.5,
+      "population_norm": 0.868,
+      "livestock_tlu": 186433.4,
+      "livestock_norm": 0.7,
+      "exposure": 0.784
+    },
+    "5.25_37.75": {
+      "population_total": 144894.2,
+      "population_norm": 0.707,
+      "livestock_tlu": 132588.3,
+      "livestock_norm": 0.616,
+      "exposure": 0.661
+    },
+    "5.25_38.25": {
+      "population_total": 163099.8,
+      "population_norm": 0.727,
+      "livestock_tlu": 201764.3,
+      "livestock_norm": 0.719,
+      "exposure": 0.723
+    },
+    "5.25_38.75": {
+      "population_total": 90760.3,
+      "population_norm": 0.627,
+      "livestock_tlu": 84866.4,
+      "livestock_norm": 0.507,
+      "exposure": 0.567
+    },
+    "5.25_39.25": {
+      "population_total": 80290.4,
+      "population_norm": 0.606,
+      "livestock_tlu": 85660.7,
+      "livestock_norm": 0.509,
+      "exposure": 0.558
+    },
+    "5.25_39.75": {
+      "population_total": 160906.0,
+      "population_norm": 0.724,
+      "livestock_tlu": 88232.1,
+      "livestock_norm": 0.516,
+      "exposure": 0.62
+    },
+    "5.25_40.25": {
+      "population_total": 43362.0,
+      "population_norm": 0.501,
+      "livestock_tlu": 25186.0,
+      "livestock_norm": 0.208,
+      "exposure": 0.355
+    },
+    "5.25_40.75": {
+      "population_total": 62235.3,
+      "population_norm": 0.563,
+      "livestock_tlu": 22084.4,
+      "livestock_norm": 0.176,
+      "exposure": 0.369
+    },
+    "5.25_41.25": {
+      "population_total": 48556.2,
+      "population_norm": 0.521,
+      "livestock_tlu": 22500.2,
+      "livestock_norm": 0.18,
+      "exposure": 0.35
+    },
+    "5.25_41.75": {
+      "population_total": 64224.1,
+      "population_norm": 0.568,
+      "livestock_tlu": 35021.3,
+      "livestock_norm": 0.289,
+      "exposure": 0.429
+    },
+    "5.25_42.25": {
+      "population_total": 92661.4,
+      "population_norm": 0.631,
+      "livestock_tlu": 35423.8,
+      "livestock_norm": 0.292,
+      "exposure": 0.461
+    },
+    "5.25_42.75": {
+      "population_total": 22217.0,
+      "population_norm": 0.388,
+      "livestock_tlu": 27190.5,
+      "livestock_norm": 0.227,
+      "exposure": 0.307
+    },
+    "5.25_43.25": {
+      "population_total": 21724.9,
+      "population_norm": 0.384,
+      "livestock_tlu": 28673.0,
+      "livestock_norm": 0.24,
+      "exposure": 0.312
+    },
+    "5.25_43.75": {
+      "population_total": 13410.9,
+      "population_norm": 0.302,
+      "livestock_tlu": 29974.4,
+      "livestock_norm": 0.251,
+      "exposure": 0.276
+    },
+    "5.25_44.25": {
+      "population_total": 35967.8,
+      "population_norm": 0.47,
+      "livestock_tlu": 40168.3,
+      "livestock_norm": 0.323,
+      "exposure": 0.396
+    },
+    "5.25_44.75": {
+      "population_total": 77540.1,
+      "population_norm": 0.6,
+      "livestock_tlu": 49647.2,
+      "livestock_norm": 0.375,
+      "exposure": 0.488
+    },
+    "5.25_45.25": {
+      "population_total": 31984.8,
+      "population_norm": 0.45,
+      "livestock_tlu": 44068.1,
+      "livestock_norm": 0.346,
+      "exposure": 0.398
+    },
+    "5.25_45.75": {
+      "population_total": 282.1,
+      "population_norm": 0.0,
+      "livestock_tlu": 18782.2,
+      "livestock_norm": 0.136,
+      "exposure": 0.068
+    },
+    "5.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 13004.0,
+      "livestock_norm": 0.046,
+      "exposure": 0.023
+    },
+    "5.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14025.6,
+      "livestock_norm": 0.064,
+      "exposure": 0.032
+    },
+    "5.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 16738.5,
+      "livestock_norm": 0.108,
+      "exposure": 0.054
+    },
+    "5.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 63472.5,
+      "livestock_norm": 0.435,
+      "exposure": 0.218
+    },
+    "5.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 48308.1,
+      "livestock_norm": 0.368,
+      "exposure": 0.184
+    },
+    "5.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 58874.6,
+      "livestock_norm": 0.417,
+      "exposure": 0.208
+    },
+    "5.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 59894.8,
+      "livestock_norm": 0.421,
+      "exposure": 0.21
+    },
+    "5.75_34.75": {
+      "population_total": 73.4,
+      "population_norm": 0.0,
+      "livestock_tlu": 53061.0,
+      "livestock_norm": 0.391,
+      "exposure": 0.196
+    },
+    "5.75_35.25": {
+      "population_total": 13387.4,
+      "population_norm": 0.301,
+      "livestock_tlu": 38029.5,
+      "livestock_norm": 0.309,
+      "exposure": 0.305
+    },
+    "5.75_35.75": {
+      "population_total": 12489.6,
+      "population_norm": 0.29,
+      "livestock_tlu": 21277.1,
+      "livestock_norm": 0.167,
+      "exposure": 0.228
+    },
+    "5.75_36.25": {
+      "population_total": 78915.1,
+      "population_norm": 0.603,
+      "livestock_tlu": 116445.6,
+      "livestock_norm": 0.584,
+      "exposure": 0.594
+    },
+    "5.75_36.75": {
+      "population_total": 387861.4,
+      "population_norm": 0.874,
+      "livestock_tlu": 287528.9,
+      "livestock_norm": 0.807,
+      "exposure": 0.84
+    },
+    "5.75_37.25": {
+      "population_total": 475529.8,
+      "population_norm": 0.909,
+      "livestock_tlu": 318258.1,
+      "livestock_norm": 0.831,
+      "exposure": 0.87
+    },
+    "5.75_37.75": {
+      "population_total": 329562.6,
+      "population_norm": 0.846,
+      "livestock_tlu": 197160.6,
+      "livestock_norm": 0.714,
+      "exposure": 0.78
+    },
+    "5.75_38.25": {
+      "population_total": 974832.6,
+      "population_norm": 1.0,
+      "livestock_tlu": 479447.4,
+      "livestock_norm": 0.932,
+      "exposure": 0.966
+    },
+    "5.75_38.75": {
+      "population_total": 520868.9,
+      "population_norm": 0.924,
+      "livestock_tlu": 290396.0,
+      "livestock_norm": 0.809,
+      "exposure": 0.867
+    },
+    "5.75_39.25": {
+      "population_total": 203380.3,
+      "population_norm": 0.764,
+      "livestock_tlu": 212797.1,
+      "livestock_norm": 0.733,
+      "exposure": 0.748
+    },
+    "5.75_39.75": {
+      "population_total": 91633.3,
+      "population_norm": 0.629,
+      "livestock_tlu": 85701.2,
+      "livestock_norm": 0.509,
+      "exposure": 0.569
+    },
+    "5.75_40.25": {
+      "population_total": 31680.2,
+      "population_norm": 0.448,
+      "livestock_tlu": 43211.4,
+      "livestock_norm": 0.341,
+      "exposure": 0.394
+    },
+    "5.75_40.75": {
+      "population_total": 39110.9,
+      "population_norm": 0.484,
+      "livestock_tlu": 25834.0,
+      "livestock_norm": 0.214,
+      "exposure": 0.349
+    },
+    "5.75_41.25": {
+      "population_total": 50379.0,
+      "population_norm": 0.527,
+      "livestock_tlu": 27343.7,
+      "livestock_norm": 0.228,
+      "exposure": 0.378
+    },
+    "5.75_41.75": {
+      "population_total": 33234.8,
+      "population_norm": 0.456,
+      "livestock_tlu": 29333.4,
+      "livestock_norm": 0.246,
+      "exposure": 0.351
+    },
+    "5.75_42.25": {
+      "population_total": 40410.3,
+      "population_norm": 0.489,
+      "livestock_tlu": 27857.8,
+      "livestock_norm": 0.233,
+      "exposure": 0.361
+    },
+    "5.75_42.75": {
+      "population_total": 30610.7,
+      "population_norm": 0.442,
+      "livestock_tlu": 29977.0,
+      "livestock_norm": 0.251,
+      "exposure": 0.346
+    },
+    "5.75_43.25": {
+      "population_total": 82185.3,
+      "population_norm": 0.61,
+      "livestock_tlu": 42897.0,
+      "livestock_norm": 0.339,
+      "exposure": 0.475
+    },
+    "5.75_43.75": {
+      "population_total": 125644.6,
+      "population_norm": 0.682,
+      "livestock_tlu": 48382.9,
+      "livestock_norm": 0.369,
+      "exposure": 0.525
+    },
+    "5.75_44.25": {
+      "population_total": 111894.3,
+      "population_norm": 0.663,
+      "livestock_tlu": 64178.9,
+      "livestock_norm": 0.438,
+      "exposure": 0.55
+    },
+    "5.75_44.75": {
+      "population_total": 32784.1,
+      "population_norm": 0.454,
+      "livestock_tlu": 38892.5,
+      "livestock_norm": 0.315,
+      "exposure": 0.384
+    },
+    "5.75_45.25": {
+      "population_total": 31642.2,
+      "population_norm": 0.448,
+      "livestock_tlu": 35297.1,
+      "livestock_norm": 0.291,
+      "exposure": 0.369
+    },
+    "5.75_45.75": {
+      "population_total": 10467.4,
+      "population_norm": 0.26,
+      "livestock_tlu": 22506.7,
+      "livestock_norm": 0.18,
+      "exposure": 0.22
+    },
+    "5.75_46.25": {
+      "population_total": 31.7,
+      "population_norm": 0.0,
+      "livestock_tlu": 14185.6,
+      "livestock_norm": 0.067,
+      "exposure": 0.033
+    },
+    "5.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 12268.4,
+      "livestock_norm": 0.031,
+      "exposure": 0.016
+    },
+    "5.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 20375.5,
+      "livestock_norm": 0.156,
+      "exposure": 0.078
+    },
+    "5.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 40765.5,
+      "livestock_norm": 0.326,
+      "exposure": 0.163
+    },
+    "6.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 52670.7,
+      "livestock_norm": 0.389,
+      "exposure": 0.195
+    },
+    "6.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 55875.2,
+      "livestock_norm": 0.404,
+      "exposure": 0.202
+    },
+    "6.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 53735.6,
+      "livestock_norm": 0.394,
+      "exposure": 0.197
+    },
+    "6.25_34.75": {
+      "population_total": 405.4,
+      "population_norm": 0.0,
+      "livestock_tlu": 42752.7,
+      "livestock_norm": 0.338,
+      "exposure": 0.169
+    },
+    "6.25_35.25": {
+      "population_total": 46084.0,
+      "population_norm": 0.512,
+      "livestock_tlu": 44902.7,
+      "livestock_norm": 0.35,
+      "exposure": 0.431
+    },
+    "6.25_35.75": {
+      "population_total": 68379.1,
+      "population_norm": 0.579,
+      "livestock_tlu": 38870.0,
+      "livestock_norm": 0.315,
+      "exposure": 0.447
+    },
+    "6.25_36.25": {
+      "population_total": 60378.6,
+      "population_norm": 0.558,
+      "livestock_tlu": 106614.2,
+      "livestock_norm": 0.563,
+      "exposure": 0.56
+    },
+    "6.25_36.75": {
+      "population_total": 672333.3,
+      "population_norm": 0.968,
+      "livestock_tlu": 404730.1,
+      "livestock_norm": 0.891,
+      "exposure": 0.929
+    },
+    "6.25_37.25": {
+      "population_total": 693046.0,
+      "population_norm": 0.973,
+      "livestock_tlu": 560849.7,
+      "livestock_norm": 0.971,
+      "exposure": 0.972
+    },
+    "6.25_37.75": {
+      "population_total": 596224.0,
+      "population_norm": 0.947,
+      "livestock_tlu": 204081.0,
+      "livestock_norm": 0.722,
+      "exposure": 0.835
+    },
+    "6.25_38.25": {
+      "population_total": 1651408.2,
+      "population_norm": 1.0,
+      "livestock_tlu": 559604.2,
+      "livestock_norm": 0.97,
+      "exposure": 0.985
+    },
+    "6.25_38.75": {
+      "population_total": 994632.1,
+      "population_norm": 1.0,
+      "livestock_tlu": 757379.9,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "6.25_39.25": {
+      "population_total": 342300.0,
+      "population_norm": 0.853,
+      "livestock_tlu": 247870.7,
+      "livestock_norm": 0.77,
+      "exposure": 0.811
+    },
+    "6.25_39.75": {
+      "population_total": 147475.1,
+      "population_norm": 0.71,
+      "livestock_tlu": 108732.3,
+      "livestock_norm": 0.568,
+      "exposure": 0.639
+    },
+    "6.25_40.25": {
+      "population_total": 20721.6,
+      "population_norm": 0.376,
+      "livestock_tlu": 36026.9,
+      "livestock_norm": 0.296,
+      "exposure": 0.336
+    },
+    "6.25_40.75": {
+      "population_total": 23105.3,
+      "population_norm": 0.394,
+      "livestock_tlu": 27187.7,
+      "livestock_norm": 0.227,
+      "exposure": 0.311
+    },
+    "6.25_41.25": {
+      "population_total": 25999.2,
+      "population_norm": 0.414,
+      "livestock_tlu": 30000.5,
+      "livestock_norm": 0.251,
+      "exposure": 0.333
+    },
+    "6.25_41.75": {
+      "population_total": 28232.8,
+      "population_norm": 0.428,
+      "livestock_tlu": 29817.7,
+      "livestock_norm": 0.25,
+      "exposure": 0.339
+    },
+    "6.25_42.25": {
+      "population_total": 100345.0,
+      "population_norm": 0.644,
+      "livestock_tlu": 37694.0,
+      "livestock_norm": 0.307,
+      "exposure": 0.476
+    },
+    "6.25_42.75": {
+      "population_total": 50162.6,
+      "population_norm": 0.526,
+      "livestock_tlu": 43285.9,
+      "livestock_norm": 0.341,
+      "exposure": 0.434
+    },
+    "6.25_43.25": {
+      "population_total": 54019.8,
+      "population_norm": 0.539,
+      "livestock_tlu": 56044.3,
+      "livestock_norm": 0.405,
+      "exposure": 0.472
+    },
+    "6.25_43.75": {
+      "population_total": 58126.7,
+      "population_norm": 0.551,
+      "livestock_tlu": 39752.3,
+      "livestock_norm": 0.32,
+      "exposure": 0.436
+    },
+    "6.25_44.25": {
+      "population_total": 75700.3,
+      "population_norm": 0.596,
+      "livestock_tlu": 24022.7,
+      "livestock_norm": 0.196,
+      "exposure": 0.396
+    },
+    "6.25_44.75": {
+      "population_total": 38454.1,
+      "population_norm": 0.481,
+      "livestock_tlu": 22205.1,
+      "livestock_norm": 0.177,
+      "exposure": 0.329
+    },
+    "6.25_45.25": {
+      "population_total": 14449.4,
+      "population_norm": 0.314,
+      "livestock_tlu": 28102.6,
+      "livestock_norm": 0.235,
+      "exposure": 0.275
+    },
+    "6.25_45.75": {
+      "population_total": 10719.0,
+      "population_norm": 0.264,
+      "livestock_tlu": 37647.1,
+      "livestock_norm": 0.307,
+      "exposure": 0.285
+    },
+    "6.25_46.25": {
+      "population_total": 20368.8,
+      "population_norm": 0.373,
+      "livestock_tlu": 28446.0,
+      "livestock_norm": 0.238,
+      "exposure": 0.305
+    },
+    "6.25_46.75": {
+      "population_total": 263.9,
+      "population_norm": 0.0,
+      "livestock_tlu": 24454.3,
+      "livestock_norm": 0.201,
+      "exposure": 0.1
+    },
+    "6.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 29159.3,
+      "livestock_norm": 0.244,
+      "exposure": 0.122
+    },
+    "6.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 42234.4,
+      "livestock_norm": 0.335,
+      "exposure": 0.168
+    },
+    "6.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 46348.1,
+      "livestock_norm": 0.358,
+      "exposure": 0.179
+    },
+    "6.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 46974.4,
+      "livestock_norm": 0.361,
+      "exposure": 0.181
+    },
+    "6.75_34.25": {
+      "population_total": 179.1,
+      "population_norm": 0.0,
+      "livestock_tlu": 39666.0,
+      "livestock_norm": 0.32,
+      "exposure": 0.16
+    },
+    "6.75_34.75": {
+      "population_total": 7512.1,
+      "population_norm": 0.203,
+      "livestock_tlu": 20197.0,
+      "livestock_norm": 0.154,
+      "exposure": 0.178
+    },
+    "6.75_35.25": {
+      "population_total": 122746.2,
+      "population_norm": 0.678,
+      "livestock_tlu": 107864.2,
+      "livestock_norm": 0.566,
+      "exposure": 0.622
+    },
+    "6.75_35.75": {
+      "population_total": 478752.6,
+      "population_norm": 0.91,
+      "livestock_tlu": 236470.8,
+      "livestock_norm": 0.758,
+      "exposure": 0.834
+    },
+    "6.75_36.25": {
+      "population_total": 109576.6,
+      "population_norm": 0.659,
+      "livestock_tlu": 109481.3,
+      "livestock_norm": 0.569,
+      "exposure": 0.614
+    },
+    "6.75_36.75": {
+      "population_total": 182505.0,
+      "population_norm": 0.746,
+      "livestock_tlu": 182455.8,
+      "livestock_norm": 0.695,
+      "exposure": 0.72
+    },
+    "6.75_37.25": {
+      "population_total": 552294.7,
+      "population_norm": 0.934,
+      "livestock_tlu": 409279.1,
+      "livestock_norm": 0.893,
+      "exposure": 0.914
+    },
+    "6.75_37.75": {
+      "population_total": 1318813.0,
+      "population_norm": 1.0,
+      "livestock_tlu": 596656.2,
+      "livestock_norm": 0.986,
+      "exposure": 0.993
+    },
+    "6.75_38.25": {
+      "population_total": 2013800.5,
+      "population_norm": 1.0,
+      "livestock_tlu": 1070494.8,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "6.75_38.75": {
+      "population_total": 1690871.8,
+      "population_norm": 1.0,
+      "livestock_tlu": 1388334.4,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "6.75_39.25": {
+      "population_total": 419640.9,
+      "population_norm": 0.888,
+      "livestock_tlu": 327808.1,
+      "livestock_norm": 0.839,
+      "exposure": 0.863
+    },
+    "6.75_39.75": {
+      "population_total": 168677.0,
+      "population_norm": 0.732,
+      "livestock_tlu": 105375.9,
+      "livestock_norm": 0.56,
+      "exposure": 0.646
+    },
+    "6.75_40.25": {
+      "population_total": 205759.8,
+      "population_norm": 0.766,
+      "livestock_tlu": 132532.0,
+      "livestock_norm": 0.616,
+      "exposure": 0.691
+    },
+    "6.75_40.75": {
+      "population_total": 191567.8,
+      "population_norm": 0.754,
+      "livestock_tlu": 94393.8,
+      "livestock_norm": 0.533,
+      "exposure": 0.643
+    },
+    "6.75_41.25": {
+      "population_total": 45907.1,
+      "population_norm": 0.511,
+      "livestock_tlu": 35267.0,
+      "livestock_norm": 0.291,
+      "exposure": 0.401
+    },
+    "6.75_41.75": {
+      "population_total": 21893.3,
+      "population_norm": 0.385,
+      "livestock_tlu": 21177.0,
+      "livestock_norm": 0.165,
+      "exposure": 0.275
+    },
+    "6.75_42.25": {
+      "population_total": 35651.8,
+      "population_norm": 0.468,
+      "livestock_tlu": 47736.1,
+      "livestock_norm": 0.365,
+      "exposure": 0.417
+    },
+    "6.75_42.75": {
+      "population_total": 13617.7,
+      "population_norm": 0.304,
+      "livestock_tlu": 45593.1,
+      "livestock_norm": 0.354,
+      "exposure": 0.329
+    },
+    "6.75_43.25": {
+      "population_total": 13804.7,
+      "population_norm": 0.307,
+      "livestock_tlu": 47467.1,
+      "livestock_norm": 0.364,
+      "exposure": 0.335
+    },
+    "6.75_43.75": {
+      "population_total": 28350.9,
+      "population_norm": 0.429,
+      "livestock_tlu": 27010.0,
+      "livestock_norm": 0.225,
+      "exposure": 0.327
+    },
+    "6.75_44.25": {
+      "population_total": 83739.6,
+      "population_norm": 0.613,
+      "livestock_tlu": 26910.4,
+      "livestock_norm": 0.224,
+      "exposure": 0.419
+    },
+    "6.75_44.75": {
+      "population_total": 25397.2,
+      "population_norm": 0.41,
+      "livestock_tlu": 23802.7,
+      "livestock_norm": 0.194,
+      "exposure": 0.302
+    },
+    "6.75_45.25": {
+      "population_total": 19960.8,
+      "population_norm": 0.369,
+      "livestock_tlu": 37847.9,
+      "livestock_norm": 0.308,
+      "exposure": 0.339
+    },
+    "6.75_45.75": {
+      "population_total": 10995.9,
+      "population_norm": 0.268,
+      "livestock_tlu": 43577.3,
+      "livestock_norm": 0.343,
+      "exposure": 0.305
+    },
+    "6.75_46.25": {
+      "population_total": 63745.8,
+      "population_norm": 0.567,
+      "livestock_tlu": 41580.1,
+      "livestock_norm": 0.331,
+      "exposure": 0.449
+    },
+    "6.75_46.75": {
+      "population_total": 62138.0,
+      "population_norm": 0.563,
+      "livestock_tlu": 60704.8,
+      "livestock_norm": 0.424,
+      "exposure": 0.493
+    },
+    "6.75_47.25": {
+      "population_total": 77.4,
+      "population_norm": 0.0,
+      "livestock_tlu": 87537.3,
+      "livestock_norm": 0.514,
+      "exposure": 0.257
+    },
+    "6.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 45960.7,
+      "livestock_norm": 0.356,
+      "exposure": 0.178
+    },
+    "7.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 58875.7,
+      "livestock_norm": 0.417,
+      "exposure": 0.208
+    },
+    "7.25_33.75": {
+      "population_total": 323.3,
+      "population_norm": 0.0,
+      "livestock_tlu": 57606.6,
+      "livestock_norm": 0.411,
+      "exposure": 0.206
+    },
+    "7.25_34.25": {
+      "population_total": 3734.9,
+      "population_norm": 0.084,
+      "livestock_tlu": 12642.1,
+      "livestock_norm": 0.039,
+      "exposure": 0.061
+    },
+    "7.25_34.75": {
+      "population_total": 5649.3,
+      "population_norm": 0.155,
+      "livestock_tlu": 5712.5,
+      "livestock_norm": 0.0,
+      "exposure": 0.077
+    },
+    "7.25_35.25": {
+      "population_total": 333452.7,
+      "population_norm": 0.848,
+      "livestock_tlu": 125696.6,
+      "livestock_norm": 0.603,
+      "exposure": 0.726
+    },
+    "7.25_35.75": {
+      "population_total": 572079.3,
+      "population_norm": 0.94,
+      "livestock_tlu": 393832.9,
+      "livestock_norm": 0.884,
+      "exposure": 0.912
+    },
+    "7.25_36.25": {
+      "population_total": 555269.9,
+      "population_norm": 0.935,
+      "livestock_tlu": 338199.5,
+      "livestock_norm": 0.846,
+      "exposure": 0.891
+    },
+    "7.25_36.75": {
+      "population_total": 536213.4,
+      "population_norm": 0.929,
+      "livestock_tlu": 468537.9,
+      "livestock_norm": 0.927,
+      "exposure": 0.928
+    },
+    "7.25_37.25": {
+      "population_total": 670039.5,
+      "population_norm": 0.967,
+      "livestock_tlu": 557636.4,
+      "livestock_norm": 0.969,
+      "exposure": 0.968
+    },
+    "7.25_37.75": {
+      "population_total": 2287396.7,
+      "population_norm": 1.0,
+      "livestock_tlu": 1169258.0,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "7.25_38.25": {
+      "population_total": 1386058.7,
+      "population_norm": 1.0,
+      "livestock_tlu": 914610.0,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "7.25_38.75": {
+      "population_total": 1402373.3,
+      "population_norm": 1.0,
+      "livestock_tlu": 1106184.5,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "7.25_39.25": {
+      "population_total": 741277.9,
+      "population_norm": 0.984,
+      "livestock_tlu": 810925.8,
+      "livestock_norm": 1.0,
+      "exposure": 0.992
+    },
+    "7.25_39.75": {
+      "population_total": 454827.1,
+      "population_norm": 0.901,
+      "livestock_tlu": 378098.9,
+      "livestock_norm": 0.874,
+      "exposure": 0.888
+    },
+    "7.25_40.25": {
+      "population_total": 444181.4,
+      "population_norm": 0.897,
+      "livestock_tlu": 401992.9,
+      "livestock_norm": 0.889,
+      "exposure": 0.893
+    },
+    "7.25_40.75": {
+      "population_total": 218089.5,
+      "population_norm": 0.776,
+      "livestock_tlu": 207306.1,
+      "livestock_norm": 0.726,
+      "exposure": 0.751
+    },
+    "7.25_41.25": {
+      "population_total": 42277.1,
+      "population_norm": 0.497,
+      "livestock_tlu": 24703.3,
+      "livestock_norm": 0.203,
+      "exposure": 0.35
+    },
+    "7.25_41.75": {
+      "population_total": 27501.8,
+      "population_norm": 0.424,
+      "livestock_tlu": 12095.8,
+      "livestock_norm": 0.028,
+      "exposure": 0.226
+    },
+    "7.25_42.25": {
+      "population_total": 61566.4,
+      "population_norm": 0.561,
+      "livestock_tlu": 25231.7,
+      "livestock_norm": 0.209,
+      "exposure": 0.385
+    },
+    "7.25_42.75": {
+      "population_total": 50919.1,
+      "population_norm": 0.529,
+      "livestock_tlu": 22120.8,
+      "livestock_norm": 0.176,
+      "exposure": 0.352
+    },
+    "7.25_43.25": {
+      "population_total": 20533.4,
+      "population_norm": 0.374,
+      "livestock_tlu": 23119.5,
+      "livestock_norm": 0.187,
+      "exposure": 0.281
+    },
+    "7.25_43.75": {
+      "population_total": 39457.2,
+      "population_norm": 0.485,
+      "livestock_tlu": 18906.6,
+      "livestock_norm": 0.138,
+      "exposure": 0.311
+    },
+    "7.25_44.25": {
+      "population_total": 45894.3,
+      "population_norm": 0.511,
+      "livestock_tlu": 21187.8,
+      "livestock_norm": 0.166,
+      "exposure": 0.338
+    },
+    "7.25_44.75": {
+      "population_total": 12173.4,
+      "population_norm": 0.285,
+      "livestock_tlu": 27736.0,
+      "livestock_norm": 0.232,
+      "exposure": 0.259
+    },
+    "7.25_45.25": {
+      "population_total": 12382.9,
+      "population_norm": 0.288,
+      "livestock_tlu": 39554.9,
+      "livestock_norm": 0.319,
+      "exposure": 0.304
+    },
+    "7.25_45.75": {
+      "population_total": 8629.8,
+      "population_norm": 0.227,
+      "livestock_tlu": 45616.3,
+      "livestock_norm": 0.354,
+      "exposure": 0.29
+    },
+    "7.25_46.25": {
+      "population_total": 31203.8,
+      "population_norm": 0.445,
+      "livestock_tlu": 46183.8,
+      "livestock_norm": 0.357,
+      "exposure": 0.401
+    },
+    "7.25_46.75": {
+      "population_total": 35350.3,
+      "population_norm": 0.467,
+      "livestock_tlu": 50133.8,
+      "livestock_norm": 0.377,
+      "exposure": 0.422
+    },
+    "7.25_47.25": {
+      "population_total": 29037.3,
+      "population_norm": 0.433,
+      "livestock_tlu": 124249.8,
+      "livestock_norm": 0.6,
+      "exposure": 0.517
+    },
+    "7.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 47547.0,
+      "livestock_norm": 0.364,
+      "exposure": 0.182
+    },
+    "7.75_33.25": {
+      "population_total": 28332.9,
+      "population_norm": 0.429,
+      "livestock_tlu": 75547.4,
+      "livestock_norm": 0.478,
+      "exposure": 0.454
+    },
+    "7.75_33.75": {
+      "population_total": 12540.1,
+      "population_norm": 0.29,
+      "livestock_tlu": 23600.5,
+      "livestock_norm": 0.192,
+      "exposure": 0.241
+    },
+    "7.75_34.25": {
+      "population_total": 39097.9,
+      "population_norm": 0.484,
+      "livestock_tlu": 1375.5,
+      "livestock_norm": 0.0,
+      "exposure": 0.242
+    },
+    "7.75_34.75": {
+      "population_total": 24476.2,
+      "population_norm": 0.404,
+      "livestock_tlu": 14255.7,
+      "livestock_norm": 0.068,
+      "exposure": 0.236
+    },
+    "7.75_35.25": {
+      "population_total": 108640.3,
+      "population_norm": 0.658,
+      "livestock_tlu": 96465.4,
+      "livestock_norm": 0.538,
+      "exposure": 0.598
+    },
+    "7.75_35.75": {
+      "population_total": 320986.4,
+      "population_norm": 0.842,
+      "livestock_tlu": 337928.3,
+      "livestock_norm": 0.846,
+      "exposure": 0.844
+    },
+    "7.75_36.25": {
+      "population_total": 462439.7,
+      "population_norm": 0.904,
+      "livestock_tlu": 450155.2,
+      "livestock_norm": 0.917,
+      "exposure": 0.91
+    },
+    "7.75_36.75": {
+      "population_total": 1437342.8,
+      "population_norm": 1.0,
+      "livestock_tlu": 745956.1,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "7.75_37.25": {
+      "population_total": 743809.9,
+      "population_norm": 0.985,
+      "livestock_tlu": 715332.4,
+      "livestock_norm": 1.0,
+      "exposure": 0.992
+    },
+    "7.75_37.75": {
+      "population_total": 1275077.1,
+      "population_norm": 1.0,
+      "livestock_tlu": 1090816.5,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "7.75_38.25": {
+      "population_total": 1184340.7,
+      "population_norm": 1.0,
+      "livestock_tlu": 788398.9,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "7.75_38.75": {
+      "population_total": 597978.3,
+      "population_norm": 0.948,
+      "livestock_tlu": 459737.0,
+      "livestock_norm": 0.922,
+      "exposure": 0.935
+    },
+    "7.75_39.25": {
+      "population_total": 785302.4,
+      "population_norm": 0.994,
+      "livestock_tlu": 846557.5,
+      "livestock_norm": 1.0,
+      "exposure": 0.997
+    },
+    "7.75_39.75": {
+      "population_total": 625994.8,
+      "population_norm": 0.956,
+      "livestock_tlu": 671734.0,
+      "livestock_norm": 1.0,
+      "exposure": 0.978
+    },
+    "7.75_40.25": {
+      "population_total": 204416.9,
+      "population_norm": 0.765,
+      "livestock_tlu": 282479.2,
+      "livestock_norm": 0.802,
+      "exposure": 0.784
+    },
+    "7.75_40.75": {
+      "population_total": 127299.7,
+      "population_norm": 0.685,
+      "livestock_tlu": 149533.4,
+      "livestock_norm": 0.646,
+      "exposure": 0.665
+    },
+    "7.75_41.25": {
+      "population_total": 46566.3,
+      "population_norm": 0.514,
+      "livestock_tlu": 34140.8,
+      "livestock_norm": 0.283,
+      "exposure": 0.398
+    },
+    "7.75_41.75": {
+      "population_total": 54306.9,
+      "population_norm": 0.54,
+      "livestock_tlu": 21158.9,
+      "livestock_norm": 0.165,
+      "exposure": 0.352
+    },
+    "7.75_42.25": {
+      "population_total": 110401.9,
+      "population_norm": 0.66,
+      "livestock_tlu": 13742.0,
+      "livestock_norm": 0.059,
+      "exposure": 0.36
+    },
+    "7.75_42.75": {
+      "population_total": 103989.3,
+      "population_norm": 0.65,
+      "livestock_tlu": 18898.5,
+      "livestock_norm": 0.137,
+      "exposure": 0.394
+    },
+    "7.75_43.25": {
+      "population_total": 39027.7,
+      "population_norm": 0.483,
+      "livestock_tlu": 14231.4,
+      "livestock_norm": 0.068,
+      "exposure": 0.276
+    },
+    "7.75_43.75": {
+      "population_total": 41482.9,
+      "population_norm": 0.494,
+      "livestock_tlu": 16556.8,
+      "livestock_norm": 0.105,
+      "exposure": 0.299
+    },
+    "7.75_44.25": {
+      "population_total": 121732.9,
+      "population_norm": 0.677,
+      "livestock_tlu": 15795.2,
+      "livestock_norm": 0.093,
+      "exposure": 0.385
+    },
+    "7.75_44.75": {
+      "population_total": 40213.7,
+      "population_norm": 0.489,
+      "livestock_tlu": 20305.8,
+      "livestock_norm": 0.155,
+      "exposure": 0.322
+    },
+    "7.75_45.25": {
+      "population_total": 19148.8,
+      "population_norm": 0.362,
+      "livestock_tlu": 31857.8,
+      "livestock_norm": 0.266,
+      "exposure": 0.314
+    },
+    "7.75_45.75": {
+      "population_total": 9517.5,
+      "population_norm": 0.243,
+      "livestock_tlu": 41210.4,
+      "livestock_norm": 0.329,
+      "exposure": 0.286
+    },
+    "7.75_46.25": {
+      "population_total": 11097.5,
+      "population_norm": 0.27,
+      "livestock_tlu": 41145.7,
+      "livestock_norm": 0.329,
+      "exposure": 0.299
+    },
+    "7.75_46.75": {
+      "population_total": 27044.8,
+      "population_norm": 0.421,
+      "livestock_tlu": 38565.9,
+      "livestock_norm": 0.313,
+      "exposure": 0.367
+    },
+    "7.75_47.25": {
+      "population_total": 21900.9,
+      "population_norm": 0.385,
+      "livestock_tlu": 38092.2,
+      "livestock_norm": 0.31,
+      "exposure": 0.347
+    },
+    "7.75_47.75": {
+      "population_total": 13162.7,
+      "population_norm": 0.299,
+      "livestock_tlu": 60932.9,
+      "livestock_norm": 0.425,
+      "exposure": 0.362
+    },
+    "8.25_33.25": {
+      "population_total": 64690.6,
+      "population_norm": 0.569,
+      "livestock_tlu": 65104.0,
+      "livestock_norm": 0.441,
+      "exposure": 0.505
+    },
+    "8.25_33.75": {
+      "population_total": 123085.1,
+      "population_norm": 0.679,
+      "livestock_tlu": 86041.1,
+      "livestock_norm": 0.51,
+      "exposure": 0.594
+    },
+    "8.25_34.25": {
+      "population_total": 79758.1,
+      "population_norm": 0.605,
+      "livestock_tlu": 89515.5,
+      "livestock_norm": 0.52,
+      "exposure": 0.562
+    },
+    "8.25_34.75": {
+      "population_total": 205167.5,
+      "population_norm": 0.766,
+      "livestock_tlu": 141482.9,
+      "livestock_norm": 0.632,
+      "exposure": 0.699
+    },
+    "8.25_35.25": {
+      "population_total": 197034.2,
+      "population_norm": 0.759,
+      "livestock_tlu": 206101.0,
+      "livestock_norm": 0.725,
+      "exposure": 0.742
+    },
+    "8.25_35.75": {
+      "population_total": 477300.5,
+      "population_norm": 0.909,
+      "livestock_tlu": 301942.3,
+      "livestock_norm": 0.819,
+      "exposure": 0.864
+    },
+    "8.25_36.25": {
+      "population_total": 540224.4,
+      "population_norm": 0.931,
+      "livestock_tlu": 457443.8,
+      "livestock_norm": 0.921,
+      "exposure": 0.926
+    },
+    "8.25_36.75": {
+      "population_total": 410974.5,
+      "population_norm": 0.884,
+      "livestock_tlu": 348418.0,
+      "livestock_norm": 0.854,
+      "exposure": 0.869
+    },
+    "8.25_37.25": {
+      "population_total": 368237.9,
+      "population_norm": 0.865,
+      "livestock_tlu": 471009.5,
+      "livestock_norm": 0.928,
+      "exposure": 0.897
+    },
+    "8.25_37.75": {
+      "population_total": 753619.6,
+      "population_norm": 0.987,
+      "livestock_tlu": 771218.7,
+      "livestock_norm": 1.0,
+      "exposure": 0.994
+    },
+    "8.25_38.25": {
+      "population_total": 965292.3,
+      "population_norm": 1.0,
+      "livestock_tlu": 916174.3,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "8.25_38.75": {
+      "population_total": 617934.1,
+      "population_norm": 0.953,
+      "livestock_tlu": 572446.4,
+      "livestock_norm": 0.976,
+      "exposure": 0.965
+    },
+    "8.25_39.25": {
+      "population_total": 737292.9,
+      "population_norm": 0.983,
+      "livestock_tlu": 718763.9,
+      "livestock_norm": 1.0,
+      "exposure": 0.992
+    },
+    "8.25_39.75": {
+      "population_total": 689437.6,
+      "population_norm": 0.972,
+      "livestock_tlu": 754141.8,
+      "livestock_norm": 1.0,
+      "exposure": 0.986
+    },
+    "8.25_40.25": {
+      "population_total": 428171.2,
+      "population_norm": 0.891,
+      "livestock_tlu": 308548.1,
+      "livestock_norm": 0.824,
+      "exposure": 0.857
+    },
+    "8.25_40.75": {
+      "population_total": 148561.6,
+      "population_norm": 0.711,
+      "livestock_tlu": 121852.1,
+      "livestock_norm": 0.596,
+      "exposure": 0.653
+    },
+    "8.25_41.25": {
+      "population_total": 99093.5,
+      "population_norm": 0.642,
+      "livestock_tlu": 56924.8,
+      "livestock_norm": 0.408,
+      "exposure": 0.525
+    },
+    "8.25_41.75": {
+      "population_total": 55097.0,
+      "population_norm": 0.542,
+      "livestock_tlu": 29544.7,
+      "livestock_norm": 0.247,
+      "exposure": 0.395
+    },
+    "8.25_42.25": {
+      "population_total": 126691.9,
+      "population_norm": 0.684,
+      "livestock_tlu": 14549.4,
+      "livestock_norm": 0.073,
+      "exposure": 0.378
+    },
+    "8.25_42.75": {
+      "population_total": 62430.1,
+      "population_norm": 0.563,
+      "livestock_tlu": 24485.1,
+      "livestock_norm": 0.201,
+      "exposure": 0.382
+    },
+    "8.25_43.25": {
+      "population_total": 35188.1,
+      "population_norm": 0.466,
+      "livestock_tlu": 19315.2,
+      "livestock_norm": 0.143,
+      "exposure": 0.304
+    },
+    "8.25_43.75": {
+      "population_total": 71711.4,
+      "population_norm": 0.587,
+      "livestock_tlu": 14774.6,
+      "livestock_norm": 0.077,
+      "exposure": 0.332
+    },
+    "8.25_44.25": {
+      "population_total": 135447.2,
+      "population_norm": 0.695,
+      "livestock_tlu": 13178.3,
+      "livestock_norm": 0.049,
+      "exposure": 0.372
+    },
+    "8.25_44.75": {
+      "population_total": 37663.2,
+      "population_norm": 0.477,
+      "livestock_tlu": 13452.5,
+      "livestock_norm": 0.054,
+      "exposure": 0.266
+    },
+    "8.25_45.25": {
+      "population_total": 20568.1,
+      "population_norm": 0.374,
+      "livestock_tlu": 15687.4,
+      "livestock_norm": 0.092,
+      "exposure": 0.233
+    },
+    "8.25_45.75": {
+      "population_total": 16150.8,
+      "population_norm": 0.333,
+      "livestock_tlu": 36273.5,
+      "livestock_norm": 0.298,
+      "exposure": 0.316
+    },
+    "8.25_46.25": {
+      "population_total": 8974.7,
+      "population_norm": 0.233,
+      "livestock_tlu": 43355.2,
+      "livestock_norm": 0.342,
+      "exposure": 0.287
+    },
+    "8.25_46.75": {
+      "population_total": 12537.2,
+      "population_norm": 0.29,
+      "livestock_tlu": 48018.4,
+      "livestock_norm": 0.367,
+      "exposure": 0.328
+    },
+    "8.25_47.25": {
+      "population_total": 600.9,
+      "population_norm": 0.0,
+      "livestock_tlu": 66696.4,
+      "livestock_norm": 0.447,
+      "exposure": 0.224
+    },
+    "8.25_47.75": {
+      "population_total": 528.4,
+      "population_norm": 0.0,
+      "livestock_tlu": 77961.9,
+      "livestock_norm": 0.486,
+      "exposure": 0.243
+    },
+    "8.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 68091.5,
+      "livestock_norm": 0.452,
+      "exposure": 0.226
+    },
+    "8.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 63365.9,
+      "livestock_norm": 0.435,
+      "exposure": 0.217
+    },
+    "8.75_34.25": {
+      "population_total": 30499.5,
+      "population_norm": 0.442,
+      "livestock_tlu": 58213.8,
+      "livestock_norm": 0.414,
+      "exposure": 0.428
+    },
+    "8.75_34.75": {
+      "population_total": 562844.0,
+      "population_norm": 0.937,
+      "livestock_tlu": 212357.4,
+      "livestock_norm": 0.732,
+      "exposure": 0.835
+    },
+    "8.75_35.25": {
+      "population_total": 524815.8,
+      "population_norm": 0.926,
+      "livestock_tlu": 316179.7,
+      "livestock_norm": 0.83,
+      "exposure": 0.878
+    },
+    "8.75_35.75": {
+      "population_total": 501262.1,
+      "population_norm": 0.918,
+      "livestock_tlu": 275024.5,
+      "livestock_norm": 0.796,
+      "exposure": 0.857
+    },
+    "8.75_36.25": {
+      "population_total": 400325.3,
+      "population_norm": 0.88,
+      "livestock_tlu": 351173.4,
+      "livestock_norm": 0.856,
+      "exposure": 0.868
+    },
+    "8.75_36.75": {
+      "population_total": 413346.3,
+      "population_norm": 0.885,
+      "livestock_tlu": 371038.3,
+      "livestock_norm": 0.869,
+      "exposure": 0.877
+    },
+    "8.75_37.25": {
+      "population_total": 543352.8,
+      "population_norm": 0.932,
+      "livestock_tlu": 398091.0,
+      "livestock_norm": 0.886,
+      "exposure": 0.909
+    },
+    "8.75_37.75": {
+      "population_total": 850012.0,
+      "population_norm": 1.0,
+      "livestock_tlu": 641118.6,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "8.75_38.25": {
+      "population_total": 737338.5,
+      "population_norm": 0.983,
+      "livestock_tlu": 597022.4,
+      "livestock_norm": 0.986,
+      "exposure": 0.985
+    },
+    "8.75_38.75": {
+      "population_total": 2260007.4,
+      "population_norm": 1.0,
+      "livestock_tlu": 576547.7,
+      "livestock_norm": 0.977,
+      "exposure": 0.989
+    },
+    "8.75_39.25": {
+      "population_total": 1014516.5,
+      "population_norm": 1.0,
+      "livestock_tlu": 471151.6,
+      "livestock_norm": 0.928,
+      "exposure": 0.964
+    },
+    "8.75_39.75": {
+      "population_total": 338670.7,
+      "population_norm": 0.851,
+      "livestock_tlu": 410012.8,
+      "livestock_norm": 0.894,
+      "exposure": 0.872
+    },
+    "8.75_40.25": {
+      "population_total": 506717.9,
+      "population_norm": 0.92,
+      "livestock_tlu": 405386.2,
+      "livestock_norm": 0.891,
+      "exposure": 0.905
+    },
+    "8.75_40.75": {
+      "population_total": 809207.7,
+      "population_norm": 0.999,
+      "livestock_tlu": 397001.8,
+      "livestock_norm": 0.886,
+      "exposure": 0.943
+    },
+    "8.75_41.25": {
+      "population_total": 376775.7,
+      "population_norm": 0.869,
+      "livestock_tlu": 201445.2,
+      "livestock_norm": 0.719,
+      "exposure": 0.794
+    },
+    "8.75_41.75": {
+      "population_total": 324538.1,
+      "population_norm": 0.844,
+      "livestock_tlu": 167729.5,
+      "livestock_norm": 0.674,
+      "exposure": 0.759
+    },
+    "8.75_42.25": {
+      "population_total": 182903.5,
+      "population_norm": 0.746,
+      "livestock_tlu": 57020.8,
+      "livestock_norm": 0.409,
+      "exposure": 0.578
+    },
+    "8.75_42.75": {
+      "population_total": 59398.2,
+      "population_norm": 0.555,
+      "livestock_tlu": 41513.2,
+      "livestock_norm": 0.331,
+      "exposure": 0.443
+    },
+    "8.75_43.25": {
+      "population_total": 69615.5,
+      "population_norm": 0.582,
+      "livestock_tlu": 49696.5,
+      "livestock_norm": 0.375,
+      "exposure": 0.479
+    },
+    "8.75_43.75": {
+      "population_total": 61076.6,
+      "population_norm": 0.56,
+      "livestock_tlu": 18624.3,
+      "livestock_norm": 0.134,
+      "exposure": 0.347
+    },
+    "8.75_44.25": {
+      "population_total": 27948.1,
+      "population_norm": 0.427,
+      "livestock_tlu": 24627.9,
+      "livestock_norm": 0.203,
+      "exposure": 0.315
+    },
+    "8.75_44.75": {
+      "population_total": 7977.3,
+      "population_norm": 0.213,
+      "livestock_tlu": 35547.7,
+      "livestock_norm": 0.293,
+      "exposure": 0.253
+    },
+    "8.75_45.25": {
+      "population_total": 6989.8,
+      "population_norm": 0.191,
+      "livestock_tlu": 46825.1,
+      "livestock_norm": 0.36,
+      "exposure": 0.276
+    },
+    "8.75_45.75": {
+      "population_total": 55.3,
+      "population_norm": 0.0,
+      "livestock_tlu": 51837.1,
+      "livestock_norm": 0.385,
+      "exposure": 0.193
+    },
+    "8.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 59437.3,
+      "livestock_norm": 0.419,
+      "exposure": 0.21
+    },
+    "8.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 66737.1,
+      "livestock_norm": 0.448,
+      "exposure": 0.224
+    },
+    "8.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 74695.9,
+      "livestock_norm": 0.475,
+      "exposure": 0.238
+    },
+    "8.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 72381.8,
+      "livestock_norm": 0.468,
+      "exposure": 0.234
+    },
+    "9.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 64088.7,
+      "livestock_norm": 0.438,
+      "exposure": 0.219
+    },
+    "9.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 50045.7,
+      "livestock_norm": 0.377,
+      "exposure": 0.188
+    },
+    "9.25_34.25": {
+      "population_total": 87558.2,
+      "population_norm": 0.621,
+      "livestock_tlu": 80295.9,
+      "livestock_norm": 0.493,
+      "exposure": 0.557
+    },
+    "9.25_34.75": {
+      "population_total": 393232.5,
+      "population_norm": 0.876,
+      "livestock_tlu": 209259.8,
+      "livestock_norm": 0.728,
+      "exposure": 0.802
+    },
+    "9.25_35.25": {
+      "population_total": 445092.8,
+      "population_norm": 0.898,
+      "livestock_tlu": 342018.8,
+      "livestock_norm": 0.849,
+      "exposure": 0.873
+    },
+    "9.25_35.75": {
+      "population_total": 530060.0,
+      "population_norm": 0.927,
+      "livestock_tlu": 230899.6,
+      "livestock_norm": 0.753,
+      "exposure": 0.84
+    },
+    "9.25_36.25": {
+      "population_total": 240679.1,
+      "population_norm": 0.793,
+      "livestock_tlu": 264140.6,
+      "livestock_norm": 0.786,
+      "exposure": 0.789
+    },
+    "9.25_36.75": {
+      "population_total": 569763.2,
+      "population_norm": 0.94,
+      "livestock_tlu": 571391.7,
+      "livestock_norm": 0.975,
+      "exposure": 0.957
+    },
+    "9.25_37.25": {
+      "population_total": 656820.5,
+      "population_norm": 0.964,
+      "livestock_tlu": 564582.1,
+      "livestock_norm": 0.972,
+      "exposure": 0.968
+    },
+    "9.25_37.75": {
+      "population_total": 448978.1,
+      "population_norm": 0.899,
+      "livestock_tlu": 579200.1,
+      "livestock_norm": 0.979,
+      "exposure": 0.939
+    },
+    "9.25_38.25": {
+      "population_total": 810668.4,
+      "population_norm": 1.0,
+      "livestock_tlu": 709405.1,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "9.25_38.75": {
+      "population_total": 2921483.5,
+      "population_norm": 1.0,
+      "livestock_tlu": 677613.4,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "9.25_39.25": {
+      "population_total": 482184.5,
+      "population_norm": 0.911,
+      "livestock_tlu": 500693.8,
+      "livestock_norm": 0.943,
+      "exposure": 0.927
+    },
+    "9.25_39.75": {
+      "population_total": 201758.2,
+      "population_norm": 0.763,
+      "livestock_tlu": 352294.9,
+      "livestock_norm": 0.856,
+      "exposure": 0.81
+    },
+    "9.25_40.25": {
+      "population_total": 107145.2,
+      "population_norm": 0.655,
+      "livestock_tlu": 282819.4,
+      "livestock_norm": 0.802,
+      "exposure": 0.729
+    },
+    "9.25_40.75": {
+      "population_total": 562935.6,
+      "population_norm": 0.938,
+      "livestock_tlu": 414848.5,
+      "livestock_norm": 0.897,
+      "exposure": 0.917
+    },
+    "9.25_41.25": {
+      "population_total": 1267546.0,
+      "population_norm": 1.0,
+      "livestock_tlu": 695160.8,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "9.25_41.75": {
+      "population_total": 1459834.6,
+      "population_norm": 1.0,
+      "livestock_tlu": 737145.0,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "9.25_42.25": {
+      "population_total": 1170496.6,
+      "population_norm": 1.0,
+      "livestock_tlu": 322206.9,
+      "livestock_norm": 0.834,
+      "exposure": 0.917
+    },
+    "9.25_42.75": {
+      "population_total": 568523.1,
+      "population_norm": 0.939,
+      "livestock_tlu": 326993.5,
+      "livestock_norm": 0.838,
+      "exposure": 0.889
+    },
+    "9.25_43.25": {
+      "population_total": 253747.6,
+      "population_norm": 0.802,
+      "livestock_tlu": 206435.8,
+      "livestock_norm": 0.725,
+      "exposure": 0.764
+    },
+    "9.25_43.75": {
+      "population_total": 114526.4,
+      "population_norm": 0.667,
+      "livestock_tlu": 203722.6,
+      "livestock_norm": 0.722,
+      "exposure": 0.694
+    },
+    "9.25_44.25": {
+      "population_total": 57.2,
+      "population_norm": 0.0,
+      "livestock_tlu": 125958.1,
+      "livestock_norm": 0.604,
+      "exposure": 0.302
+    },
+    "9.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 62209.8,
+      "livestock_norm": 0.43,
+      "exposure": 0.215
+    },
+    "9.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 66819.7,
+      "livestock_norm": 0.448,
+      "exposure": 0.224
+    },
+    "9.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 68549.4,
+      "livestock_norm": 0.454,
+      "exposure": 0.227
+    },
+    "9.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 69244.9,
+      "livestock_norm": 0.457,
+      "exposure": 0.228
+    },
+    "9.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 69521.0,
+      "livestock_norm": 0.458,
+      "exposure": 0.229
+    },
+    "9.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 69396.3,
+      "livestock_norm": 0.457,
+      "exposure": 0.229
+    },
+    "9.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 75178.7,
+      "livestock_norm": 0.477,
+      "exposure": 0.238
+    },
+    "9.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 54049.4,
+      "livestock_norm": 0.396,
+      "exposure": 0.198
+    },
+    "9.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 85459.5,
+      "livestock_norm": 0.508,
+      "exposure": 0.254
+    },
+    "9.75_34.25": {
+      "population_total": 31744.9,
+      "population_norm": 0.448,
+      "livestock_tlu": 95917.9,
+      "livestock_norm": 0.537,
+      "exposure": 0.493
+    },
+    "9.75_34.75": {
+      "population_total": 236101.1,
+      "population_norm": 0.79,
+      "livestock_tlu": 178615.7,
+      "livestock_norm": 0.69,
+      "exposure": 0.74
+    },
+    "9.75_35.25": {
+      "population_total": 348494.5,
+      "population_norm": 0.856,
+      "livestock_tlu": 281722.4,
+      "livestock_norm": 0.801,
+      "exposure": 0.829
+    },
+    "9.75_35.75": {
+      "population_total": 102432.0,
+      "population_norm": 0.648,
+      "livestock_tlu": 58625.5,
+      "livestock_norm": 0.416,
+      "exposure": 0.532
+    },
+    "9.75_36.25": {
+      "population_total": 180706.5,
+      "population_norm": 0.744,
+      "livestock_tlu": 193480.9,
+      "livestock_norm": 0.709,
+      "exposure": 0.727
+    },
+    "9.75_36.75": {
+      "population_total": 315639.4,
+      "population_norm": 0.839,
+      "livestock_tlu": 296115.6,
+      "livestock_norm": 0.814,
+      "exposure": 0.826
+    },
+    "9.75_37.25": {
+      "population_total": 362363.2,
+      "population_norm": 0.863,
+      "livestock_tlu": 279392.6,
+      "livestock_norm": 0.799,
+      "exposure": 0.831
+    },
+    "9.75_37.75": {
+      "population_total": 341732.2,
+      "population_norm": 0.853,
+      "livestock_tlu": 381837.6,
+      "livestock_norm": 0.876,
+      "exposure": 0.864
+    },
+    "9.75_38.25": {
+      "population_total": 502985.8,
+      "population_norm": 0.918,
+      "livestock_tlu": 548123.6,
+      "livestock_norm": 0.965,
+      "exposure": 0.942
+    },
+    "9.75_38.75": {
+      "population_total": 752518.2,
+      "population_norm": 0.987,
+      "livestock_tlu": 595455.7,
+      "livestock_norm": 0.985,
+      "exposure": 0.986
+    },
+    "9.75_39.25": {
+      "population_total": 447800.0,
+      "population_norm": 0.899,
+      "livestock_tlu": 521826.0,
+      "livestock_norm": 0.953,
+      "exposure": 0.926
+    },
+    "9.75_39.75": {
+      "population_total": 559479.7,
+      "population_norm": 0.936,
+      "livestock_tlu": 447051.7,
+      "livestock_norm": 0.915,
+      "exposure": 0.926
+    },
+    "9.75_40.25": {
+      "population_total": 64594.4,
+      "population_norm": 0.569,
+      "livestock_tlu": 259824.4,
+      "livestock_norm": 0.782,
+      "exposure": 0.675
+    },
+    "9.75_40.75": {
+      "population_total": 58503.1,
+      "population_norm": 0.552,
+      "livestock_tlu": 78657.1,
+      "livestock_norm": 0.488,
+      "exposure": 0.52
+    },
+    "9.75_41.25": {
+      "population_total": 163853.6,
+      "population_norm": 0.728,
+      "livestock_tlu": 124274.4,
+      "livestock_norm": 0.6,
+      "exposure": 0.664
+    },
+    "9.75_41.75": {
+      "population_total": 506700.3,
+      "population_norm": 0.92,
+      "livestock_tlu": 232227.0,
+      "livestock_norm": 0.754,
+      "exposure": 0.837
+    },
+    "9.75_42.25": {
+      "population_total": 268029.2,
+      "population_norm": 0.811,
+      "livestock_tlu": 221085.4,
+      "livestock_norm": 0.742,
+      "exposure": 0.777
+    },
+    "9.75_42.75": {
+      "population_total": 320890.9,
+      "population_norm": 0.842,
+      "livestock_tlu": 195122.3,
+      "livestock_norm": 0.711,
+      "exposure": 0.777
+    },
+    "9.75_43.25": {
+      "population_total": 254249.8,
+      "population_norm": 0.802,
+      "livestock_tlu": 263913.4,
+      "livestock_norm": 0.785,
+      "exposure": 0.794
+    },
+    "9.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 228578.4,
+      "livestock_norm": 0.75,
+      "exposure": 0.375
+    },
+    "9.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 143174.9,
+      "livestock_norm": 0.635,
+      "exposure": 0.318
+    },
+    "9.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 91654.3,
+      "livestock_norm": 0.526,
+      "exposure": 0.263
+    },
+    "9.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 93022.3,
+      "livestock_norm": 0.529,
+      "exposure": 0.265
+    },
+    "9.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 72114.3,
+      "livestock_norm": 0.467,
+      "exposure": 0.233
+    },
+    "9.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 75819.0,
+      "livestock_norm": 0.479,
+      "exposure": 0.239
+    },
+    "9.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 90876.2,
+      "livestock_norm": 0.523,
+      "exposure": 0.262
+    },
+    "9.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 77977.0,
+      "livestock_norm": 0.486,
+      "exposure": 0.243
+    },
+    "9.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 78633.7,
+      "livestock_norm": 0.488,
+      "exposure": 0.244
+    },
+    "10.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 67188.8,
+      "livestock_norm": 0.449,
+      "exposure": 0.225
+    },
+    "10.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 157627.1,
+      "livestock_norm": 0.659,
+      "exposure": 0.329
+    },
+    "10.25_34.25": {
+      "population_total": 18852.7,
+      "population_norm": 0.36,
+      "livestock_tlu": 172143.5,
+      "livestock_norm": 0.68,
+      "exposure": 0.52
+    },
+    "10.25_34.75": {
+      "population_total": 214445.8,
+      "population_norm": 0.773,
+      "livestock_tlu": 60692.2,
+      "livestock_norm": 0.424,
+      "exposure": 0.599
+    },
+    "10.25_35.25": {
+      "population_total": 57837.5,
+      "population_norm": 0.55,
+      "livestock_tlu": 28106.2,
+      "livestock_norm": 0.235,
+      "exposure": 0.393
+    },
+    "10.25_35.75": {
+      "population_total": 37510.7,
+      "population_norm": 0.477,
+      "livestock_tlu": 34717.9,
+      "livestock_norm": 0.287,
+      "exposure": 0.382
+    },
+    "10.25_36.25": {
+      "population_total": 88349.1,
+      "population_norm": 0.622,
+      "livestock_tlu": 155183.6,
+      "livestock_norm": 0.655,
+      "exposure": 0.639
+    },
+    "10.25_36.75": {
+      "population_total": 157097.5,
+      "population_norm": 0.72,
+      "livestock_tlu": 216294.7,
+      "livestock_norm": 0.737,
+      "exposure": 0.728
+    },
+    "10.25_37.25": {
+      "population_total": 300004.8,
+      "population_norm": 0.83,
+      "livestock_tlu": 323946.0,
+      "livestock_norm": 0.836,
+      "exposure": 0.833
+    },
+    "10.25_37.75": {
+      "population_total": 713419.0,
+      "population_norm": 0.978,
+      "livestock_tlu": 564319.7,
+      "livestock_norm": 0.972,
+      "exposure": 0.975
+    },
+    "10.25_38.25": {
+      "population_total": 619410.3,
+      "population_norm": 0.954,
+      "livestock_tlu": 499997.6,
+      "livestock_norm": 0.942,
+      "exposure": 0.948
+    },
+    "10.25_38.75": {
+      "population_total": 493967.2,
+      "population_norm": 0.915,
+      "livestock_tlu": 428679.0,
+      "livestock_norm": 0.905,
+      "exposure": 0.91
+    },
+    "10.25_39.25": {
+      "population_total": 382107.9,
+      "population_norm": 0.872,
+      "livestock_tlu": 338352.6,
+      "livestock_norm": 0.847,
+      "exposure": 0.859
+    },
+    "10.25_39.75": {
+      "population_total": 617027.3,
+      "population_norm": 0.953,
+      "livestock_tlu": 481746.8,
+      "livestock_norm": 0.933,
+      "exposure": 0.943
+    },
+    "10.25_40.25": {
+      "population_total": 130755.4,
+      "population_norm": 0.689,
+      "livestock_tlu": 400381.3,
+      "livestock_norm": 0.888,
+      "exposure": 0.789
+    },
+    "10.25_40.75": {
+      "population_total": 27171.2,
+      "population_norm": 0.422,
+      "livestock_tlu": 125272.9,
+      "livestock_norm": 0.602,
+      "exposure": 0.512
+    },
+    "10.25_41.25": {
+      "population_total": 56398.0,
+      "population_norm": 0.546,
+      "livestock_tlu": 40322.8,
+      "livestock_norm": 0.324,
+      "exposure": 0.435
+    },
+    "10.25_41.75": {
+      "population_total": 35163.7,
+      "population_norm": 0.466,
+      "livestock_tlu": 10354.4,
+      "livestock_norm": 0.0,
+      "exposure": 0.233
+    },
+    "10.25_42.25": {
+      "population_total": 57317.7,
+      "population_norm": 0.549,
+      "livestock_tlu": 25185.9,
+      "livestock_norm": 0.208,
+      "exposure": 0.378
+    },
+    "10.25_42.75": {
+      "population_total": 79246.0,
+      "population_norm": 0.604,
+      "livestock_tlu": 123044.0,
+      "livestock_norm": 0.598,
+      "exposure": 0.601
+    },
+    "10.25_43.25": {
+      "population_total": 7597.4,
+      "population_norm": 0.205,
+      "livestock_tlu": 196071.0,
+      "livestock_norm": 0.712,
+      "exposure": 0.459
+    },
+    "10.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 97697.5,
+      "livestock_norm": 0.541,
+      "exposure": 0.271
+    },
+    "10.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 59804.2,
+      "livestock_norm": 0.421,
+      "exposure": 0.21
+    },
+    "10.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 49373.1,
+      "livestock_norm": 0.373,
+      "exposure": 0.187
+    },
+    "10.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 71906.0,
+      "livestock_norm": 0.466,
+      "exposure": 0.233
+    },
+    "10.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 57098.8,
+      "livestock_norm": 0.409,
+      "exposure": 0.205
+    },
+    "10.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 72814.2,
+      "livestock_norm": 0.469,
+      "exposure": 0.234
+    },
+    "10.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 81682.3,
+      "livestock_norm": 0.497,
+      "exposure": 0.249
+    },
+    "10.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 106961.8,
+      "livestock_norm": 0.563,
+      "exposure": 0.282
+    },
+    "10.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 81808.1,
+      "livestock_norm": 0.498,
+      "exposure": 0.249
+    },
+    "10.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 153796.9,
+      "livestock_norm": 0.653,
+      "exposure": 0.326
+    },
+    "10.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 303509.1,
+      "livestock_norm": 0.82,
+      "exposure": 0.41
+    },
+    "10.75_34.25": {
+      "population_total": 12697.6,
+      "population_norm": 0.292,
+      "livestock_tlu": 222101.6,
+      "livestock_norm": 0.743,
+      "exposure": 0.518
+    },
+    "10.75_34.75": {
+      "population_total": 37905.5,
+      "population_norm": 0.479,
+      "livestock_tlu": 58562.2,
+      "livestock_norm": 0.415,
+      "exposure": 0.447
+    },
+    "10.75_35.25": {
+      "population_total": 21414.0,
+      "population_norm": 0.381,
+      "livestock_tlu": 15885.3,
+      "livestock_norm": 0.095,
+      "exposure": 0.238
+    },
+    "10.75_35.75": {
+      "population_total": 77525.5,
+      "population_norm": 0.6,
+      "livestock_tlu": 65007.6,
+      "livestock_norm": 0.441,
+      "exposure": 0.521
+    },
+    "10.75_36.25": {
+      "population_total": 245356.0,
+      "population_norm": 0.796,
+      "livestock_tlu": 257047.0,
+      "livestock_norm": 0.779,
+      "exposure": 0.788
+    },
+    "10.75_36.75": {
+      "population_total": 618380.4,
+      "population_norm": 0.954,
+      "livestock_tlu": 638615.8,
+      "livestock_norm": 1.0,
+      "exposure": 0.977
+    },
+    "10.75_37.25": {
+      "population_total": 791115.9,
+      "population_norm": 0.995,
+      "livestock_tlu": 632107.6,
+      "livestock_norm": 1.0,
+      "exposure": 0.998
+    },
+    "10.75_37.75": {
+      "population_total": 815797.9,
+      "population_norm": 1.0,
+      "livestock_tlu": 703745.2,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "10.75_38.25": {
+      "population_total": 633825.2,
+      "population_norm": 0.958,
+      "livestock_tlu": 485404.3,
+      "livestock_norm": 0.935,
+      "exposure": 0.946
+    },
+    "10.75_38.75": {
+      "population_total": 556357.4,
+      "population_norm": 0.936,
+      "livestock_tlu": 496497.8,
+      "livestock_norm": 0.941,
+      "exposure": 0.938
+    },
+    "10.75_39.25": {
+      "population_total": 626139.7,
+      "population_norm": 0.956,
+      "livestock_tlu": 525786.7,
+      "livestock_norm": 0.955,
+      "exposure": 0.955
+    },
+    "10.75_39.75": {
+      "population_total": 717841.1,
+      "population_norm": 0.979,
+      "livestock_tlu": 630251.7,
+      "livestock_norm": 0.999,
+      "exposure": 0.989
+    },
+    "10.75_40.25": {
+      "population_total": 196623.5,
+      "population_norm": 0.759,
+      "livestock_tlu": 401038.2,
+      "livestock_norm": 0.888,
+      "exposure": 0.823
+    },
+    "10.75_40.75": {
+      "population_total": 15607.3,
+      "population_norm": 0.328,
+      "livestock_tlu": 57945.9,
+      "livestock_norm": 0.413,
+      "exposure": 0.37
+    },
+    "10.75_41.25": {
+      "population_total": 39943.2,
+      "population_norm": 0.487,
+      "livestock_tlu": 37308.4,
+      "livestock_norm": 0.305,
+      "exposure": 0.396
+    },
+    "10.75_41.75": {
+      "population_total": 26948.8,
+      "population_norm": 0.42,
+      "livestock_tlu": 32713.6,
+      "livestock_norm": 0.272,
+      "exposure": 0.346
+    },
+    "10.75_42.25": {
+      "population_total": 20417.0,
+      "population_norm": 0.373,
+      "livestock_tlu": 54350.4,
+      "livestock_norm": 0.397,
+      "exposure": 0.385
+    },
+    "10.75_42.75": {
+      "population_total": 23416.7,
+      "population_norm": 0.397,
+      "livestock_tlu": 64786.4,
+      "livestock_norm": 0.44,
+      "exposure": 0.418
+    },
+    "10.75_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 62862.2,
+      "livestock_norm": 0.433,
+      "exposure": 0.216
+    },
+    "10.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 50083.0,
+      "livestock_norm": 0.377,
+      "exposure": 0.188
+    },
+    "10.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 7002.4,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "10.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 364.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "10.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 4791.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "10.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 28773.0,
+      "livestock_norm": 0.241,
+      "exposure": 0.12
+    },
+    "10.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 37810.1,
+      "livestock_norm": 0.308,
+      "exposure": 0.154
+    },
+    "10.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 47743.3,
+      "livestock_norm": 0.365,
+      "exposure": 0.183
+    },
+    "10.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 112240.4,
+      "livestock_norm": 0.575,
+      "exposure": 0.288
+    },
+    "10.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 99878.1,
+      "livestock_norm": 0.547,
+      "exposure": 0.273
+    },
+    "11.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 285263.8,
+      "livestock_norm": 0.805,
+      "exposure": 0.402
+    },
+    "11.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 413798.6,
+      "livestock_norm": 0.896,
+      "exposure": 0.448
+    },
+    "11.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 424063.8,
+      "livestock_norm": 0.902,
+      "exposure": 0.451
+    },
+    "11.25_34.75": {
+      "population_total": 1007.3,
+      "population_norm": 0.0,
+      "livestock_tlu": 246669.9,
+      "livestock_norm": 0.769,
+      "exposure": 0.384
+    },
+    "11.25_35.25": {
+      "population_total": 18325.2,
+      "population_norm": 0.355,
+      "livestock_tlu": 16874.3,
+      "livestock_norm": 0.11,
+      "exposure": 0.232
+    },
+    "11.25_35.75": {
+      "population_total": 23265.3,
+      "population_norm": 0.395,
+      "livestock_tlu": 14802.7,
+      "livestock_norm": 0.077,
+      "exposure": 0.236
+    },
+    "11.25_36.25": {
+      "population_total": 166982.0,
+      "population_norm": 0.731,
+      "livestock_tlu": 140568.4,
+      "livestock_norm": 0.631,
+      "exposure": 0.681
+    },
+    "11.25_36.75": {
+      "population_total": 561372.5,
+      "population_norm": 0.937,
+      "livestock_tlu": 656187.7,
+      "livestock_norm": 1.0,
+      "exposure": 0.969
+    },
+    "11.25_37.25": {
+      "population_total": 721797.7,
+      "population_norm": 0.98,
+      "livestock_tlu": 899528.5,
+      "livestock_norm": 1.0,
+      "exposure": 0.99
+    },
+    "11.25_37.75": {
+      "population_total": 738346.9,
+      "population_norm": 0.984,
+      "livestock_tlu": 630040.2,
+      "livestock_norm": 0.999,
+      "exposure": 0.991
+    },
+    "11.25_38.25": {
+      "population_total": 355348.8,
+      "population_norm": 0.859,
+      "livestock_tlu": 501100.0,
+      "livestock_norm": 0.943,
+      "exposure": 0.901
+    },
+    "11.25_38.75": {
+      "population_total": 319678.2,
+      "population_norm": 0.841,
+      "livestock_tlu": 410303.0,
+      "livestock_norm": 0.894,
+      "exposure": 0.868
+    },
+    "11.25_39.25": {
+      "population_total": 426977.2,
+      "population_norm": 0.89,
+      "livestock_tlu": 534943.8,
+      "livestock_norm": 0.959,
+      "exposure": 0.925
+    },
+    "11.25_39.75": {
+      "population_total": 1028911.8,
+      "population_norm": 1.0,
+      "livestock_tlu": 724596.5,
+      "livestock_norm": 1.0,
+      "exposure": 1.0
+    },
+    "11.25_40.25": {
+      "population_total": 192777.2,
+      "population_norm": 0.755,
+      "livestock_tlu": 443029.6,
+      "livestock_norm": 0.913,
+      "exposure": 0.834
+    },
+    "11.25_40.75": {
+      "population_total": 68690.9,
+      "population_norm": 0.58,
+      "livestock_tlu": 104886.8,
+      "livestock_norm": 0.559,
+      "exposure": 0.569
+    },
+    "11.25_41.25": {
+      "population_total": 41577.6,
+      "population_norm": 0.494,
+      "livestock_tlu": 88329.0,
+      "livestock_norm": 0.516,
+      "exposure": 0.505
+    },
+    "11.25_41.75": {
+      "population_total": 27615.9,
+      "population_norm": 0.425,
+      "livestock_tlu": 73076.2,
+      "livestock_norm": 0.47,
+      "exposure": 0.447
+    },
+    "11.25_42.25": {
+      "population_total": 193.3,
+      "population_norm": 0.0,
+      "livestock_tlu": 76145.6,
+      "livestock_norm": 0.48,
+      "exposure": 0.24
+    },
+    "11.25_42.75": {
+      "population_total": 6540.7,
+      "population_norm": 0.18,
+      "livestock_tlu": 86289.8,
+      "livestock_norm": 0.511,
+      "exposure": 0.345
+    },
+    "11.25_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 49399.3,
+      "livestock_norm": 0.374,
+      "exposure": 0.187
+    },
+    "11.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 5331.7,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 641.6,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14795.0,
+      "livestock_norm": 0.077,
+      "exposure": 0.039
+    },
+    "11.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 22796.1,
+      "livestock_norm": 0.184,
+      "exposure": 0.092
+    },
+    "11.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 302085.5,
+      "livestock_norm": 0.819,
+      "exposure": 0.409
+    },
+    "11.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 444412.4,
+      "livestock_norm": 0.914,
+      "exposure": 0.457
+    },
+    "11.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 491458.5,
+      "livestock_norm": 0.938,
+      "exposure": 0.469
+    },
+    "11.75_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 287266.0,
+      "livestock_norm": 0.806,
+      "exposure": 0.403
+    },
+    "11.75_35.25": {
+      "population_total": 8521.4,
+      "population_norm": 0.225,
+      "livestock_tlu": 32963.3,
+      "livestock_norm": 0.274,
+      "exposure": 0.249
+    },
+    "11.75_35.75": {
+      "population_total": 12855.4,
+      "population_norm": 0.295,
+      "livestock_tlu": 14156.0,
+      "livestock_norm": 0.066,
+      "exposure": 0.181
+    },
+    "11.75_36.25": {
+      "population_total": 39721.2,
+      "population_norm": 0.486,
+      "livestock_tlu": 51580.8,
+      "livestock_norm": 0.384,
+      "exposure": 0.435
+    },
+    "11.75_36.75": {
+      "population_total": 382657.9,
+      "population_norm": 0.872,
+      "livestock_tlu": 355626.7,
+      "livestock_norm": 0.859,
+      "exposure": 0.865
+    },
+    "11.75_37.25": {
+      "population_total": 622412.4,
+      "population_norm": 0.955,
+      "livestock_tlu": 865061.0,
+      "livestock_norm": 1.0,
+      "exposure": 0.977
+    },
+    "11.75_37.75": {
+      "population_total": 703992.7,
+      "population_norm": 0.976,
+      "livestock_tlu": 700787.8,
+      "livestock_norm": 1.0,
+      "exposure": 0.988
+    },
+    "11.75_38.25": {
+      "population_total": 774615.0,
+      "population_norm": 0.992,
+      "livestock_tlu": 581102.0,
+      "livestock_norm": 0.979,
+      "exposure": 0.986
+    },
+    "11.75_38.75": {
+      "population_total": 437377.2,
+      "population_norm": 0.895,
+      "livestock_tlu": 401584.5,
+      "livestock_norm": 0.889,
+      "exposure": 0.892
+    },
+    "11.75_39.25": {
+      "population_total": 600577.2,
+      "population_norm": 0.949,
+      "livestock_tlu": 486268.0,
+      "livestock_norm": 0.936,
+      "exposure": 0.942
+    },
+    "11.75_39.75": {
+      "population_total": 553296.8,
+      "population_norm": 0.935,
+      "livestock_tlu": 676279.7,
+      "livestock_norm": 1.0,
+      "exposure": 0.967
+    },
+    "11.75_40.25": {
+      "population_total": 127683.4,
+      "population_norm": 0.685,
+      "livestock_tlu": 693284.2,
+      "livestock_norm": 1.0,
+      "exposure": 0.843
+    },
+    "11.75_40.75": {
+      "population_total": 47481.2,
+      "population_norm": 0.517,
+      "livestock_tlu": 132536.3,
+      "livestock_norm": 0.616,
+      "exposure": 0.566
+    },
+    "11.75_41.25": {
+      "population_total": 95843.9,
+      "population_norm": 0.636,
+      "livestock_tlu": 100443.3,
+      "livestock_norm": 0.548,
+      "exposure": 0.592
+    },
+    "11.75_41.75": {
+      "population_total": 41650.0,
+      "population_norm": 0.495,
+      "livestock_tlu": 93065.4,
+      "livestock_norm": 0.529,
+      "exposure": 0.512
+    },
+    "11.75_42.25": {
+      "population_total": 452.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 85935.0,
+      "livestock_norm": 0.51,
+      "exposure": 0.255
+    },
+    "11.75_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 72599.2,
+      "livestock_norm": 0.468,
+      "exposure": 0.234
+    },
+    "11.75_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14129.8,
+      "livestock_norm": 0.066,
+      "exposure": 0.033
+    },
+    "11.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "11.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 244856.9,
+      "livestock_norm": 0.767,
+      "exposure": 0.384
+    },
+    "12.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 265844.1,
+      "livestock_norm": 0.787,
+      "exposure": 0.394
+    },
+    "12.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 404293.2,
+      "livestock_norm": 0.89,
+      "exposure": 0.445
+    },
+    "12.25_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 179031.6,
+      "livestock_norm": 0.69,
+      "exposure": 0.345
+    },
+    "12.25_35.25": {
+      "population_total": 2557.3,
+      "population_norm": 0.02,
+      "livestock_tlu": 13724.3,
+      "livestock_norm": 0.059,
+      "exposure": 0.039
+    },
+    "12.25_35.75": {
+      "population_total": 41716.8,
+      "population_norm": 0.495,
+      "livestock_tlu": 51492.9,
+      "livestock_norm": 0.384,
+      "exposure": 0.439
+    },
+    "12.25_36.25": {
+      "population_total": 60382.9,
+      "population_norm": 0.558,
+      "livestock_tlu": 63461.1,
+      "livestock_norm": 0.435,
+      "exposure": 0.496
+    },
+    "12.25_36.75": {
+      "population_total": 199884.5,
+      "population_norm": 0.761,
+      "livestock_tlu": 282931.5,
+      "livestock_norm": 0.803,
+      "exposure": 0.782
+    },
+    "12.25_37.25": {
+      "population_total": 455149.3,
+      "population_norm": 0.901,
+      "livestock_tlu": 286970.7,
+      "livestock_norm": 0.806,
+      "exposure": 0.854
+    },
+    "12.25_37.75": {
+      "population_total": 527886.1,
+      "population_norm": 0.927,
+      "livestock_tlu": 444123.5,
+      "livestock_norm": 0.913,
+      "exposure": 0.92
+    },
+    "12.25_38.25": {
+      "population_total": 309696.3,
+      "population_norm": 0.836,
+      "livestock_tlu": 295763.3,
+      "livestock_norm": 0.813,
+      "exposure": 0.825
+    },
+    "12.25_38.75": {
+      "population_total": 292231.8,
+      "population_norm": 0.826,
+      "livestock_tlu": 265439.4,
+      "livestock_norm": 0.787,
+      "exposure": 0.806
+    },
+    "12.25_39.25": {
+      "population_total": 348962.0,
+      "population_norm": 0.856,
+      "livestock_tlu": 383159.6,
+      "livestock_norm": 0.877,
+      "exposure": 0.867
+    },
+    "12.25_39.75": {
+      "population_total": 438047.1,
+      "population_norm": 0.895,
+      "livestock_tlu": 520350.2,
+      "livestock_norm": 0.952,
+      "exposure": 0.924
+    },
+    "12.25_40.25": {
+      "population_total": 69978.2,
+      "population_norm": 0.583,
+      "livestock_tlu": 313248.8,
+      "livestock_norm": 0.828,
+      "exposure": 0.705
+    },
+    "12.25_40.75": {
+      "population_total": 31571.0,
+      "population_norm": 0.447,
+      "livestock_tlu": 82271.6,
+      "livestock_norm": 0.499,
+      "exposure": 0.473
+    },
+    "12.25_41.25": {
+      "population_total": 23484.7,
+      "population_norm": 0.397,
+      "livestock_tlu": 31229.8,
+      "livestock_norm": 0.261,
+      "exposure": 0.329
+    },
+    "12.25_41.75": {
+      "population_total": 24146.8,
+      "population_norm": 0.402,
+      "livestock_tlu": 37408.0,
+      "livestock_norm": 0.305,
+      "exposure": 0.354
+    },
+    "12.25_42.25": {
+      "population_total": 9521.5,
+      "population_norm": 0.243,
+      "livestock_tlu": 67139.6,
+      "livestock_norm": 0.449,
+      "exposure": 0.346
+    },
+    "12.25_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 73316.6,
+      "livestock_norm": 0.471,
+      "exposure": 0.235
+    },
+    "12.25_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 29234.5,
+      "livestock_norm": 0.245,
+      "exposure": 0.122
+    },
+    "12.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 302929.6,
+      "livestock_norm": 0.819,
+      "exposure": 0.41
+    },
+    "12.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 212487.6,
+      "livestock_norm": 0.732,
+      "exposure": 0.366
+    },
+    "12.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 221470.1,
+      "livestock_norm": 0.742,
+      "exposure": 0.371
+    },
+    "12.75_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 139865.1,
+      "livestock_norm": 0.629,
+      "exposure": 0.315
+    },
+    "12.75_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 22898.2,
+      "livestock_norm": 0.185,
+      "exposure": 0.092
+    },
+    "12.75_35.75": {
+      "population_total": 13433.8,
+      "population_norm": 0.302,
+      "livestock_tlu": 46355.5,
+      "livestock_norm": 0.358,
+      "exposure": 0.33
+    },
+    "12.75_36.25": {
+      "population_total": 112896.0,
+      "population_norm": 0.664,
+      "livestock_tlu": 132795.7,
+      "livestock_norm": 0.617,
+      "exposure": 0.64
+    },
+    "12.75_36.75": {
+      "population_total": 125434.2,
+      "population_norm": 0.682,
+      "livestock_tlu": 226747.1,
+      "livestock_norm": 0.748,
+      "exposure": 0.715
+    },
+    "12.75_37.25": {
+      "population_total": 799720.5,
+      "population_norm": 0.997,
+      "livestock_tlu": 531713.9,
+      "livestock_norm": 0.958,
+      "exposure": 0.977
+    },
+    "12.75_37.75": {
+      "population_total": 468317.7,
+      "population_norm": 0.906,
+      "livestock_tlu": 403963.8,
+      "livestock_norm": 0.89,
+      "exposure": 0.898
+    },
+    "12.75_38.25": {
+      "population_total": 206491.0,
+      "population_norm": 0.767,
+      "livestock_tlu": 255347.5,
+      "livestock_norm": 0.777,
+      "exposure": 0.772
+    },
+    "12.75_38.75": {
+      "population_total": 148755.8,
+      "population_norm": 0.711,
+      "livestock_tlu": 277813.6,
+      "livestock_norm": 0.798,
+      "exposure": 0.755
+    },
+    "12.75_39.25": {
+      "population_total": 320940.8,
+      "population_norm": 0.842,
+      "livestock_tlu": 327537.2,
+      "livestock_norm": 0.839,
+      "exposure": 0.84
+    },
+    "12.75_39.75": {
+      "population_total": 484767.9,
+      "population_norm": 0.912,
+      "livestock_tlu": 350880.6,
+      "livestock_norm": 0.855,
+      "exposure": 0.884
+    },
+    "12.75_40.25": {
+      "population_total": 97837.4,
+      "population_norm": 0.64,
+      "livestock_tlu": 202514.5,
+      "livestock_norm": 0.72,
+      "exposure": 0.68
+    },
+    "12.75_40.75": {
+      "population_total": 26197.9,
+      "population_norm": 0.416,
+      "livestock_tlu": 58978.8,
+      "livestock_norm": 0.417,
+      "exposure": 0.416
+    },
+    "12.75_41.25": {
+      "population_total": 10819.8,
+      "population_norm": 0.265,
+      "livestock_tlu": 19868.6,
+      "livestock_norm": 0.15,
+      "exposure": 0.207
+    },
+    "12.75_41.75": {
+      "population_total": 11192.8,
+      "population_norm": 0.271,
+      "livestock_tlu": 28662.9,
+      "livestock_norm": 0.24,
+      "exposure": 0.255
+    },
+    "12.75_42.25": {
+      "population_total": 5816.3,
+      "population_norm": 0.16,
+      "livestock_tlu": 35088.2,
+      "livestock_norm": 0.29,
+      "exposure": 0.225
+    },
+    "12.75_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 20643.9,
+      "livestock_norm": 0.159,
+      "exposure": 0.08
+    },
+    "12.75_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 7681.2,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 13137.7,
+      "livestock_norm": 0.048,
+      "exposure": 0.024
+    },
+    "12.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 8851.3,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 3044.3,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 679.3,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "12.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 281119.8,
+      "livestock_norm": 0.801,
+      "exposure": 0.4
+    },
+    "13.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 287843.7,
+      "livestock_norm": 0.807,
+      "exposure": 0.403
+    },
+    "13.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 223052.5,
+      "livestock_norm": 0.744,
+      "exposure": 0.372
+    },
+    "13.25_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 160646.8,
+      "livestock_norm": 0.663,
+      "exposure": 0.332
+    },
+    "13.25_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 127974.5,
+      "livestock_norm": 0.608,
+      "exposure": 0.304
+    },
+    "13.25_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 132704.1,
+      "livestock_norm": 0.616,
+      "exposure": 0.308
+    },
+    "13.25_36.25": {
+      "population_total": 23922.1,
+      "population_norm": 0.4,
+      "livestock_tlu": 106615.3,
+      "livestock_norm": 0.563,
+      "exposure": 0.481
+    },
+    "13.25_36.75": {
+      "population_total": 56164.2,
+      "population_norm": 0.545,
+      "livestock_tlu": 124897.2,
+      "livestock_norm": 0.602,
+      "exposure": 0.573
+    },
+    "13.25_37.25": {
+      "population_total": 184970.2,
+      "population_norm": 0.748,
+      "livestock_tlu": 287954.2,
+      "livestock_norm": 0.807,
+      "exposure": 0.778
+    },
+    "13.25_37.75": {
+      "population_total": 327785.4,
+      "population_norm": 0.846,
+      "livestock_tlu": 290834.3,
+      "livestock_norm": 0.809,
+      "exposure": 0.827
+    },
+    "13.25_38.25": {
+      "population_total": 415464.8,
+      "population_norm": 0.886,
+      "livestock_tlu": 237017.5,
+      "livestock_norm": 0.759,
+      "exposure": 0.822
+    },
+    "13.25_38.75": {
+      "population_total": 196918.5,
+      "population_norm": 0.759,
+      "livestock_tlu": 243517.8,
+      "livestock_norm": 0.766,
+      "exposure": 0.762
+    },
+    "13.25_39.25": {
+      "population_total": 401716.6,
+      "population_norm": 0.88,
+      "livestock_tlu": 304510.7,
+      "livestock_norm": 0.821,
+      "exposure": 0.85
+    },
+    "13.25_39.75": {
+      "population_total": 425531.5,
+      "population_norm": 0.89,
+      "livestock_tlu": 227708.5,
+      "livestock_norm": 0.749,
+      "exposure": 0.82
+    },
+    "13.25_40.25": {
+      "population_total": 55499.8,
+      "population_norm": 0.543,
+      "livestock_tlu": 141072.9,
+      "livestock_norm": 0.632,
+      "exposure": 0.587
+    },
+    "13.25_40.75": {
+      "population_total": 15728.1,
+      "population_norm": 0.329,
+      "livestock_tlu": 37225.3,
+      "livestock_norm": 0.304,
+      "exposure": 0.316
+    },
+    "13.25_41.25": {
+      "population_total": 4004.7,
+      "population_norm": 0.096,
+      "livestock_tlu": 6805.3,
+      "livestock_norm": 0.0,
+      "exposure": 0.048
+    },
+    "13.25_41.75": {
+      "population_total": 5815.0,
+      "population_norm": 0.16,
+      "livestock_tlu": 23018.2,
+      "livestock_norm": 0.186,
+      "exposure": 0.173
+    },
+    "13.25_42.25": {
+      "population_total": 12.9,
+      "population_norm": 0.0,
+      "livestock_tlu": 16717.3,
+      "livestock_norm": 0.107,
+      "exposure": 0.054
+    },
+    "13.25_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 2916.8,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.25_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 22357.6,
+      "livestock_norm": 0.179,
+      "exposure": 0.089
+    },
+    "13.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 103525.0,
+      "livestock_norm": 0.555,
+      "exposure": 0.278
+    },
+    "13.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 78651.4,
+      "livestock_norm": 0.488,
+      "exposure": 0.244
+    },
+    "13.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 28247.3,
+      "livestock_norm": 0.236,
+      "exposure": 0.118
+    },
+    "13.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 27080.2,
+      "livestock_norm": 0.226,
+      "exposure": 0.113
+    },
+    "13.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 9279.1,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 4006.4,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 1333.4,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 345547.3,
+      "livestock_norm": 0.852,
+      "exposure": 0.426
+    },
+    "13.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 305290.1,
+      "livestock_norm": 0.821,
+      "exposure": 0.411
+    },
+    "13.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 180679.3,
+      "livestock_norm": 0.692,
+      "exposure": 0.346
+    },
+    "13.75_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 144102.5,
+      "livestock_norm": 0.637,
+      "exposure": 0.318
+    },
+    "13.75_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 154328.1,
+      "livestock_norm": 0.654,
+      "exposure": 0.327
+    },
+    "13.75_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 158877.7,
+      "livestock_norm": 0.661,
+      "exposure": 0.33
+    },
+    "13.75_36.25": {
+      "population_total": 9525.0,
+      "population_norm": 0.244,
+      "livestock_tlu": 133580.6,
+      "livestock_norm": 0.618,
+      "exposure": 0.431
+    },
+    "13.75_36.75": {
+      "population_total": 69320.4,
+      "population_norm": 0.581,
+      "livestock_tlu": 114557.9,
+      "livestock_norm": 0.58,
+      "exposure": 0.581
+    },
+    "13.75_37.25": {
+      "population_total": 139220.0,
+      "population_norm": 0.7,
+      "livestock_tlu": 261818.7,
+      "livestock_norm": 0.783,
+      "exposure": 0.742
+    },
+    "13.75_37.75": {
+      "population_total": 118833.8,
+      "population_norm": 0.673,
+      "livestock_tlu": 250420.1,
+      "livestock_norm": 0.773,
+      "exposure": 0.723
+    },
+    "13.75_38.25": {
+      "population_total": 312766.4,
+      "population_norm": 0.838,
+      "livestock_tlu": 415565.7,
+      "livestock_norm": 0.897,
+      "exposure": 0.867
+    },
+    "13.75_38.75": {
+      "population_total": 401565.0,
+      "population_norm": 0.88,
+      "livestock_tlu": 368478.1,
+      "livestock_norm": 0.867,
+      "exposure": 0.874
+    },
+    "13.75_39.25": {
+      "population_total": 543182.7,
+      "population_norm": 0.931,
+      "livestock_tlu": 329710.8,
+      "livestock_norm": 0.84,
+      "exposure": 0.886
+    },
+    "13.75_39.75": {
+      "population_total": 456704.7,
+      "population_norm": 0.902,
+      "livestock_tlu": 229763.2,
+      "livestock_norm": 0.751,
+      "exposure": 0.827
+    },
+    "13.75_40.25": {
+      "population_total": 76773.9,
+      "population_norm": 0.599,
+      "livestock_tlu": 12179.3,
+      "livestock_norm": 0.03,
+      "exposure": 0.314
+    },
+    "13.75_40.75": {
+      "population_total": 16481.3,
+      "population_norm": 0.337,
+      "livestock_tlu": 5538.4,
+      "livestock_norm": 0.0,
+      "exposure": 0.168
+    },
+    "13.75_41.25": {
+      "population_total": 2321.0,
+      "population_norm": 0.003,
+      "livestock_tlu": 19639.8,
+      "livestock_norm": 0.147,
+      "exposure": 0.075
+    },
+    "13.75_41.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 17413.1,
+      "livestock_norm": 0.117,
+      "exposure": 0.059
+    },
+    "13.75_42.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 995.5,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.75_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 634.1,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.75_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 46485.1,
+      "livestock_norm": 0.359,
+      "exposure": 0.179
+    },
+    "13.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 164607.3,
+      "livestock_norm": 0.669,
+      "exposure": 0.335
+    },
+    "13.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 156145.6,
+      "livestock_norm": 0.656,
+      "exposure": 0.328
+    },
+    "13.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 72135.5,
+      "livestock_norm": 0.467,
+      "exposure": 0.233
+    },
+    "13.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 60334.1,
+      "livestock_norm": 0.423,
+      "exposure": 0.211
+    },
+    "13.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 58095.6,
+      "livestock_norm": 0.413,
+      "exposure": 0.207
+    },
+    "13.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 38717.3,
+      "livestock_norm": 0.314,
+      "exposure": 0.157
+    },
+    "13.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14258.8,
+      "livestock_norm": 0.068,
+      "exposure": 0.034
+    },
+    "13.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 6511.1,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "13.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 1838.9,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.25_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 745357.6,
+      "livestock_norm": 1.0,
+      "exposure": 0.5
+    },
+    "14.25_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 548204.5,
+      "livestock_norm": 0.965,
+      "exposure": 0.483
+    },
+    "14.25_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 150274.1,
+      "livestock_norm": 0.647,
+      "exposure": 0.324
+    },
+    "14.25_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 123428.1,
+      "livestock_norm": 0.599,
+      "exposure": 0.299
+    },
+    "14.25_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 163441.6,
+      "livestock_norm": 0.668,
+      "exposure": 0.334
+    },
+    "14.25_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 150628.8,
+      "livestock_norm": 0.648,
+      "exposure": 0.324
+    },
+    "14.25_36.25": {
+      "population_total": 639.4,
+      "population_norm": 0.0,
+      "livestock_tlu": 126701.5,
+      "livestock_norm": 0.605,
+      "exposure": 0.303
+    },
+    "14.25_36.75": {
+      "population_total": 89438.1,
+      "population_norm": 0.625,
+      "livestock_tlu": 81728.2,
+      "livestock_norm": 0.497,
+      "exposure": 0.561
+    },
+    "14.25_37.25": {
+      "population_total": 50827.5,
+      "population_norm": 0.528,
+      "livestock_tlu": 103542.3,
+      "livestock_norm": 0.555,
+      "exposure": 0.542
+    },
+    "14.25_37.75": {
+      "population_total": 124622.9,
+      "population_norm": 0.681,
+      "livestock_tlu": 240843.9,
+      "livestock_norm": 0.763,
+      "exposure": 0.722
+    },
+    "14.25_38.25": {
+      "population_total": 464008.4,
+      "population_norm": 0.905,
+      "livestock_tlu": 411653.6,
+      "livestock_norm": 0.895,
+      "exposure": 0.9
+    },
+    "14.25_38.75": {
+      "population_total": 611933.3,
+      "population_norm": 0.952,
+      "livestock_tlu": 379394.9,
+      "livestock_norm": 0.875,
+      "exposure": 0.913
+    },
+    "14.25_39.25": {
+      "population_total": 699537.2,
+      "population_norm": 0.974,
+      "livestock_tlu": 394466.2,
+      "livestock_norm": 0.884,
+      "exposure": 0.929
+    },
+    "14.25_39.75": {
+      "population_total": 277000.8,
+      "population_norm": 0.817,
+      "livestock_tlu": 250334.6,
+      "livestock_norm": 0.772,
+      "exposure": 0.795
+    },
+    "14.25_40.25": {
+      "population_total": 56650.6,
+      "population_norm": 0.547,
+      "livestock_tlu": 48933.2,
+      "livestock_norm": 0.371,
+      "exposure": 0.459
+    },
+    "14.25_40.75": {
+      "population_total": 4205.9,
+      "population_norm": 0.104,
+      "livestock_tlu": 18695.1,
+      "livestock_norm": 0.135,
+      "exposure": 0.12
+    },
+    "14.25_41.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 16412.1,
+      "livestock_norm": 0.103,
+      "exposure": 0.051
+    },
+    "14.25_41.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 470.5,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.25_42.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.25_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 2406.9,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.25_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 130576.9,
+      "livestock_norm": 0.613,
+      "exposure": 0.306
+    },
+    "14.25_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 184388.8,
+      "livestock_norm": 0.697,
+      "exposure": 0.349
+    },
+    "14.25_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 213267.6,
+      "livestock_norm": 0.733,
+      "exposure": 0.367
+    },
+    "14.25_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 82461.6,
+      "livestock_norm": 0.5,
+      "exposure": 0.25
+    },
+    "14.25_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 52811.6,
+      "livestock_norm": 0.39,
+      "exposure": 0.195
+    },
+    "14.25_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 50002.1,
+      "livestock_norm": 0.377,
+      "exposure": 0.188
+    },
+    "14.25_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 49931.3,
+      "livestock_norm": 0.376,
+      "exposure": 0.188
+    },
+    "14.25_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 41433.5,
+      "livestock_norm": 0.33,
+      "exposure": 0.165
+    },
+    "14.25_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 30995.1,
+      "livestock_norm": 0.259,
+      "exposure": 0.13
+    },
+    "14.25_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 7081.4,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.75_33.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 845639.9,
+      "livestock_norm": 1.0,
+      "exposure": 0.5
+    },
+    "14.75_33.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 543799.6,
+      "livestock_norm": 0.963,
+      "exposure": 0.482
+    },
+    "14.75_34.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 171286.2,
+      "livestock_norm": 0.679,
+      "exposure": 0.34
+    },
+    "14.75_34.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 81539.1,
+      "livestock_norm": 0.497,
+      "exposure": 0.248
+    },
+    "14.75_35.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 101982.9,
+      "livestock_norm": 0.552,
+      "exposure": 0.276
+    },
+    "14.75_35.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 135235.7,
+      "livestock_norm": 0.621,
+      "exposure": 0.311
+    },
+    "14.75_36.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 124696.5,
+      "livestock_norm": 0.601,
+      "exposure": 0.301
+    },
+    "14.75_36.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 136696.3,
+      "livestock_norm": 0.624,
+      "exposure": 0.312
+    },
+    "14.75_37.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 130185.6,
+      "livestock_norm": 0.612,
+      "exposure": 0.306
+    },
+    "14.75_37.75": {
+      "population_total": 37028.4,
+      "population_norm": 0.475,
+      "livestock_tlu": 180807.4,
+      "livestock_norm": 0.692,
+      "exposure": 0.584
+    },
+    "14.75_38.25": {
+      "population_total": 29796.1,
+      "population_norm": 0.438,
+      "livestock_tlu": 232214.7,
+      "livestock_norm": 0.754,
+      "exposure": 0.596
+    },
+    "14.75_38.75": {
+      "population_total": 2649.1,
+      "population_norm": 0.026,
+      "livestock_tlu": 270463.6,
+      "livestock_norm": 0.791,
+      "exposure": 0.409
+    },
+    "14.75_39.25": {
+      "population_total": 38127.5,
+      "population_norm": 0.479,
+      "livestock_tlu": 274413.0,
+      "livestock_norm": 0.795,
+      "exposure": 0.637
+    },
+    "14.75_39.75": {
+      "population_total": 6213.5,
+      "population_norm": 0.171,
+      "livestock_tlu": 75551.0,
+      "livestock_norm": 0.478,
+      "exposure": 0.324
+    },
+    "14.75_40.25": {
+      "population_total": 7171.3,
+      "population_norm": 0.195,
+      "livestock_tlu": 25397.2,
+      "livestock_norm": 0.21,
+      "exposure": 0.203
+    },
+    "14.75_40.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 13056.8,
+      "livestock_norm": 0.047,
+      "exposure": 0.023
+    },
+    "14.75_41.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 3537.1,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.75_41.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.75_42.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 0.0,
+      "livestock_norm": 0.0,
+      "exposure": 0.0
+    },
+    "14.75_42.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 14273.2,
+      "livestock_norm": 0.068,
+      "exposure": 0.034
+    },
+    "14.75_43.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 175890.1,
+      "livestock_norm": 0.686,
+      "exposure": 0.343
+    },
+    "14.75_43.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 149093.3,
+      "livestock_norm": 0.645,
+      "exposure": 0.323
+    },
+    "14.75_44.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 143260.0,
+      "livestock_norm": 0.635,
+      "exposure": 0.318
+    },
+    "14.75_44.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 57203.8,
+      "livestock_norm": 0.41,
+      "exposure": 0.205
+    },
+    "14.75_45.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 52449.0,
+      "livestock_norm": 0.388,
+      "exposure": 0.194
+    },
+    "14.75_45.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 38486.9,
+      "livestock_norm": 0.312,
+      "exposure": 0.156
+    },
+    "14.75_46.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 20082.9,
+      "livestock_norm": 0.152,
+      "exposure": 0.076
+    },
+    "14.75_46.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 16106.9,
+      "livestock_norm": 0.098,
+      "exposure": 0.049
+    },
+    "14.75_47.25": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 30155.7,
+      "livestock_norm": 0.252,
+      "exposure": 0.126
+    },
+    "14.75_47.75": {
+      "population_total": 0.0,
+      "population_norm": 0.0,
+      "livestock_tlu": 15143.9,
+      "livestock_norm": 0.083,
+      "exposure": 0.042
+    }
+  }
+}

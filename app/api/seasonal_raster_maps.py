@@ -67,6 +67,8 @@ CSV_EXTENSIONS = {".csv"}
 
 INDICATOR_RENDERING = {
     "rainfall_total": {"cmap": "YlGnBu", "default_vmin": None, "default_vmax": None, "low_label": "Low rainfall", "high_label": "High rainfall"},
+    "rx1day": {"cmap": "YlGnBu", "default_vmin": None, "default_vmax": None, "low_label": "Low max 1-day rainfall", "high_label": "High max 1-day rainfall"},
+    "rx5day": {"cmap": "YlGnBu", "default_vmin": None, "default_vmax": None, "low_label": "Low max 5-day rainfall", "high_label": "High max 5-day rainfall"},
     "spi": {"cmap": "BrBG", "default_vmin": -2.5, "default_vmax": 2.5, "low_label": "Dry", "high_label": "Wet"},
     "cdd": {"cmap": "YlOrRd", "default_vmin": 0, "default_vmax": None, "low_label": "Few dry days", "high_label": "Long dry spell"},
     "cwd": {"cmap": "Blues", "default_vmin": 0, "default_vmax": None, "low_label": "Few wet days", "high_label": "Long wet spell"},
@@ -146,7 +148,17 @@ def enrich_record(record: Dict[str, Any], source_path: Optional[Path] = None) ->
         "source_path": safe_rel_path(source_path) if source_path else "",
         "variable": record.get("variable") or record.get("variable_name") or "",
         "bounds": bounds,
-        "units": record.get("units") or ("probability" if product in PROBABILITY_PRODUCTS else indicator_meta.get("units")) or "",
+        "units": record.get("units") or (
+            "probability" if product in PROBABILITY_PRODUCTS
+            # rainfall_percentile's Anomaly product is a %-anomaly of
+            # rainfall (see INDICATOR_PATTERNS' percent_anomaly/pctanomaly
+            # comment), not a percentile rank like its Forecast/Climatology
+            # products -- format_value would otherwise render it as
+            # "-45.00 percentile", which misreads as an impossible
+            # percentile value instead of a -45% rainfall anomaly.
+            else "%" if (indicator == "rainfall_percentile" and product == "anomaly")
+            else indicator_meta.get("units")
+        ) or "",
         "init_date": record.get("init_date", ""),
         "valid_start": record.get("valid_start", ""),
         "valid_end": record.get("valid_end", ""),
@@ -829,12 +841,25 @@ def get_render_config(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = 
     # the app. Flip to RdBu_r for those so red always means "drier than normal"
     # everywhere, regardless of which raw quantity is being measured.
     dryness_oriented = indicator in {"cdd", "dryspell_prob_5d", "dryspell_prob_7d", "dryspell_prob_9d"}
-    if product == "anomaly" and not record.get("cmap") and indicator not in {"spi", "rainfall_percentile"}:
+    # SPI never has an anomaly product (it's already a standardized anomaly),
+    # so it stays excluded. rainfall_percentile now has a real one though (the
+    # "percent_anomaly"/pctanomaly rasters -- a %-anomaly of rainfall, not a
+    # second percentile computation), so it needs the same diverging
+    # treatment as every other wetness-oriented anomaly.
+    if product == "anomaly" and not record.get("cmap") and indicator != "spi":
         cmap_name = "RdBu_r" if dryness_oriented else "RdBu"
 
     stats = stats or {}
     vmin = record.get("vmin")
     vmax = record.get("vmax")
+
+    # rainfall_percentile's own vmin/vmax defaults (0-100) describe a
+    # percentile rank and only make sense for its Forecast/Climatology
+    # products. Its Anomaly product is a %-anomaly of rainfall with a
+    # completely different range (can be negative, can exceed 100), so it
+    # must fall through to the data-driven percentile-based scaling below
+    # instead of being forced onto the fixed 0-100 scale.
+    skip_fixed_defaults = indicator == "rainfall_percentile" and product == "anomaly"
 
     # Drought/wet probability rasters are bounded [0, 1] by construction
     # (P(SPI <= -1.0) / P(SPI >= +1.0)), so the color scale is always fixed to
@@ -848,9 +873,9 @@ def get_render_config(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = 
         if vmax is None:
             vmax = probability_defaults["vmax"]
     else:
-        if vmin is None:
+        if vmin is None and not skip_fixed_defaults:
             vmin = defaults.get("default_vmin")
-        if vmax is None:
+        if vmax is None and not skip_fixed_defaults:
             vmax = defaults.get("default_vmax")
         if vmin is None and stats.get("p10") is not None:
             vmin = stats.get("p10")
@@ -883,11 +908,17 @@ def get_render_config(record: Dict[str, Any], stats: Optional[Dict[str, Any]] = 
         low_label = probability_defaults["low_label"]
         high_label = probability_defaults["high_label"]
     elif is_diverging_anomaly and dryness_oriented:
+        # CDD/dry-spell-probability anomalies are day counts/probabilities,
+        # not rainfall amounts -- "fewer/longer [days]" reads naturally here.
         low_label = "Fewer than normal"
         high_label = "Longer than normal"
     elif is_diverging_anomaly:
-        low_label = "Fewer than normal"
-        high_label = "Longer than normal"
+        # Every other anomaly (rainfall total, rx1day/rx5day, rainfall
+        # percentile) is a rainfall-amount deviation, where "drier/wetter"
+        # is the correct framing -- this branch previously duplicated the
+        # dryness-oriented one above verbatim, mislabeling all of these.
+        low_label = "Drier than normal"
+        high_label = "Wetter than normal"
     else:
         low_label = defaults.get("low_label", "Low")
         high_label = defaults.get("high_label", "High")

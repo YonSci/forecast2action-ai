@@ -1,21 +1,39 @@
 import pandas as pd
 
+# Single source of truth for the weighted risk-score formula and its
+# no_alert/watch/warning/trigger classification thresholds. Other modules
+# (app/data_pipeline/ethiopia_forecast_grid_pipeline.py, app/api/main.py)
+# previously duplicated these literals inline -- importing from here instead
+# means a future re-tuning only has to happen in one place.
+RISK_WEIGHTS = {
+    "hazard_probability": 0.40,
+    "exposure": 0.25,
+    "vulnerability": 0.25,
+    "confidence": 0.10,
+}
+
+RISK_THRESHOLDS = {
+    "trigger": 0.80,
+    "warning": 0.60,
+    "watch": 0.35,
+}
+
 
 def classify_risk(score: float) -> str:
     """
     Convert numeric risk score into operational alert level.
     """
 
-    if score < 0.35:
-        return "no_alert"
+    if score >= RISK_THRESHOLDS["trigger"]:
+        return "trigger"
 
-    if score < 0.60:
-        return "watch"
-
-    if score < 0.80:
+    if score >= RISK_THRESHOLDS["warning"]:
         return "warning"
 
-    return "trigger"
+    if score >= RISK_THRESHOLDS["watch"]:
+        return "watch"
+
+    return "no_alert"
 
 
 def calculate_risk_score(
@@ -37,10 +55,10 @@ def calculate_risk_score(
     """
 
     score = (
-        0.40 * float(hazard_probability)
-        + 0.25 * float(exposure)
-        + 0.25 * float(vulnerability)
-        + 0.10 * float(confidence)
+        RISK_WEIGHTS["hazard_probability"] * float(hazard_probability)
+        + RISK_WEIGHTS["exposure"] * float(exposure)
+        + RISK_WEIGHTS["vulnerability"] * float(vulnerability)
+        + RISK_WEIGHTS["confidence"] * float(confidence)
     )
 
     return round(min(max(score, 0.0), 1.0), 3)
