@@ -257,25 +257,72 @@ function seasonalReducer(state, action) {
   }
 }
 
-const ETHIOPIA_CENTER = [9, 40.5];
+// Exposure/Vulnerability ship one static file that applies to every period
+// (see app/api/hazard_risk_catalog_shared.py's STATIC_PERIOD) -- the period
+// dropdown is disabled whenever the selected layer falls in one of these
+// categories, since changing it would have no effect.
+const HAZARD_RISK_STATIC_CATEGORIES = new Set(["exposure", "vulnerability"]);
 
-const ETHIOPIA_BOUNDS = [
-  [3, 33],
-  [15, 48],
-];
-
-const ETHIOPIA_MAX_BOUNDS = [
-  [1.5, 31.5],
-  [16.5, 49.5],
-];
-
-const HAZARD_COLORS = {
-  drought: "#D92D20",
-  dry_spell: "#F79009",
-  heavy_rainfall: "#1570EF",
-  wet_spell: "#0E9384",
-  no_alert: "#12B76A",
+const FALLBACK_HAZARD_RISK_OPTIONS = {
+  categories: [],
+  periods: [],
+  layers: [],
 };
+
+const INITIAL_HAZARD_RISK_STATE = {
+  options: FALLBACK_HAZARD_RISK_OPTIONS,
+  category: "risk",
+  layerValue: "population_r_drought",
+  period: "JJAS",
+  selectedMap: null,
+  loading: false,
+  errorMessage: "",
+};
+
+function hazardRiskReducer(state, action) {
+  switch (action.type) {
+    case "SET_OPTIONS": {
+      const layers = action.options.layers || [];
+      const stillValid = layers.some((item) => item.value === state.layerValue);
+      const fallbackLayer = layers.find((item) => item.category === state.category) || layers[0];
+      return {
+        ...state,
+        options: action.options,
+        layerValue: stillValid ? state.layerValue : fallbackLayer?.value || state.layerValue,
+        category: stillValid ? state.category : fallbackLayer?.category || state.category,
+      };
+    }
+    case "SET_CATEGORY": {
+      const firstLayerInCategory = state.options.layers.find(
+        (item) => item.category === action.value,
+      );
+      return {
+        ...state,
+        category: action.value,
+        layerValue: firstLayerInCategory?.value || state.layerValue,
+      };
+    }
+    case "SET_LAYER": {
+      const layerMeta = state.options.layers.find((item) => item.value === action.value);
+      return { ...state, layerValue: action.value, category: layerMeta?.category || state.category };
+    }
+    case "SET_PERIOD":
+      return { ...state, period: action.value };
+    case "FETCH_START":
+      return { ...state, loading: true, errorMessage: "" };
+    case "FETCH_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        selectedMap: action.selectedMap,
+        errorMessage: action.errorMessage || "",
+      };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, selectedMap: null, errorMessage: action.errorMessage };
+    default:
+      return state;
+  }
+}
 
 const INDICATOR_LEGENDS = {
   rainfall_total: {
@@ -412,13 +459,28 @@ function formatValue(value, digits = 2) {
   return numberValue.toFixed(digits);
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+// Hazard/risk raster units (see app/api/hazard_risk_catalog_shared.py's
+// LAYER_DEFINITIONS) aren't readable appended raw the way climate indicator
+// units are (e.g. "mm", "days") -- "1.57 score_0_100" reads as noise, not a
+// unit. This only remaps hazard/risk's own vocabulary; every other units
+// string (climate indicators) still appends as before.
+const HAZARD_RISK_UNIT_SUFFIXES = {
+  score_0_100: " / 100",
+  probability: "",
+  index: "",
+  normalized: "",
+  code: "",
+  class: "",
+};
+
+function formatUnitsSuffix(units) {
+  if (!units) {
+    return "";
+  }
+  if (Object.prototype.hasOwnProperty.call(HAZARD_RISK_UNIT_SUFFIXES, units)) {
+    return HAZARD_RISK_UNIT_SUFFIXES[units];
+  }
+  return ` ${units}`;
 }
 
 function getOptionLabel(options, value, fallback = "") {
@@ -440,192 +502,6 @@ function normalizeUrl(url) {
   }
 
   return apiUrl(url);
-}
-
-// Single source of truth for both the map fill color AND the legend swatches
-// below (NumericLayerLegend) -- previously the legend was a separate static
-// CSS gradient bar with its own hardcoded stop positions that didn't match
-// these thresholds (and didn't distinguish risk_score's 4-color/magenta
-// scheme from the other layers' 5-color scheme at all), so the legend never
-// actually matched what was painted on the map. Buckets are ordered
-// highest-min-first; getNumericColor/legend both walk the same list.
-const RISK_SCORE_BUCKETS = [
-  { min: 0.8, color: "#D92D20", label: "Trigger (≥ 0.80)" },
-  { min: 0.6, color: "#C11574", label: "Warning (0.60–0.79)" },
-  { min: 0.35, color: "#F79009", label: "Watch (0.35–0.59)" },
-  { min: -Infinity, color: "#12B76A", label: "No alert (< 0.35)" },
-];
-
-const GENERIC_NUMERIC_BUCKETS = [
-  { min: 0.8, color: "#7F1D1D", label: "≥ 0.80" },
-  { min: 0.65, color: "#B42318", label: "0.65–0.79" },
-  { min: 0.5, color: "#F79009", label: "0.50–0.64" },
-  { min: 0.35, color: "#FEC84B", label: "0.35–0.49" },
-  { min: -Infinity, color: "#12B76A", label: "< 0.35" },
-];
-
-function getNumericBuckets(layer) {
-  return layer === "risk_score" ? RISK_SCORE_BUCKETS : GENERIC_NUMERIC_BUCKETS;
-}
-
-function getNumericColor(value, layer) {
-  const numberValue = Number(value);
-
-  if (!Number.isFinite(numberValue)) {
-    return "#CBD5E1";
-  }
-
-  const buckets = getNumericBuckets(layer);
-  const bucket = buckets.find((item) => numberValue >= item.min);
-
-  return bucket ? bucket.color : buckets[buckets.length - 1].color;
-}
-
-function getFillColor(properties, layer) {
-  if (layer === "hazard") {
-    return HAZARD_COLORS[properties.hazard] || "#94A3B8";
-  }
-
-  return getNumericColor(properties[layer], layer);
-}
-
-function NumericLayerLegend({ layer }) {
-  const buckets = getNumericBuckets(layer);
-
-  return (
-    <div className="forecast-hazard-legend">
-      {buckets.map((bucket) => (
-        <span key={bucket.label}>
-          <i style={{ background: bucket.color }} />
-          {bucket.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function getLayerValue(properties, layer) {
-  if (layer === "hazard") {
-    return titleCase(properties.hazard);
-  }
-
-  if (layer === "risk_score") {
-    return formatValue(properties.risk_score, 3);
-  }
-
-  if (layer === "hazard_probability") {
-    return formatValue(properties.hazard_probability, 3);
-  }
-
-  if (layer === "exposure") {
-    return formatValue(properties.exposure, 3);
-  }
-
-  if (layer === "vulnerability") {
-    return formatValue(properties.vulnerability, 3);
-  }
-
-  return "N/A";
-}
-
-function collectLatLngsFromCoordinates(coordinates, output = []) {
-  if (!Array.isArray(coordinates)) {
-    return output;
-  }
-
-  if (
-    coordinates.length >= 2 &&
-    typeof coordinates[0] === "number" &&
-    typeof coordinates[1] === "number"
-  ) {
-    output.push([coordinates[1], coordinates[0]]);
-    return output;
-  }
-
-  coordinates.forEach((item) => collectLatLngsFromCoordinates(item, output));
-  return output;
-}
-
-function getGeojsonBoundsObject(geojson) {
-  if (!geojson || !Array.isArray(geojson.features)) {
-    return null;
-  }
-
-  const latLngs = [];
-
-  geojson.features.forEach((feature) => {
-    collectLatLngsFromCoordinates(feature.geometry?.coordinates, latLngs);
-  });
-
-  if (latLngs.length === 0) {
-    return null;
-  }
-
-  const lats = latLngs.map((item) => item[0]);
-  const lons = latLngs.map((item) => item[1]);
-
-  return {
-    south: Math.min(...lats),
-    north: Math.max(...lats),
-    west: Math.min(...lons),
-    east: Math.max(...lons),
-    latLngs,
-  };
-}
-
-function filterGridByBoundaryBoundingBox(geojson, boundaryGeojson) {
-  if (!geojson || !boundaryGeojson) {
-    return geojson;
-  }
-
-  const bounds = getGeojsonBoundsObject(boundaryGeojson);
-
-  if (!bounds) {
-    return geojson;
-  }
-
-  const filteredFeatures = (geojson.features || []).filter((feature) => {
-    const props = feature.properties || {};
-    const lat = Number(props.lat_center);
-    const lon = Number(props.lon_center);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return false;
-    }
-
-    return (
-      lat >= bounds.south &&
-      lat <= bounds.north &&
-      lon >= bounds.west &&
-      lon <= bounds.east
-    );
-  });
-
-  return {
-    ...geojson,
-    metadata: {
-      ...geojson.metadata,
-      feature_count: filteredFeatures.length,
-      filtered_by_admin_selection: true,
-    },
-    features: filteredFeatures,
-  };
-}
-
-function FitForecastMapToEthiopiaDomain({ viewKey }) {
-  const map = useMap();
-
-  useEffect(() => {
-    map.fitBounds(ETHIOPIA_BOUNDS, {
-      padding: [8, 8],
-      animate: true,
-      duration: 0.4,
-    });
-
-    map.setMaxBounds(ETHIOPIA_MAX_BOUNDS);
-  }, [map, viewKey]);
-
-  return null;
 }
 
 function getBoundaryOverlayStyle(feature) {
@@ -868,7 +744,26 @@ function RasterInspectPosition({ latlng, onPosition }) {
 }
 
 function RasterLegend({ map, indicator }) {
-  const legendItems = map?.legend?.items || [];
+  const legend = map?.legend;
+
+  // Discrete class layers (e.g. hazard/risk's risk_class: Very low..Very
+  // high) have no meaningful gradient between bands -- unlike every other
+  // raster legend here, so they get their own fixed-swatch rendering
+  // instead of the continuous gradient bar below.
+  if (legend?.type === "categorical" && legend.items?.length) {
+    return (
+      <div className="forecast-hazard-legend">
+        {legend.items.map((item) => (
+          <span key={`${map.id}-categorical-legend-${item.value}`}>
+            <i style={{ background: item.color }} />
+            {item.label}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  const legendItems = legend?.items || [];
 
   if (legendItems.length) {
     const gradient = `linear-gradient(to right, ${legendItems.map((item) => item.color).join(", ")})`;
@@ -955,6 +850,7 @@ function SeasonalInteractiveMapCard({
   inspectPoint = null,
   onInspectPoint = null,
   indicator = null,
+  valueEndpointBase = "/api/seasonal-raster",
 }) {
   const [clickedValue, setClickedValue] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
@@ -1012,7 +908,7 @@ function SeasonalInteractiveMapCard({
     params.set("lat", String(inspectPoint.lat));
     params.set("lon", String(inspectPoint.lon));
 
-    fetch(apiUrl(`/api/seasonal-raster/value/${map.id}?${params.toString()}`))
+    fetch(apiUrl(`${valueEndpointBase}/value/${map.id}?${params.toString()}`))
       .then((response) =>
         response.ok
           ? response.json()
@@ -1045,7 +941,7 @@ function SeasonalInteractiveMapCard({
     return () => {
       cancelled = true;
     };
-  }, [map?.id, inspectPoint]);
+  }, [map?.id, inspectPoint, valueEndpointBase]);
 
   return (
     <article
@@ -1112,7 +1008,7 @@ function SeasonalInteractiveMapCard({
               style={{ left: hoverInfo.x, top: hoverInfo.y }}
             >
               {formatValue(hoverInfo.value, 2)}
-              {valueGrid?.units ? ` ${valueGrid.units}` : ""}
+              {formatUnitsSuffix(valueGrid?.units)}
             </div>
           ) : null}
 
@@ -1132,8 +1028,8 @@ function SeasonalInteractiveMapCard({
                       top: inspectMarkerPos.y,
                     }}
                   >
-                    {formatValue(clickedValue.value, 2)}
-                    {clickedValue.units ? ` ${clickedValue.units}` : ""}
+                    {clickedValue.formatted_value ||
+                      `${formatValue(clickedValue.value, 2)}${formatUnitsSuffix(clickedValue.units)}`}
                   </div>
                 )}
             </>
@@ -1206,10 +1102,12 @@ function SeasonalInteractiveMapCard({
 }
 
 function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
-  const [layer, setLayer] = useState("hazard");
-  const [geojson, setGeojson] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  // No longer user-selectable (the old grid-cell hazard/risk map dropdown was
+  // removed in favor of the real-raster section below), but AIMapInterpretation
+  // still reads `layer`/`layerLabel` off onForecastSelectionChange's payload
+  // (see forecastSelection.layer usages there), so this stays fixed at its
+  // original default rather than being deleted outright.
+  const [layer] = useState("hazard");
 
   const [seasonalState, dispatchSeasonal] = useReducer(
     seasonalReducer,
@@ -1229,6 +1127,21 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     errorMessage: seasonalErrorMessage,
   } = seasonalState;
 
+  const [hazardRiskState, dispatchHazardRisk] = useReducer(
+    hazardRiskReducer,
+    INITIAL_HAZARD_RISK_STATE,
+  );
+  const {
+    options: hazardRiskOptions,
+    category: hazardRiskCategory,
+    layerValue: hazardRiskLayer,
+    period: hazardRiskPeriod,
+    selectedMap: selectedHazardRiskMap,
+    loading: hazardRiskLoading,
+    errorMessage: hazardRiskErrorMessage,
+  } = hazardRiskState;
+  const [hazardRiskInspectPoint, setHazardRiskInspectPoint] = useState(null);
+
   const boundaryGeojson = adminSelection?.boundaryGeojson || null;
   const [seasonalInspectPoint, setSeasonalInspectPoint] = useState(null);
 
@@ -1240,10 +1153,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     () => deriveHazardLeadFromSeasonal(seasonalScale, seasonalPeriod),
     [seasonalScale, seasonalPeriod],
   );
-
-  const displayedGeojson = useMemo(() => {
-    return filterGridByBoundaryBoundingBox(geojson, boundaryGeojson);
-  }, [geojson, boundaryGeojson]);
 
   const selectedLayerLabel = getOptionLabel(OPTIONS.layers, layer);
   const selectedLeadLabel = getOptionLabel(OPTIONS.leads, lead);
@@ -1361,8 +1270,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   const activeMapGroup = "Climate Indicator Maps and Hazard/Risk Layers";
   const activeMapLabel = `${displayedClimateMapLabel} (climate indicator) and ${selectedLayerLabel} (hazard/risk)`;
 
-  const hazardViewKey = `${forecastScale}-${lead}-${layer}-${adminSelection?.regionId || "all"}-${adminSelection?.zoneId || "all"}-${adminSelection?.woredaId || "all"}`;
-
   useEffect(() => {
     if (typeof onForecastSelectionChange === "function") {
       onForecastSelectionChange({
@@ -1463,49 +1370,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadLayer() {
-      setLoading(true);
-      setErrorMessage("");
-
-      try {
-        const params = new URLSearchParams();
-        params.set("forecast_scale", forecastScale);
-        params.set("lead", lead);
-        params.set("layer", layer);
-        params.set("indicator", "spi");
-
-        const response = await fetch(
-          apiUrl(`/api/map-layers/ethiopia?${params.toString()}`),
-          { signal: controller.signal },
-        );
-
-        if (!response.ok) {
-          throw new Error(`Layer request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setGeojson(data);
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          console.error(error);
-          setGeojson(null);
-          setErrorMessage(
-            "Could not load Ethiopia hazard/risk map layer. Check the backend /api/map-layers/ethiopia endpoint.",
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadLayer();
-
-    return () => controller.abort();
-  }, [forecastScale, lead, layer]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
     async function loadSeasonalMap() {
       dispatchSeasonal({ type: "FETCH_START" });
 
@@ -1575,40 +1439,85 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     return () => controller.abort();
   }, [seasonalIndicator, seasonalPeriod, seasonalProduct]);
 
-  function styleFeature(feature) {
-    const properties = feature.properties || {};
-    const fillColor = getFillColor(properties, layer);
+  useEffect(() => {
+    const controller = new AbortController();
 
-    return {
-      color: "#ffffff",
-      weight: 0.45,
-      fillColor,
-      fillOpacity: 0.72,
-    };
-  }
+    async function loadHazardRiskOptions() {
+      try {
+        const response = await fetch(apiUrl("/api/hazard-risk/options"), {
+          signal: controller.signal,
+        });
 
-  function onEachFeature(feature, leafletLayer) {
-    const properties = feature.properties || {};
+        if (!response.ok) {
+          throw new Error(`Hazard/risk options request failed: ${response.status}`);
+        }
 
-    const popupHtml = `
-      <div class="forecast-popup">
-        <h3>Ethiopia Forecast Grid Cell</h3>
-        <p><strong>Selected area:</strong> ${escapeHtml(selectedAdminLabel)}</p>
-        <p><strong>Lead:</strong> ${escapeHtml(properties.lead_label || selectedLeadLabel)}</p>
-        <p><strong>Hazard map layer:</strong> ${escapeHtml(selectedLayerLabel)}</p>
-        <p><strong>Displayed value:</strong> ${escapeHtml(getLayerValue(properties, layer))}</p>
-        <hr />
-        <p><strong>Hazard:</strong> ${escapeHtml(titleCase(properties.hazard))}</p>
-        <p><strong>Risk level:</strong> ${escapeHtml(titleCase(properties.risk_level))}</p>
-        <p><strong>Risk score:</strong> ${escapeHtml(formatValue(properties.risk_score, 3))}</p>
-        <p><strong>Hazard probability:</strong> ${escapeHtml(formatValue(properties.hazard_probability, 3))}</p>
-        <p><strong>Exposure:</strong> ${escapeHtml(formatValue(properties.exposure, 3))}</p>
-        <p><strong>Vulnerability:</strong> ${escapeHtml(formatValue(properties.vulnerability, 3))}</p>
-      </div>
-    `;
+        const data = await response.json();
+        dispatchHazardRisk({
+          type: "SET_OPTIONS",
+          options: {
+            categories: data.categories || [],
+            periods: data.periods || [],
+            layers: data.layers || [],
+          },
+        });
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.warn(error);
+        }
+      }
+    }
 
-    leafletLayer.bindPopup(popupHtml);
-  }
+    loadHazardRiskOptions();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadHazardRiskMap() {
+      dispatchHazardRisk({ type: "FETCH_START" });
+
+      try {
+        const params = new URLSearchParams();
+        params.set("layer", hazardRiskLayer);
+        params.set("period", hazardRiskPeriod);
+
+        const response = await fetch(
+          apiUrl(`/api/hazard-risk/map?${params.toString()}`),
+          { signal: controller.signal },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Hazard/risk map request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        dispatchHazardRisk({
+          type: "FETCH_SUCCESS",
+          selectedMap: data.map || null,
+          errorMessage: data.map
+            ? ""
+            : data.message ||
+              `No hazard/risk map was found for layer=${hazardRiskLayer} period=${hazardRiskPeriod}. Check /api/hazard-risk/options and /api/hazard-risk/health.`,
+        });
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+          dispatchHazardRisk({
+            type: "FETCH_ERROR",
+            errorMessage:
+              "Could not load the hazard/risk raster map. Check data/maps/{Hazard,Probability_Severity,Exposure,Vulnerability,Risk} and confirm /api/hazard-risk is registered.",
+          });
+        }
+      }
+    }
+
+    loadHazardRiskMap();
+
+    return () => controller.abort();
+  }, [hazardRiskLayer, hazardRiskPeriod]);
 
   const compareProductOrder = seasonalCompareProducts?.length
     ? seasonalCompareProducts
@@ -1621,6 +1530,31 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       map: compareSeasonalMaps?.[product] || null,
     };
   });
+
+  const hazardRiskLayersByCategory = useMemo(() => {
+    const groups = new Map();
+    for (const item of hazardRiskOptions.layers) {
+      if (!groups.has(item.category)) {
+        groups.set(item.category, []);
+      }
+      groups.get(item.category).push(item);
+    }
+    return groups;
+  }, [hazardRiskOptions.layers]);
+
+  const isStaticHazardRiskLayer = HAZARD_RISK_STATIC_CATEGORIES.has(hazardRiskCategory);
+  const selectedHazardRiskLayerLabel = getOptionLabel(
+    hazardRiskOptions.layers,
+    hazardRiskLayer,
+  );
+  const selectedHazardRiskPeriodLabel = isStaticHazardRiskLayer
+    ? "All periods"
+    : getOptionLabel(hazardRiskOptions.periods, hazardRiskPeriod);
+  const selectedHazardRiskCategoryLabel = getOptionLabel(
+    hazardRiskOptions.categories,
+    hazardRiskCategory,
+  );
+  const hazardRiskBoundaryKey = `${adminSelection?.regionId || "all"}-${adminSelection?.zoneId || "all"}-${adminSelection?.woredaId || "all"}`;
 
   return (
     <>
@@ -1847,7 +1781,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         </div>
       </section>
 
-      <section className="panel forecast-layer-section hazard-layer-section">
+      <section className="panel forecast-layer-section hazard-risk-raster-section">
         <div className="forecast-layer-header">
           <div>
             <h2>Ethiopia Hazard / Risk Layers</h2>
@@ -1859,120 +1793,109 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         </div>
 
         <div className="forecast-layer-controls">
-          <div className="forecast-control forecast-control-primary">
-            <label htmlFor="forecast-layer">Hazard map layer</label>
+          <div className="forecast-control">
+            <label htmlFor="hazard-risk-category">Category</label>
             <select
-              id="forecast-layer"
-              value={layer}
-              onChange={(event) => setLayer(event.target.value)}
+              id="hazard-risk-category"
+              value={hazardRiskCategory}
+              onChange={(event) =>
+                dispatchHazardRisk({ type: "SET_CATEGORY", value: event.target.value })
+              }
             >
-              {OPTIONS.layers.map((item) => (
+              {hazardRiskOptions.categories.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
               ))}
             </select>
           </div>
+
+          <div className="forecast-control forecast-control-primary">
+            <label htmlFor="hazard-risk-layer">Layer</label>
+            <select
+              id="hazard-risk-layer"
+              value={hazardRiskLayer}
+              onChange={(event) =>
+                dispatchHazardRisk({ type: "SET_LAYER", value: event.target.value })
+              }
+            >
+              {(hazardRiskLayersByCategory.get(hazardRiskCategory) || []).map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="forecast-control">
+            <label htmlFor="hazard-risk-period">Period</label>
+            <select
+              id="hazard-risk-period"
+              value={hazardRiskPeriod}
+              disabled={isStaticHazardRiskLayer}
+              onChange={(event) =>
+                dispatchHazardRisk({ type: "SET_PERIOD", value: event.target.value })
+              }
+            >
+              {isStaticHazardRiskLayer ? (
+                <option value={hazardRiskPeriod}>All periods</option>
+              ) : (
+                hazardRiskOptions.periods.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
         </div>
 
         <div className="forecast-layer-summary">
           <div>
-            <span>Forecast horizon</span>
-            <strong>{selectedSeasonalPeriodLabel}</strong>
+            <span>Category</span>
+            <strong>{selectedHazardRiskCategoryLabel}</strong>
           </div>
-
           <div>
-            <span>Hazard map layer</span>
-            <strong>{selectedLayerLabel}</strong>
+            <span>Layer</span>
+            <strong>{selectedHazardRiskLayerLabel}</strong>
+          </div>
+          <div>
+            <span>Period</span>
+            <strong>{selectedHazardRiskPeriodLabel}</strong>
           </div>
         </div>
 
-        {errorMessage && <div className="error-banner">{errorMessage}</div>}
+        {hazardRiskErrorMessage && (
+          <div className="error-banner">{hazardRiskErrorMessage}</div>
+        )}
 
-        <div className="forecast-map-layout">
-          <div
-            id="forecast-risk-map-hazard"
-            className="forecast-map-wrapper forecast-map-wrapper-switcher"
-          >
-            <MapContainer
-              center={ETHIOPIA_CENTER}
-              zoom={6.25}
-              minZoom={5.75}
-              maxZoom={9}
-              zoomSnap={0.25}
-              zoomDelta={0.25}
-              maxBounds={ETHIOPIA_MAX_BOUNDS}
-              maxBoundsViscosity={1.0}
-              scrollWheelZoom={false}
-              className="forecast-map"
-            >
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+        <div className="seasonal-map-viewer">
+          {hazardRiskLoading && (
+            <div className="forecast-map-loading seasonal-loading">
+              Loading hazard/risk map...
+            </div>
+          )}
 
-              <FitForecastMapToEthiopiaDomain viewKey={hazardViewKey} />
+          <div className="seasonal-single-map-layout">
+            <SeasonalInteractiveMapCard
+              map={selectedHazardRiskMap}
+              title={`${selectedHazardRiskLayerLabel} · ${selectedHazardRiskPeriodLabel}`}
+              emptyText="No raster map was found for this layer/period. Check data/maps/{Hazard,Probability_Severity,Exposure,Vulnerability,Risk} and /api/hazard-risk/health."
+              boundaryGeojson={boundaryGeojson}
+              boundaryKey={hazardRiskBoundaryKey}
+              inspectPoint={hazardRiskInspectPoint}
+              onInspectPoint={setHazardRiskInspectPoint}
+              valueEndpointBase="/api/hazard-risk"
+            />
 
-              {displayedGeojson && (
-                <GeoJSON
-                  key={`forecast-grid-${hazardViewKey}`}
-                  data={displayedGeojson}
-                  style={styleFeature}
-                  onEachFeature={onEachFeature}
-                />
-              )}
-
-              {boundaryGeojson && (
-                <GeoJSON
-                  key={`forecast-boundary-${hazardViewKey}`}
-                  data={boundaryGeojson}
-                  style={getBoundaryOverlayStyle}
-                />
-              )}
-            </MapContainer>
-
-            {loading && (
-              <div className="forecast-map-loading">Loading map layer...</div>
-            )}
-          </div>
-
-          <div className="forecast-legend-card">
-            <h3>Legend</h3>
-            <p className="forecast-legend-mode">
-              Hazard/Risk Layers: <strong>{selectedLayerLabel}</strong>
-            </p>
-
-            {layer === "hazard" ? (
-              <div className="forecast-hazard-legend">
-                <span>
-                  <i style={{ background: HAZARD_COLORS.drought }} />
-                  Drought
-                </span>
-                <span>
-                  <i style={{ background: HAZARD_COLORS.dry_spell }} />
-                  Dry spell
-                </span>
-                <span>
-                  <i style={{ background: HAZARD_COLORS.heavy_rainfall }} />
-                  Heavy rainfall
-                </span>
-                <span>
-                  <i style={{ background: HAZARD_COLORS.wet_spell }} />
-                  Wet spell
-                </span>
-                <span>
-                  <i style={{ background: HAZARD_COLORS.no_alert }} />
-                  No alert
-                </span>
-              </div>
-            ) : (
-              <NumericLayerLegend layer={layer} />
-            )}
-
-            <p>
-              The selected administrative boundary is used to filter the
-              displayed forecast grid.
-            </p>
+            <aside className="forecast-legend-card seasonal-info-card">
+              <h3>Hazard/Risk layer</h3>
+              <p className="forecast-legend-mode">
+                {selectedHazardRiskLayerLabel}:{" "}
+                <strong>{selectedHazardRiskPeriodLabel}</strong>
+              </p>
+              <RasterLegend map={selectedHazardRiskMap} />
+            </aside>
           </div>
         </div>
       </section>
