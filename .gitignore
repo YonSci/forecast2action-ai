@@ -236,6 +236,21 @@ forecast2action_action_tracker_*.csv
 !data/maps/Subseasonal/**
 !data/maps/*.json
 
+# Ethiopia Hazard/Risk raster sources served by app/api/hazard_risk_maps.py --
+# same "Render deploys from git" reasoning as the seasonal raster sources
+# above: without these, the folders exist locally but never reach the
+# deployed server, so /api/hazard-risk/* silently finds zero maps there.
+!data/maps/Hazard/
+!data/maps/Hazard/**
+!data/maps/Probability_Severity/
+!data/maps/Probability_Severity/**
+!data/maps/Exposure/
+!data/maps/Exposure/**
+!data/maps/Vulnerability/
+!data/maps/Vulnerability/**
+!data/maps/Risk/
+!data/maps/Risk/**
+
 # Ethiopia admin boundary shapefile used by seasonal_raster_maps.py to clip
 # rendered maps to the real country border, and by the admin boundary
 # selector API. Also required at runtime on Render -- without it, deploys
