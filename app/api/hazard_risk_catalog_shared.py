@@ -41,6 +41,8 @@ __all__ = [
     "RISK_CLASS_BANDS",
     "RISK_CLASS_BY_CODE",
     "DOMINANT_HAZARD_CODE_THRESHOLD",
+    "DOMINANT_HAZARD_CODE_BANDS",
+    "DOMINANT_HAZARD_CODE_BY_CODE",
     "parse_hazard_risk_filename",
 ]
 
@@ -61,7 +63,6 @@ STATIC_PERIOD = "static"
 CATEGORIES = [
     {"value": "hazard", "label": "Hazard"},
     {"value": "probability", "label": "Probability"},
-    {"value": "severity", "label": "Severity"},
     {"value": "exposure", "label": "Exposure"},
     {"value": "vulnerability", "label": "Vulnerability"},
     {"value": "risk", "label": "Risk"},
@@ -77,24 +78,20 @@ LAYER_DEFINITIONS = [
     {"value": "h_wet_mean", "category": "hazard", "hazard_type": "wet", "label": "Wetness Hazard (mean)", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "Blues", "low_label": "Low hazard", "high_label": "High hazard", "is_categorical": False},
     {"value": "p_drought", "category": "probability", "hazard_type": "drought", "label": "Drought Probability", "units": "probability", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low probability", "high_label": "High probability", "is_categorical": False},
     {"value": "p_wet", "category": "probability", "hazard_type": "wet", "label": "Wet Probability", "units": "probability", "vmin": 0.0, "vmax": 1.0, "cmap": "Blues", "low_label": "Low probability", "high_label": "High probability", "is_categorical": False},
-    {"value": "s_drought", "category": "severity", "hazard_type": "drought", "label": "Drought Severity", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low severity", "high_label": "High severity", "is_categorical": False},
-    {"value": "s_wet", "category": "severity", "hazard_type": "wet", "label": "Wet Severity", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "Blues", "low_label": "Low severity", "high_label": "High severity", "is_categorical": False},
     {"value": "population_normalized", "category": "exposure", "hazard_type": None, "label": "Population Exposure", "units": "normalized", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low exposure", "high_label": "High exposure", "is_categorical": False},
     {"value": "v_drought", "category": "vulnerability", "hazard_type": "drought", "label": "Drought Vulnerability", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low vulnerability", "high_label": "High vulnerability", "is_categorical": False},
     {"value": "v_wet", "category": "vulnerability", "hazard_type": "wet", "label": "Wet Vulnerability", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "Blues", "low_label": "Low vulnerability", "high_label": "High vulnerability", "is_categorical": False},
     # Risk (r_drought/r_wet/r_dominant) = 100 * P * S_effective * E * V, so it
     # is a 0-100 relative score, NOT a 0-1 probability -- confirmed against
     # real data (max observed r_dominant so far is ~56.6).
-    {"value": "population_r_drought", "category": "risk", "hazard_type": "drought", "label": "Drought Risk", "units": "score_0_100", "vmin": 0.0, "vmax": 100.0, "cmap": "YlOrRd", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
-    {"value": "population_r_wet", "category": "risk", "hazard_type": "wet", "label": "Wet Risk", "units": "score_0_100", "vmin": 0.0, "vmax": 100.0, "cmap": "Blues", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
-    {"value": "population_r_dominant", "category": "risk", "hazard_type": "dominant", "label": "Dominant Risk", "units": "score_0_100", "vmin": 0.0, "vmax": 100.0, "cmap": "RdPu", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
+    {"value": "population_r_drought", "category": "risk", "hazard_type": "drought", "label": "Drought Risk", "units": "score", "vmin": 0.0, "vmax": 100.0, "cmap": "YlOrRd", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
+    {"value": "population_r_wet", "category": "risk", "hazard_type": "wet", "label": "Wet Risk", "units": "score", "vmin": 0.0, "vmax": 100.0, "cmap": "Blues", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
+    {"value": "population_r_dominant", "category": "risk", "hazard_type": "dominant", "label": "Dominant Risk", "units": "score", "vmin": 0.0, "vmax": 100.0, "cmap": "RdPu", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
     {"value": "population_risk_class", "category": "risk", "hazard_type": "dominant", "label": "Risk Class", "units": "class", "vmin": 0, "vmax": 4, "cmap": None, "low_label": "Very low", "high_label": "Very high", "is_categorical": True},
-    # dominant_code semantics (0=none, 1=drought-dominated, 2=wet-dominated,
-    # 3=mixed/compound, at a 19.9 threshold on r_drought/r_wet) are confirmed
-    # but deferred: this layer is scanned/cataloged so it's discoverable via
-    # /catalog, but does not yet get a dedicated categorical legend/render
-    # path (falls through to the generic continuous fallback below).
-    {"value": "population_dominant_code", "category": "risk", "hazard_type": "dominant", "label": "Dominant Hazard Code", "units": "code", "vmin": 0, "vmax": 3, "cmap": "viridis", "low_label": "None", "high_label": "Compound", "is_categorical": True},
+    # dominant_code = 0 if neither R_drought nor R_wet exceeds
+    # DOMINANT_HAZARD_CODE_THRESHOLD, 1 if only R_drought does, 2 if only
+    # R_wet does, 3 if both do simultaneously (see DOMINANT_HAZARD_CODE_BANDS).
+    {"value": "population_dominant_code", "category": "risk", "hazard_type": "dominant", "label": "Dominant Hazard Code", "units": "dominant_code", "vmin": 0, "vmax": 3, "cmap": None, "low_label": "Insignificant", "high_label": "Mixed / compound", "is_categorical": True},
 ]
 LAYER_BY_VALUE = {item["value"]: item for item in LAYER_DEFINITIONS}
 
@@ -111,10 +108,21 @@ RISK_CLASS_BANDS = [
 ]
 RISK_CLASS_BY_CODE = {band["code"]: band for band in RISK_CLASS_BANDS}
 
-# Not used by any render/legend path yet (dominant_code is deferred -- see
-# LAYER_DEFINITIONS above) but recorded here since it was confirmed as part
-# of the data's real encoding, for whenever that layer is picked back up.
+# dominant_code's 4-value scheme: 0 if neither R_drought nor R_wet exceeds
+# DOMINANT_HAZARD_CODE_THRESHOLD, 1 if only R_drought does (drought-dominated),
+# 2 if only R_wet does (wet-dominated), 3 if both do simultaneously
+# (mixed/compound). Colors intentionally echo this app's existing drought=red
+# / wet=blue convention (see h_dry_mean/h_wet_mean's cmaps above), with a
+# neutral gray for "insignificant" and a distinct purple for "mixed".
 DOMINANT_HAZARD_CODE_THRESHOLD = 19.9
+
+DOMINANT_HAZARD_CODE_BANDS = [
+    {"code": 0, "label": "Insignificant", "color": "#94A3B8"},
+    {"code": 1, "label": "Drought-dominated", "color": "#D92D20"},
+    {"code": 2, "label": "Wet-dominated", "color": "#1570EF"},
+    {"code": 3, "label": "Mixed / compound", "color": "#7C3AED"},
+]
+DOMINANT_HAZARD_CODE_BY_CODE = {band["code"]: band for band in DOMINANT_HAZARD_CODE_BANDS}
 
 _INIT_DATE_PATTERN = re.compile(r"^(\d{4}-\d{2}-\d{2})_")
 

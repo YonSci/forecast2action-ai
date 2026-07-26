@@ -284,12 +284,17 @@ function hazardRiskReducer(state, action) {
     case "SET_OPTIONS": {
       const layers = action.options.layers || [];
       const stillValid = layers.some((item) => item.value === state.layerValue);
-      const fallbackLayer = layers.find((item) => item.category === state.category) || layers[0];
+      const fallbackLayer =
+        layers.find((item) => item.category === state.category) || layers[0];
       return {
         ...state,
         options: action.options,
-        layerValue: stillValid ? state.layerValue : fallbackLayer?.value || state.layerValue,
-        category: stillValid ? state.category : fallbackLayer?.category || state.category,
+        layerValue: stillValid
+          ? state.layerValue
+          : fallbackLayer?.value || state.layerValue,
+        category: stillValid
+          ? state.category
+          : fallbackLayer?.category || state.category,
       };
     }
     case "SET_CATEGORY": {
@@ -303,8 +308,14 @@ function hazardRiskReducer(state, action) {
       };
     }
     case "SET_LAYER": {
-      const layerMeta = state.options.layers.find((item) => item.value === action.value);
-      return { ...state, layerValue: action.value, category: layerMeta?.category || state.category };
+      const layerMeta = state.options.layers.find(
+        (item) => item.value === action.value,
+      );
+      return {
+        ...state,
+        layerValue: action.value,
+        category: layerMeta?.category || state.category,
+      };
     }
     case "SET_PERIOD":
       return { ...state, period: action.value };
@@ -318,7 +329,12 @@ function hazardRiskReducer(state, action) {
         errorMessage: action.errorMessage || "",
       };
     case "FETCH_ERROR":
-      return { ...state, loading: false, selectedMap: null, errorMessage: action.errorMessage };
+      return {
+        ...state,
+        loading: false,
+        selectedMap: null,
+        errorMessage: action.errorMessage,
+      };
     default:
       return state;
   }
@@ -461,11 +477,11 @@ function formatValue(value, digits = 2) {
 
 // Hazard/risk raster units (see app/api/hazard_risk_catalog_shared.py's
 // LAYER_DEFINITIONS) aren't readable appended raw the way climate indicator
-// units are (e.g. "mm", "days") -- "1.57 score_0_100" reads as noise, not a
+// units are (e.g. "mm", "days") -- "1.57 score" reads as noise, not a
 // unit. This only remaps hazard/risk's own vocabulary; every other units
 // string (climate indicators) still appends as before.
 const HAZARD_RISK_UNIT_SUFFIXES = {
-  score_0_100: " / 100",
+  score: " / 100",
   probability: "",
   index: "",
   normalized: "",
@@ -1316,7 +1332,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     onForecastSelectionChange,
   ]);
 
-
   useEffect(() => {
     const controller = new AbortController();
 
@@ -1449,7 +1464,9 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         });
 
         if (!response.ok) {
-          throw new Error(`Hazard/risk options request failed: ${response.status}`);
+          throw new Error(
+            `Hazard/risk options request failed: ${response.status}`,
+          );
         }
 
         const data = await response.json();
@@ -1542,7 +1559,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     return groups;
   }, [hazardRiskOptions.layers]);
 
-  const isStaticHazardRiskLayer = HAZARD_RISK_STATIC_CATEGORIES.has(hazardRiskCategory);
+  const isStaticHazardRiskLayer =
+    HAZARD_RISK_STATIC_CATEGORIES.has(hazardRiskCategory);
   const selectedHazardRiskLayerLabel = getOptionLabel(
     hazardRiskOptions.layers,
     hazardRiskLayer,
@@ -1799,7 +1817,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               id="hazard-risk-category"
               value={hazardRiskCategory}
               onChange={(event) =>
-                dispatchHazardRisk({ type: "SET_CATEGORY", value: event.target.value })
+                dispatchHazardRisk({
+                  type: "SET_CATEGORY",
+                  value: event.target.value,
+                })
               }
             >
               {hazardRiskOptions.categories.map((item) => (
@@ -1816,14 +1837,19 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               id="hazard-risk-layer"
               value={hazardRiskLayer}
               onChange={(event) =>
-                dispatchHazardRisk({ type: "SET_LAYER", value: event.target.value })
+                dispatchHazardRisk({
+                  type: "SET_LAYER",
+                  value: event.target.value,
+                })
               }
             >
-              {(hazardRiskLayersByCategory.get(hazardRiskCategory) || []).map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
+              {(hazardRiskLayersByCategory.get(hazardRiskCategory) || []).map(
+                (item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ),
+              )}
             </select>
           </div>
 
@@ -1834,7 +1860,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               value={hazardRiskPeriod}
               disabled={isStaticHazardRiskLayer}
               onChange={(event) =>
-                dispatchHazardRisk({ type: "SET_PERIOD", value: event.target.value })
+                dispatchHazardRisk({
+                  type: "SET_PERIOD",
+                  value: event.target.value,
+                })
               }
             >
               {isStaticHazardRiskLayer ? (

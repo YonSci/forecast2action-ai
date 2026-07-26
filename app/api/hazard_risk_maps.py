@@ -28,6 +28,8 @@ from fastapi.responses import Response
 
 from app.api.hazard_risk_catalog_shared import (
     CATEGORIES,
+    DOMINANT_HAZARD_CODE_BANDS,
+    DOMINANT_HAZARD_CODE_BY_CODE,
     LAYER_DEFINITIONS,
     LAYER_BY_VALUE,
     PERIOD_BY_VALUE,
@@ -63,6 +65,13 @@ from app.api.seasonal_raster_maps import (
 router = APIRouter(prefix="/api/hazard-risk", tags=["Ethiopia Hazard/Risk Layers"])
 
 MAPS_ROOT = Path(os.getenv("HAZARD_RISK_ROOT", PROJECT_ROOT / "data" / "maps")).resolve()
+
+# Layers with a fixed discrete color per integer code, rendered/legended via
+# render_categorical_rgba below instead of a continuous colormap.
+CATEGORICAL_BANDS_BY_LAYER = {
+    "population_risk_class": RISK_CLASS_BY_CODE,
+    "population_dominant_code": DOMINANT_HAZARD_CODE_BY_CODE,
+}
 FOLDER_NAMES = ["Hazard", "Probability_Severity", "Exposure", "Vulnerability", "Risk"]
 
 
@@ -188,8 +197,8 @@ def get_map_statistics_cached(map_id: str) -> Dict[str, Any]:
 
 def get_render_config(record: Dict[str, Any]) -> Dict[str, Any]:
     definition = LAYER_BY_VALUE[record["layer"]]
-    if record["layer"] == "population_risk_class":
-        return {"cmap": "categorical_risk_class", "vmin": 0, "vmax": 4, "low_label": definition["low_label"], "high_label": definition["high_label"]}
+    if record["layer"] in CATEGORICAL_BANDS_BY_LAYER:
+        return {"cmap": f"categorical_{record['layer']}", "vmin": definition["vmin"], "vmax": definition["vmax"], "low_label": definition["low_label"], "high_label": definition["high_label"]}
     return {
         "cmap": definition["cmap"],
         "vmin": definition["vmin"],
@@ -207,10 +216,22 @@ def build_legend(record: Dict[str, Any]) -> Dict[str, Any]:
             "title": "Risk Class",
             "units": "class",
             "type": "categorical",
-            "cmap": "categorical_risk_class",
+            "cmap": "categorical_population_risk_class",
             "items": [
                 {"value": band["code"], "label": band["label"], "color": band["color"], "range": list(band["range"])}
                 for band in RISK_CLASS_BANDS
+            ],
+        }
+
+    if record["layer"] == "population_dominant_code":
+        return {
+            "title": "Dominant Hazard Code",
+            "units": "dominant_code",
+            "type": "categorical",
+            "cmap": "categorical_population_dominant_code",
+            "items": [
+                {"value": band["code"], "label": band["label"], "color": band["color"]}
+                for band in DOMINANT_HAZARD_CODE_BANDS
             ],
         }
 
@@ -265,12 +286,12 @@ def upsample_value_array_nearest(arr: Any, scale_factor: float) -> Tuple[Any, An
     return upsampled_values.astype("float32"), upsampled_valid
 
 
-def render_risk_class_rgba(band: Any, valid_mask: Any):
+def render_categorical_rgba(band: Any, valid_mask: Any, bands_by_code: Dict[int, Dict[str, Any]]):
     import numpy as np
 
     rgba = np.zeros((band.shape[0], band.shape[1], 4), dtype="uint8")
     codes = np.rint(np.nan_to_num(band, nan=-1.0)).astype("int32")
-    for code, class_meta in RISK_CLASS_BY_CODE.items():
+    for code, class_meta in bands_by_code.items():
         color = class_meta["color"]
         r, g, b = (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
         sel = valid_mask & (codes == code)
@@ -282,19 +303,22 @@ def format_hazard_risk_value(value: Optional[float], record: Dict[str, Any]) -> 
     """Format a raw cell value for display, using this module's own units vocabulary.
 
     seasonal_raster_maps.py's imported format_value only special-cases
-    "probability" -- units like "score_0_100" or "class" are specific to this
-    catalog and would otherwise render as e.g. "0.82 score_0_100".
+    "probability" -- units like "score" or "class" are specific to this
+    catalog and would otherwise render as e.g. "0.82 score".
     """
     if value is None or not math.isfinite(float(value)):
         return "No data"
 
     units = record.get("units", "")
-    if units == "score_0_100":
+    if units == "score":
         return f"{float(value):.1f} / 100"
     if units == "class":
         band = RISK_CLASS_BY_CODE.get(int(round(float(value))))
         return band["label"] if band else f"{float(value):.0f}"
-    return format_value(value, units if units not in {"index", "normalized", "code"} else "")
+    if units == "dominant_code":
+        band = DOMINANT_HAZARD_CODE_BY_CODE.get(int(round(float(value))))
+        return band["label"] if band else f"{float(value):.0f}"
+    return format_value(value, units if units not in {"index", "normalized"} else "")
 
 
 def public_map_record(record: Dict[str, Any], include_statistics: bool = True) -> Dict[str, Any]:
@@ -443,13 +467,13 @@ async def get_hazard_risk_image(map_id: str) -> Response:
     record = require_map(map_id)
     arr, transform, bounds = load_display_array(record)
     config = get_render_config(record)
-    is_risk_class = record["layer"] == "population_risk_class"
+    categorical_bands = CATEGORICAL_BANDS_BY_LAYER.get(record["layer"])
 
     long_side = max(arr.shape)
     scale_factor = max(1.0, FULL_IMAGE_MIN_LONG_SIDE / long_side) if long_side else 1.0
 
     if scale_factor > 1.0:
-        if is_risk_class:
+        if categorical_bands is not None:
             render_arr, upsampled_valid_fraction = upsample_value_array_nearest(arr, scale_factor)
         else:
             render_arr, upsampled_valid_fraction = upsample_value_array(arr, scale_factor)
@@ -460,13 +484,13 @@ async def get_hazard_risk_image(map_id: str) -> Response:
         render_arr = arr
         valid_mask = np.isfinite(arr)
 
-    # Nearest-neighbor row remap (order=0) for risk_class for the same
-    # class-integrity reason as upsample_value_array_nearest above.
-    render_arr = remap_rows_equirect_to_mercator(render_arr, bounds["south"], bounds["north"], order=(0 if is_risk_class else 1))
+    # Nearest-neighbor row remap (order=0) for categorical layers, for the
+    # same class-integrity reason as upsample_value_array_nearest above.
+    render_arr = remap_rows_equirect_to_mercator(render_arr, bounds["south"], bounds["north"], order=(0 if categorical_bands is not None else 1))
     valid_mask = remap_rows_equirect_to_mercator(valid_mask.astype("float32"), bounds["south"], bounds["north"], order=0) > 0.5
 
-    if is_risk_class:
-        rgba = render_risk_class_rgba(render_arr, valid_mask)
+    if categorical_bands is not None:
+        rgba = render_categorical_rgba(render_arr, valid_mask, categorical_bands)
     else:
         rgba = render_array_to_rgba(render_arr, valid_mask, config["vmin"], config["vmax"], config["cmap"])
 
