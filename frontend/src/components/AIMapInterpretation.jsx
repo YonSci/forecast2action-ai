@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import html2canvas from "html2canvas";
 import { apiUrl } from "../config.js";
-import { CLIMATE_INDICATORS } from "../constants/climateIndicators.js";
+import {
+  CLIMATE_INDICATORS,
+  VISIBLE_CLIMATE_INDICATORS,
+} from "../constants/climateIndicators.js";
 import "../styles/aiMapInterpretation.css";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -239,7 +242,17 @@ function getLanguageLabel(value) {
   return LANGUAGE_LABELS[code] || titleCase(code || "English");
 }
 
-function getLeadLabel(value) {
+// JJAS is a 4-month aggregate (June-July-August-September), but the
+// underlying `lead` value it maps to (see ForecastLayerMap.jsx's
+// SEASONAL_PERIOD_TO_HAZARD_LEAD) is still just "month_1" -- there's no
+// distinct "4-month" lead in the backend's fixed FORECAST_LEADS vocabulary,
+// so that value has to stay "month_1" for /api/intervention-ranking to keep
+// working. This only fixes what's DISPLAYED for that case, so it reads "4
+// Months" instead of the misleading "Month 1".
+function getLeadLabel(value, seasonalPeriod) {
+  if (String(seasonalPeriod || "").trim().toLowerCase() === "jjas") {
+    return "4 Months";
+  }
   return LEAD_LABELS[value] || titleCase(value || "week_1");
 }
 
@@ -252,6 +265,27 @@ function getLayerLabel(value) {
     MAP_LAYERS.find((item) => item.key === value)?.label ||
     titleCase(value || "risk_score")
   );
+}
+
+// Maps the Hazard/Exposure/Vulnerability/Risk Layers section's category
+// (the real thing the user picks now) onto the older district-ranking
+// vocabulary used by /api/intervention-ranking (risk_score/hazard_probability
+// /exposure/vulnerability). These are two different data sources -- a 0.25°
+// raster grid vs. admin3 district ranking -- but keeping this mapping means
+// switching category here also changes which district ranking gets
+// deep-dived for "top priority areas", instead of that staying frozen on
+// whatever the old, now-removed layer dropdown last had (see the `layer`
+// state comment in ForecastLayerMap.jsx).
+const HAZARD_RISK_CATEGORY_TO_RANKING_LAYER = {
+  hazard: "risk_score",
+  probability: "hazard_probability",
+  exposure: "exposure",
+  vulnerability: "vulnerability",
+  risk: "risk_score",
+};
+
+function getRankingLayerForHazardRiskCategory(category) {
+  return HAZARD_RISK_CATEGORY_TO_RANKING_LAYER[category] || "risk_score";
 }
 
 function getIndicatorLabel(value) {
@@ -344,7 +378,17 @@ function buildCacheKey({
     seasonalProduct: forecastSelection?.seasonalProduct || "",
     climateMapView: forecastSelection?.climateMapView || "",
     seasonalMapId: forecastSelection?.seasonalMap?.id || "",
+    // Not just for display: switching the Hazard/Risk raster selection (or
+    // the admin boundary scope) must bust the cached report, or a stale
+    // advisory generated for a different layer/period/area would silently
+    // get reused instead of regenerating.
+    hazardRiskCategory: forecastSelection?.hazardRiskCategory || "",
+    hazardRiskLayer: forecastSelection?.hazardRiskLayer || "",
+    hazardRiskPeriod: forecastSelection?.hazardRiskPeriod || "",
+    hazardRiskMapId: forecastSelection?.hazardRiskMap?.id || "",
     admin: {
+      countryId: adminSelection?.countryId || "",
+      boundaryLevel: adminSelection?.boundaryLevel || "",
       regionId: adminSelection?.regionId || "",
       zoneId: adminSelection?.zoneId || "",
       woredaId: adminSelection?.woredaId || "",
@@ -644,7 +688,7 @@ async function buildAllClimateIndicatorSummaries(
   adminSelection,
 ) {
   const entries = await Promise.all(
-    CLIMATE_INDICATORS.map(async (indicator) => {
+    VISIBLE_CLIMATE_INDICATORS.map(async (indicator) => {
       const ranking = await fetchRanking({
         forecastSelection,
         adminSelection,
@@ -849,28 +893,13 @@ function AIMapInterpretation({
   const contextSummary = useMemo(() => {
     return {
       forecastScale: getForecastScaleLabel(forecastSelection.forecastScale),
-      lead: getLeadLabel(forecastSelection.lead),
+      lead: getLeadLabel(forecastSelection.lead, forecastSelection.seasonalPeriod),
       activeMapGroup: getMapGroupLabel(forecastSelection),
       displayedMap: getDisplayedMapLabel(forecastSelection),
-      activeLayer: getLayerLabel(forecastSelection.layer),
-      activeIndicator: getIndicatorLabel(
-        forecastSelection.seasonalIndicator || forecastSelection.indicator,
-      ),
-      seasonalScale:
-        forecastSelection?.seasonalScaleLabel ||
-        titleCase(forecastSelection?.seasonalScale || "seasonal"),
       seasonalPeriod:
         forecastSelection?.seasonalPeriodLabel ||
         forecastSelection?.seasonalPeriod ||
-        getLeadLabel(forecastSelection.lead),
-      seasonalProduct:
-        forecastSelection?.seasonalProductLabel ||
-        forecastSelection?.seasonalProduct ||
-        "Forecast",
-      climateMapView:
-        forecastSelection?.climateMapView === "compare"
-          ? "Forecast vs Climatology vs Anomaly"
-          : "Single map",
+        getLeadLabel(forecastSelection.lead, forecastSelection.seasonalPeriod),
       seasonalMap: forecastSelection?.seasonalMap || null,
       adminScope: getAdminScope(adminSelection),
       language: getLanguageLabel(normalizedLanguage),
@@ -932,8 +961,11 @@ function AIMapInterpretation({
         "Preparing Ethiopia-wide spatial summaries for all map layers and climate indicators...",
       );
 
-      const rankingLayer =
-        forecastSelection.layer && forecastSelection.layer !== "hazard"
+      const rankingLayer = forecastSelection.hazardRiskCategory
+        ? getRankingLayerForHazardRiskCategory(
+            forecastSelection.hazardRiskCategory,
+          )
+        : forecastSelection.layer && forecastSelection.layer !== "hazard"
           ? forecastSelection.layer
           : "risk_score";
 
@@ -1002,6 +1034,24 @@ function AIMapInterpretation({
           hazard_type:
             selectedPriorityArea?.hazard || getDefaultHazard(topAreas),
           admin_scope: getAdminScope(adminSelection),
+          // The real, currently-displayed Hazard/Exposure/Vulnerability/Risk
+          // raster layer -- category/layer/period plus that specific map's
+          // own statistics (min/max/mean/valid_count) and legend, so the AI
+          // can ground its interpretation in the actual layer on screen
+          // rather than only the district-ranking summaries below.
+          hazard_risk_category: forecastSelection?.hazardRiskCategory || "",
+          hazard_risk_category_label:
+            forecastSelection?.hazardRiskCategoryLabel || "",
+          hazard_risk_layer: forecastSelection?.hazardRiskLayer || "",
+          hazard_risk_layer_label:
+            forecastSelection?.hazardRiskLayerLabel || "",
+          hazard_risk_period: forecastSelection?.hazardRiskPeriod || "",
+          hazard_risk_period_label:
+            forecastSelection?.hazardRiskPeriodLabel || "",
+          hazard_risk_map_units: forecastSelection?.hazardRiskMap?.units || "",
+          hazard_risk_map_statistics:
+            forecastSelection?.hazardRiskMap?.statistics || null,
+          hazard_risk_map_legend: forecastSelection?.hazardRiskMap?.legend || null,
         },
         top_admin_areas: topAreas,
         all_map_layer_summaries: allMapLayerSummaries,
@@ -1087,28 +1137,8 @@ function AIMapInterpretation({
           <strong>{contextSummary.displayedMap}</strong>
         </div>
         <div>
-          <span>Climate indicator scale</span>
-          <strong>{contextSummary.seasonalScale}</strong>
-        </div>
-        <div>
           <span>Seasonal period</span>
           <strong>{contextSummary.seasonalPeriod}</strong>
-        </div>
-        <div>
-          <span>Map product</span>
-          <strong>{contextSummary.seasonalProduct}</strong>
-        </div>
-        <div>
-          <span>View mode</span>
-          <strong>{contextSummary.climateMapView}</strong>
-        </div>
-        <div>
-          <span>Active climate indicator</span>
-          <strong>{contextSummary.activeIndicator}</strong>
-        </div>
-        <div>
-          <span>Active map layer</span>
-          <strong>{contextSummary.activeLayer}</strong>
         </div>
         <div>
           <span>Admin scope</span>
@@ -1138,8 +1168,7 @@ function AIMapInterpretation({
         <div>
           <span>Climate indicators used</span>
           <strong>
-            Rainfall Total · SPI · CDD · CWD · dryspell ≥5/7/9 days · Rainfall
-            Percentile
+            {VISIBLE_CLIMATE_INDICATORS.map((item) => item.label).join(" · ")}
           </strong>
         </div>
       </div>
@@ -1324,14 +1353,8 @@ function AIMapInterpretation({
               <strong>Admin scope:</strong> {contextSummary.adminScope} ·{" "}
               <strong>Active map group:</strong> {contextSummary.activeMapGroup}{" "}
               · <strong>Displayed map:</strong> {contextSummary.displayedMap} ·{" "}
-              <strong>Climate indicator scale:</strong>{" "}
-              {contextSummary.seasonalScale} · <strong>Seasonal period:</strong>{" "}
-              {contextSummary.seasonalPeriod} · <strong>Map product:</strong>{" "}
-              {contextSummary.seasonalProduct} ·{" "}
-              <strong>Active climate indicator:</strong>{" "}
-              {contextSummary.activeIndicator} ·{" "}
-              <strong>Active map layer:</strong> {contextSummary.activeLayer} ·{" "}
-              <strong>Output language:</strong> {contextSummary.language}
+              <strong>Seasonal period:</strong> {contextSummary.seasonalPeriod}{" "}
+              · <strong>Output language:</strong> {contextSummary.language}
             </p>
             <p>{report.executive_summary}</p>
           </div>

@@ -15,6 +15,7 @@ import {
   ALL_SEASONAL_PERIODS,
   CLIMATE_INDICATORS,
   CLIMATE_SCALES,
+  HIDDEN_CLIMATE_INDICATORS,
   SEASONAL_PRODUCTS,
   SEASONAL_PRODUCT_ORDER,
 } from "../constants/climateIndicators.js";
@@ -101,17 +102,6 @@ const FALLBACK_SEASONAL_OPTIONS = {
 };
 
 const PRODUCT_ORDER = SEASONAL_PRODUCT_ORDER;
-
-// Hidden from the Climate indicator dropdown for now -- removed by request,
-// not because the data is missing. rainfall_percentile was previously hidden
-// here too, but is no longer: it now has real forecast + climatology rasters
-// (see data/maps/geotiff/*_percentile_median.tif / *_percentile_climatology_mean.tif),
-// not just the single forecast-only netcdf/csv it used to have.
-const HIDDEN_CLIMATE_INDICATORS = new Set([
-  "dryspell_prob_5d",
-  "dryspell_prob_7d",
-  "dryspell_prob_9d",
-]);
 
 const INITIAL_SEASONAL_STATE = {
   options: FALLBACK_SEASONAL_OPTIONS,
@@ -1171,6 +1161,32 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
   } = hazardRiskState;
   const [hazardRiskInspectPoint, setHazardRiskInspectPoint] = useState(null);
 
+  const hazardRiskLayersByCategory = useMemo(() => {
+    const groups = new Map();
+    for (const item of hazardRiskOptions.layers) {
+      if (!groups.has(item.category)) {
+        groups.set(item.category, []);
+      }
+      groups.get(item.category).push(item);
+    }
+    return groups;
+  }, [hazardRiskOptions.layers]);
+
+  const isStaticHazardRiskLayer =
+    HAZARD_RISK_STATIC_CATEGORIES.has(hazardRiskCategory);
+  const selectedHazardRiskLayerLabel = getOptionLabel(
+    hazardRiskOptions.layers,
+    hazardRiskLayer,
+  );
+  const selectedHazardRiskPeriodLabel = isStaticHazardRiskLayer
+    ? "All periods"
+    : getOptionLabel(hazardRiskOptions.periods, hazardRiskPeriod);
+  const selectedHazardRiskCategoryLabel = getOptionLabel(
+    hazardRiskOptions.categories,
+    hazardRiskCategory,
+  );
+  const hazardRiskBoundaryKey = `${adminSelection?.regionId || "all"}-${adminSelection?.zoneId || "all"}-${adminSelection?.woredaId || "all"}`;
+
   const boundaryGeojson = adminSelection?.boundaryGeojson || null;
   const [seasonalInspectPoint, setSeasonalInspectPoint] = useState(null);
 
@@ -1296,8 +1312,13 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
 
   // Both sections are always visible together (no tab switcher), so the
   // context sent to the AI interpretation workflow always describes both.
+  // The hazard/risk half used to describe the old (now-removed) grid-cell
+  // layer dropdown via `selectedLayerLabel` -- that value is permanently
+  // frozen at "Hazard Map" now (see the `layer` state above), so it no
+  // longer means anything. This describes the REAL current selection from
+  // the Hazard/Exposure/Vulnerability/Risk Layers section instead.
   const activeMapGroup = "Climate Indicator Maps and Hazard/Risk Layers";
-  const activeMapLabel = `${displayedClimateMapLabel} (climate indicator) and ${selectedLayerLabel} (hazard/risk)`;
+  const activeMapLabel = `${displayedClimateMapLabel} (climate indicator) and ${selectedHazardRiskLayerLabel} · ${selectedHazardRiskPeriodLabel} (${selectedHazardRiskCategoryLabel})`;
 
   useEffect(() => {
     if (typeof onForecastSelectionChange === "function") {
@@ -1321,6 +1342,13 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
         climateMapView,
         seasonalMap: selectedSeasonalMap,
         seasonalCompareMaps: compareSeasonalMaps,
+        hazardRiskCategory,
+        hazardRiskCategoryLabel: selectedHazardRiskCategoryLabel,
+        hazardRiskLayer,
+        hazardRiskLayerLabel: selectedHazardRiskLayerLabel,
+        hazardRiskPeriod,
+        hazardRiskPeriodLabel: selectedHazardRiskPeriodLabel,
+        hazardRiskMap: selectedHazardRiskMap,
       });
     }
   }, [
@@ -1342,6 +1370,13 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     climateMapView,
     selectedSeasonalMap,
     compareSeasonalMaps,
+    hazardRiskCategory,
+    selectedHazardRiskCategoryLabel,
+    hazardRiskLayer,
+    selectedHazardRiskLayerLabel,
+    hazardRiskPeriod,
+    selectedHazardRiskPeriodLabel,
+    selectedHazardRiskMap,
     onForecastSelectionChange,
   ]);
 
@@ -1561,32 +1596,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
     };
   });
 
-  const hazardRiskLayersByCategory = useMemo(() => {
-    const groups = new Map();
-    for (const item of hazardRiskOptions.layers) {
-      if (!groups.has(item.category)) {
-        groups.set(item.category, []);
-      }
-      groups.get(item.category).push(item);
-    }
-    return groups;
-  }, [hazardRiskOptions.layers]);
-
-  const isStaticHazardRiskLayer =
-    HAZARD_RISK_STATIC_CATEGORIES.has(hazardRiskCategory);
-  const selectedHazardRiskLayerLabel = getOptionLabel(
-    hazardRiskOptions.layers,
-    hazardRiskLayer,
-  );
-  const selectedHazardRiskPeriodLabel = isStaticHazardRiskLayer
-    ? "All periods"
-    : getOptionLabel(hazardRiskOptions.periods, hazardRiskPeriod);
-  const selectedHazardRiskCategoryLabel = getOptionLabel(
-    hazardRiskOptions.categories,
-    hazardRiskCategory,
-  );
-  const hazardRiskBoundaryKey = `${adminSelection?.regionId || "all"}-${adminSelection?.zoneId || "all"}-${adminSelection?.woredaId || "all"}`;
-
   return (
     <>
       <section className="panel forecast-layer-section climate-indicator-section">
@@ -1596,10 +1605,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
             <p className="map-selected-area">
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>
-          </div>
-
-          <div className="forecast-domain-badge">
-            Seasonal maps · Ethiopia domain
           </div>
         </div>
 
@@ -1820,7 +1825,6 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>
           </div>
-          <div className="forecast-domain-badge">Lat 3–15°N · Lon 33–48°E</div>
         </div>
 
         <div className="forecast-layer-controls">

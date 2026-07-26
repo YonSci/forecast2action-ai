@@ -21,6 +21,24 @@ export const CLIMATE_INDICATORS = [
   { value: "rainfall_percentile", label: "Rainfall Percentile" },
 ];
 
+// Hidden from the Climate indicator dropdown (ForecastLayerMap) and excluded
+// from the AI report's Ethiopia-wide indicator summaries (AIMapInterpretation)
+// until their climatology/anomaly rasters are backfilled -- removed by
+// request, not because the data is missing. Shared here (not duplicated per
+// file) so both stay in sync with what's actually offered -- a hardcoded
+// duplicate of this set is exactly how the "Climate indicators used" display
+// text previously drifted out of sync (still mentioned dryspell probabilities
+// after Rx1day/Rx5day replaced them as the actually-visible indicators).
+export const HIDDEN_CLIMATE_INDICATORS = new Set([
+  "dryspell_prob_5d",
+  "dryspell_prob_7d",
+  "dryspell_prob_9d",
+]);
+
+export const VISIBLE_CLIMATE_INDICATORS = CLIMATE_INDICATORS.filter(
+  (item) => !HIDDEN_CLIMATE_INDICATORS.has(item.value),
+);
+
 export const SEASONAL_PERIODS = [
   { value: "June", label: "June", scale: "seasonal" },
   { value: "July", label: "July", scale: "seasonal" },
