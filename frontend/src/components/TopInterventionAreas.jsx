@@ -1,12 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "../config.js";
-
-const RANKING_LAYERS = [
-  { value: "risk_score", label: "Risk Score" },
-  { value: "hazard_probability", label: "Hazard Probability" },
-  { value: "exposure", label: "Exposure" },
-  { value: "vulnerability", label: "Vulnerability" },
-];
+import { getPriorityLevel } from "../constants/priorityLevels.js";
 
 const ADMIN_LEVELS = [
   { value: "admin1", label: "Regions" },
@@ -20,12 +14,27 @@ const TOP_OPTIONS = [
   { value: 10, label: "Top 10" },
 ];
 
-const DEFAULT_THRESHOLDS = {
-  risk_score: 0.6,
-  hazard_probability: 0.6,
-  exposure: 0.7,
-  vulnerability: 0.7,
+const CATEGORY_OPTIONS = [
+  { value: "hazard", label: "Hazard" },
+  { value: "probability", label: "Probability" },
+  { value: "exposure", label: "Exposure" },
+  { value: "vulnerability", label: "Vulnerability" },
+  { value: "risk", label: "Risk" },
+];
+
+// Which layer each category starts on, and what stays remembered per
+// category as the user switches "Rank by" back and forth. Risk defaults to
+// the drought score (not Risk Class) so the initial hazard-type sync below
+// has something concrete to lock onto.
+const DEFAULT_SELECTED_BY_CATEGORY = {
+  hazard: "h_dry_mean",
+  probability: "p_drought",
+  exposure: "population_normalized",
+  vulnerability: "v_drought",
+  risk: "population_r_drought",
 };
+
+const RISK_CLASS_LABELS = ["Very low", "Low", "Moderate", "High", "Very high"];
 
 function titleCase(value) {
   if (value === null || value === undefined || value === "") {
@@ -39,55 +48,58 @@ function titleCase(value) {
     });
 }
 
-function formatNumber(value, digits = 3) {
+function formatMetricValue(value, layerMeta) {
   const numberValue = Number(value);
 
   if (!Number.isFinite(numberValue)) {
     return "N/A";
   }
 
-  return numberValue.toFixed(digits);
+  if (!layerMeta) {
+    return numberValue.toFixed(2);
+  }
+
+  if (layerMeta.units === "score") {
+    return `${numberValue.toFixed(1)} / 100`;
+  }
+
+  if (layerMeta.units === "probability") {
+    return `${(numberValue * 100).toFixed(1)}%`;
+  }
+
+  if (layerMeta.is_categorical) {
+    const index = Math.max(
+      0,
+      Math.min(RISK_CLASS_LABELS.length - 1, Math.round(numberValue)),
+    );
+    return `${RISK_CLASS_LABELS[index]} (avg ${numberValue.toFixed(2)})`;
+  }
+
+  return numberValue.toFixed(2);
 }
 
-function getPriorityClass(priorityLevel) {
-  if (priorityLevel === "trigger" || priorityLevel === "high") {
-    return "priority-high";
-  }
-
-  if (priorityLevel === "warning" || priorityLevel === "moderate") {
-    return "priority-medium";
-  }
-
-  if (priorityLevel === "watch") {
-    return "priority-watch";
-  }
-
-  return "priority-low";
-}
-
-function getRiskClass(riskLevel) {
-  if (riskLevel === "trigger") {
-    return "risk-trigger";
-  }
-
-  if (riskLevel === "warning") {
-    return "risk-warning";
-  }
-
-  if (riskLevel === "watch") {
-    return "risk-watch";
-  }
-
-  return "risk-no_alert";
-}
 
 function getOptionLabel(options, value) {
   const match = options.find((item) => item.value === value);
   return match?.label || titleCase(value);
 }
 
-function isRankingLayer(value) {
-  return RANKING_LAYERS.some((item) => item.value === value);
+// A single shared "hazard type" (drought/wet) applies across Hazard,
+// Probability, Vulnerability, and Risk (when Risk isn't on the
+// hazard-type-agnostic Risk Class option) -- picking any drought- or
+// wet-flavored metric in one category re-points all the others at their
+// matching drought/wet layer too, instead of leaving them on whatever they
+// were previously set to.
+function applyHazardTypeSync(current, hazardType) {
+  const next = { ...current };
+  next.hazard = hazardType === "drought" ? "h_dry_mean" : "h_wet_mean";
+  next.probability = hazardType === "drought" ? "p_drought" : "p_wet";
+  next.vulnerability = hazardType === "drought" ? "v_drought" : "v_wet";
+  if (next.risk !== "population_risk_class") {
+    next.risk =
+      hazardType === "drought" ? "population_r_drought" : "population_r_wet";
+  }
+  return next;
 }
 
 function isSamePriorityArea(a, b) {
@@ -120,10 +132,46 @@ function getReadableAdminLevel(adminLevel) {
   return titleCase(adminLevel);
 }
 
+function SortableColumnHeader({ column, label, sortColumn, sortDirection, onSort }) {
+  const isActive = sortColumn === column;
+
+  return (
+    <th aria-sort={isActive ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        className="sortable-column-header"
+        onClick={() => onSort(column)}
+      >
+        {label}
+        <span className="sort-indicator">
+          {isActive ? (sortDirection === "asc" ? " ▲" : " ▼") : ""}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 function buildBoundaryGeojsonFromItem(item, selectedArea) {
   if (!item?.boundary_feature) {
     return null;
   }
+
+  // Carrying metrics_display/priority_* onto the feature's own properties
+  // (not just the top-level selectedArea object) means RiskMap.jsx's popup
+  // can show every ranked metric for the clicked area directly off the
+  // GeoJSON feature, with no separate lookup or knowledge of layer labels
+  // /formatting required on its side.
+  const enrichedFeature = {
+    ...item.boundary_feature,
+    properties: {
+      ...item.boundary_feature.properties,
+      rank: item.rank,
+      metrics_display: selectedArea.metrics_display,
+      priority_level: selectedArea.priority_level,
+      priority_label: selectedArea.priority_label,
+      priority_score: selectedArea.priority_score,
+    },
+  };
 
   return {
     type: "FeatureCollection",
@@ -136,7 +184,7 @@ function buildBoundaryGeojsonFromItem(item, selectedArea) {
       woreda_id: selectedArea.woreda_id,
       feature_count: 1,
     },
-    features: [item.boundary_feature],
+    features: [enrichedFeature],
   };
 }
 
@@ -146,42 +194,88 @@ function TopInterventionAreas({
   selectedPriorityArea = null,
   onPriorityAreaSelect,
 }) {
-  const forecastScale = forecastSelection.forecastScale || "subseasonal";
-  const lead = forecastSelection.lead || "week_1";
-  const selectedMapLayer = forecastSelection.layer || "risk_score";
-  const selectedIndicator = forecastSelection.indicator || "spi";
+  const period = forecastSelection.seasonalPeriod || "JJAS";
 
-  const [rankingLayer, setRankingLayer] = useState(
-    isRankingLayer(selectedMapLayer) ? selectedMapLayer : "risk_score",
+  const [rankingLayers, setRankingLayers] = useState([]);
+  const [category, setCategory] = useState("risk");
+  const [selectedByCategory, setSelectedByCategory] = useState(
+    DEFAULT_SELECTED_BY_CATEGORY,
   );
   const [adminLevel, setAdminLevel] = useState("admin3");
   const [selectionMode, setSelectionMode] = useState("top");
   const [topN, setTopN] = useState(5);
-  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLDS.risk_score);
+  const [threshold, setThreshold] = useState(null);
   const [rankingData, setRankingData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
-  const selectedAreaLabel =
-    adminSelection?.woredaLabel ||
-    adminSelection?.zoneLabel ||
-    adminSelection?.regionLabel ||
-    "All Ethiopia";
+  // Client-side secondary sort on top of the backend's rank_by ordering --
+  // null means "no override, show the backend's own order". Each item's own
+  // `rank` (its position under the actual rank_by metric) is left untouched
+  // when sorting by a different column; only the row order changes.
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState("desc");
 
   const rankingItems = rankingData?.ranking || [];
 
+  const layerMetaByValue = useMemo(() => {
+    return Object.fromEntries(rankingLayers.map((item) => [item.value, item]));
+  }, [rankingLayers]);
+
+  const metricsForCategory = useMemo(() => {
+    return rankingLayers.filter((item) => item.category === category);
+  }, [rankingLayers, category]);
+
+  const rankBy = selectedByCategory[category];
+
+  // Load the real Hazard/Risk raster catalog's ranking-eligible layers once
+  // (this is the single source of truth for the category/metric vocabulary
+  // -- see the earlier "dryspell" display-text drift bug for why this isn't
+  // hardcoded a second time here).
   useEffect(() => {
-    if (isRankingLayer(selectedMapLayer)) {
-      setRankingLayer(selectedMapLayer);
-      setThreshold(DEFAULT_THRESHOLDS[selectedMapLayer] || 0.6);
+    const controller = new AbortController();
+
+    async function loadRankingOptions() {
+      try {
+        const response = await fetch(
+          apiUrl("/api/hazard-risk/ranking-options"),
+          { signal: controller.signal },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Ranking options request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setRankingLayers(
+          Array.isArray(data.ranking_layers) ? data.ranking_layers : [],
+        );
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+        }
+      }
     }
-  }, [selectedMapLayer]);
+
+    loadRankingOptions();
+
+    return () => controller.abort();
+  }, []);
+
+  // Reset the threshold to the newly-selected rank-by layer's own default
+  // whenever it changes -- each layer has a different natural scale (0-1
+  // index/probability/normalized vs. 0-100 score vs. 0-4 class).
+  useEffect(() => {
+    const meta = layerMetaByValue[rankBy];
+    if (meta) {
+      setThreshold(meta.default_threshold);
+    }
+  }, [rankBy, layerMetaByValue]);
 
   useEffect(() => {
-    setThreshold(DEFAULT_THRESHOLDS[rankingLayer] || 0.6);
-  }, [rankingLayer]);
+    if (threshold === null || !rankingLayers.length) {
+      return undefined;
+    }
 
-  useEffect(() => {
     const controller = new AbortController();
 
     async function loadRanking() {
@@ -189,12 +283,14 @@ function TopInterventionAreas({
       setErrorMessage("");
 
       try {
-        const params = new URLSearchParams();
+        const metricsList = Array.from(
+          new Set(Object.values(selectedByCategory)),
+        );
 
-        params.set("forecast_scale", forecastScale);
-        params.set("lead", lead);
-        params.set("layer", rankingLayer);
-        params.set("indicator", selectedIndicator);
+        const params = new URLSearchParams();
+        params.set("rank_by", rankBy);
+        params.set("metrics", metricsList.join(","));
+        params.set("period", period);
         params.set("admin_level", adminLevel);
         params.set("selection_mode", selectionMode);
         params.set("top_n", String(topN));
@@ -209,7 +305,7 @@ function TopInterventionAreas({
         }
 
         const response = await fetch(
-          apiUrl(`/api/intervention-ranking?${params.toString()}`),
+          apiUrl(`/api/hazard-risk/ranking?${params.toString()}`),
           { signal: controller.signal },
         );
 
@@ -224,7 +320,7 @@ function TopInterventionAreas({
           console.error(error);
           setRankingData(null);
           setErrorMessage(
-            "Could not load priority intervention ranking. Check the backend /api/intervention-ranking endpoint.",
+            "Could not load priority intervention ranking. Check the backend /api/hazard-risk/ranking endpoint.",
           );
         }
       } finally {
@@ -236,26 +332,89 @@ function TopInterventionAreas({
 
     return () => controller.abort();
   }, [
-    forecastScale,
-    lead,
-    rankingLayer,
-    selectedIndicator,
+    rankBy,
+    selectedByCategory,
+    period,
     adminLevel,
     selectionMode,
     topN,
     threshold,
+    rankingLayers.length,
     adminSelection?.regionId,
     adminSelection?.zoneId,
   ]);
 
-  function handleRankingLayerChange(event) {
-    const nextLayer = event.target.value;
+  function handleCategoryChange(event) {
+    setCategory(event.target.value);
+  }
 
-    setRankingLayer(nextLayer);
-    setThreshold(DEFAULT_THRESHOLDS[nextLayer] || 0.6);
+  function handleMetricChange(event) {
+    const nextValue = event.target.value;
+    const meta = layerMetaByValue[nextValue];
+
+    setSelectedByCategory((previous) => {
+      const updated = { ...previous, [category]: nextValue };
+      if (meta?.hazard_type === "drought" || meta?.hazard_type === "wet") {
+        return applyHazardTypeSync(updated, meta.hazard_type);
+      }
+      return updated;
+    });
+  }
+
+  function handleSortClick(column) {
+    if (sortColumn === column) {
+      setSortDirection((previous) => (previous === "desc" ? "asc" : "desc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
   }
 
   function handlePriorityAreaSelect(item) {
+    const priorityInfo = getPriorityLevel(item.priority_score);
+
+    // All five category columns' current values for this specific area, with
+    // their real labels/formatting already resolved -- so RiskMap.jsx's popup
+    // can show everything about the clicked area without needing its own
+    // copy of layer metadata or formatting logic.
+    const metricsDisplay = [
+      {
+        label: hazardLayerMeta?.label || "Hazard",
+        value: formatMetricValue(
+          item.metrics[selectedByCategory.hazard],
+          hazardLayerMeta,
+        ),
+      },
+      {
+        label: probabilityLayerMeta?.label || "Probability",
+        value: formatMetricValue(
+          item.metrics[selectedByCategory.probability],
+          probabilityLayerMeta,
+        ),
+      },
+      {
+        label: exposureLayerMeta?.label || "Exposure",
+        value: formatMetricValue(
+          item.metrics[selectedByCategory.exposure],
+          exposureLayerMeta,
+        ),
+      },
+      {
+        label: vulnerabilityLayerMeta?.label || "Vulnerability",
+        value: formatMetricValue(
+          item.metrics[selectedByCategory.vulnerability],
+          vulnerabilityLayerMeta,
+        ),
+      },
+      {
+        label: riskLayerMeta?.label || "Risk",
+        value: formatMetricValue(
+          item.metrics[selectedByCategory.risk],
+          riskLayerMeta,
+        ),
+      },
+    ];
+
     const selectedArea = {
       ...item,
       selected_at: Date.now(),
@@ -266,10 +425,11 @@ function TopInterventionAreas({
       region: item.region || "",
       zone: item.zone || "",
       woreda: item.woreda || "",
-      forecast_scale: forecastScale,
-      lead,
-      selected_map_layer: selectedMapLayer,
-      selected_indicator: selectedIndicator,
+      selected_map_layer: rankBy,
+      selected_period: period,
+      metrics_display: metricsDisplay,
+      priority_level: priorityInfo.level,
+      priority_label: priorityInfo.label,
       area_name:
         item.area_name ||
         item.woreda ||
@@ -301,6 +461,55 @@ function TopInterventionAreas({
     }, 150);
   }
 
+  const hazardLayerMeta = layerMetaByValue[selectedByCategory.hazard];
+  const probabilityLayerMeta = layerMetaByValue[selectedByCategory.probability];
+  const exposureLayerMeta = layerMetaByValue[selectedByCategory.exposure];
+  const vulnerabilityLayerMeta =
+    layerMetaByValue[selectedByCategory.vulnerability];
+  const riskLayerMeta = layerMetaByValue[selectedByCategory.risk];
+
+  const sortColumnGetters = {
+    hazard: (item) => item.metrics[selectedByCategory.hazard],
+    probability: (item) => item.metrics[selectedByCategory.probability],
+    exposure: (item) => item.metrics[selectedByCategory.exposure],
+    vulnerability: (item) => item.metrics[selectedByCategory.vulnerability],
+    risk: (item) => item.metrics[selectedByCategory.risk],
+    priority_score: (item) => item.priority_score,
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortColumn) {
+      return rankingItems;
+    }
+
+    const getValue = sortColumnGetters[sortColumn];
+    if (!getValue) {
+      return rankingItems;
+    }
+
+    return [...rankingItems].sort((a, b) => {
+      const aValue = Number(getValue(a));
+      const bValue = Number(getValue(b));
+      const aValid = Number.isFinite(aValue);
+      const bValid = Number.isFinite(bValue);
+
+      if (!aValid && !bValid) {
+        return 0;
+      }
+      // Rows missing this column's value sort to the bottom regardless of
+      // direction, rather than jumping to the top on ascending sort.
+      if (!aValid) {
+        return 1;
+      }
+      if (!bValid) {
+        return -1;
+      }
+
+      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rankingItems, sortColumn, sortDirection, selectedByCategory]);
+
   return (
     <section className="panel intervention-panel">
       <div className="section-heading intervention-heading">
@@ -317,13 +526,28 @@ function TopInterventionAreas({
 
       <div className="intervention-controls intervention-controls-compact">
         <div className="forecast-control">
-          <label htmlFor="intervention-layer">Rank by</label>
+          <label htmlFor="intervention-category">Rank by</label>
           <select
-            id="intervention-layer"
-            value={rankingLayer}
-            onChange={handleRankingLayerChange}
+            id="intervention-category"
+            value={category}
+            onChange={handleCategoryChange}
           >
-            {RANKING_LAYERS.map((item) => (
+            {CATEGORY_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="forecast-control">
+          <label htmlFor="intervention-metric">Metric</label>
+          <select
+            id="intervention-metric"
+            value={rankBy}
+            onChange={handleMetricChange}
+          >
+            {metricsForCategory.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -380,9 +604,7 @@ function TopInterventionAreas({
             id="intervention-threshold"
             type="number"
             step="0.05"
-            min="0"
-            max="1"
-            value={threshold}
+            value={threshold ?? ""}
             onChange={(event) => setThreshold(Number(event.target.value))}
           />
         </div>
@@ -391,7 +613,7 @@ function TopInterventionAreas({
       <div className="intervention-summary-grid">
         <div>
           <span>Ranking layer</span>
-          <strong>{getOptionLabel(RANKING_LAYERS, rankingLayer)}</strong>
+          <strong>{riskLayerMeta?.label && rankBy === selectedByCategory.risk ? riskLayerMeta.label : getOptionLabel(metricsForCategory, rankBy)}</strong>
         </div>
 
         <div>
@@ -417,21 +639,57 @@ function TopInterventionAreas({
           <thead>
             <tr>
               <th>Rank</th>
-              <th>Area</th>
-              <th>Hazard</th>
-              <th>Risk level</th>
-              <th>Risk score</th>
-              <th>Hazard probability</th>
-              <th>Exposure</th>
-              <th>Vulnerability</th>
-              <th>Priority score</th>
+              <th>Location</th>
+              <SortableColumnHeader
+                column="hazard"
+                label={hazardLayerMeta?.label || "Hazard"}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="probability"
+                label={probabilityLayerMeta?.label || "Probability"}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="exposure"
+                label={exposureLayerMeta?.label || "Exposure"}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="vulnerability"
+                label={vulnerabilityLayerMeta?.label || "Vulnerability"}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="risk"
+                label={riskLayerMeta?.label || "Risk"}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="priority_score"
+                label="Priority score"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
               <th>Map</th>
             </tr>
           </thead>
 
           <tbody>
-            {rankingItems.map((item) => {
+            {sortedItems.map((item) => {
               const isSelected = isSamePriorityArea(item, selectedPriorityArea);
+              const priorityInfo = getPriorityLevel(item.priority_score);
 
               return (
                 <tr
@@ -452,28 +710,42 @@ function TopInterventionAreas({
                     </small>
                   </td>
 
-                  <td>{titleCase(item.hazard)}</td>
-
                   <td>
-                    <span
-                      className={`risk-pill ${getRiskClass(item.risk_level)}`}
-                    >
-                      {titleCase(item.risk_level)}
-                    </span>
+                    {formatMetricValue(
+                      item.metrics[selectedByCategory.hazard],
+                      hazardLayerMeta,
+                    )}
+                  </td>
+                  <td>
+                    {formatMetricValue(
+                      item.metrics[selectedByCategory.probability],
+                      probabilityLayerMeta,
+                    )}
+                  </td>
+                  <td>
+                    {formatMetricValue(
+                      item.metrics[selectedByCategory.exposure],
+                      exposureLayerMeta,
+                    )}
+                  </td>
+                  <td>
+                    {formatMetricValue(
+                      item.metrics[selectedByCategory.vulnerability],
+                      vulnerabilityLayerMeta,
+                    )}
+                  </td>
+                  <td>
+                    {formatMetricValue(
+                      item.metrics[selectedByCategory.risk],
+                      riskLayerMeta,
+                    )}
                   </td>
 
-                  <td>{formatNumber(item.risk_score)}</td>
-                  <td>{formatNumber(item.hazard_probability)}</td>
-                  <td>{formatNumber(item.exposure)}</td>
-                  <td>{formatNumber(item.vulnerability)}</td>
-
                   <td>
                     <span
-                      className={`priority-score-pill ${getPriorityClass(
-                        item.priority_level,
-                      )}`}
+                      className={`priority-score-pill ${priorityInfo.className}`}
                     >
-                      {formatNumber(item.priority_score)}
+                      {priorityInfo.label} ({Number(item.priority_score).toFixed(2)})
                     </span>
                   </td>
 
@@ -492,7 +764,7 @@ function TopInterventionAreas({
 
             {rankingItems.length === 0 && (
               <tr>
-                <td colSpan="10">
+                <td colSpan="9">
                   No areas matched the selected ranking configuration.
                 </td>
               </tr>

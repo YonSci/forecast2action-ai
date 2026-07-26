@@ -1401,6 +1401,30 @@ tbody td {
   vertical-align: top;
 }
 
+.sortable-column-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sortable-column-header:hover {
+  color: var(--navy, #1849a9);
+}
+
+.sort-indicator {
+  font-size: 0.75em;
+  color: var(--muted);
+}
+
 .rank-badge {
   width: 34px;
   height: 34px;

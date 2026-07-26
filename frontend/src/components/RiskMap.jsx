@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   GeoJSON,
   LayersControl,
@@ -7,7 +7,9 @@ import {
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { apiUrl } from "../config.js";
 import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
+import { PRIORITY_LEVELS } from "../constants/priorityLevels.js";
 
 const ETHIOPIA_CENTER = [9, 40.5];
 
@@ -21,12 +23,9 @@ const ETHIOPIA_MAX_BOUNDS = [
   [16.5, 49.5],
 ];
 
-const RISK_STYLE = {
-  trigger: { color: "#D92D20", label: "Trigger" },
-  warning: { color: "#C11574", label: "Warning" },
-  watch: { color: "#F79009", label: "Watch" },
-  no_alert: { color: "#12B76A", label: "No alert" },
-};
+const PRIORITY_COLOR_BY_LEVEL = Object.fromEntries(
+  PRIORITY_LEVELS.map((item) => [item.level, item.color]),
+);
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -85,8 +84,40 @@ function FitMapToEthiopiaDomain({ activeBoundaryKey }) {
   return null;
 }
 
+// Subtle, non-interactive reference outline so a district near the border
+// (e.g. Gambela, which genuinely borders South Sudan) doesn't look like it
+// might be misplaced -- without this, RiskMap drew only the selected
+// district with no visual cue for where Ethiopia's real border actually is,
+// unlike the Hazard/Risk raster maps which are always clipped to the
+// country border (see clip_array_to_country) and so never have this
+// ambiguity.
+function getCountryOutlineStyle() {
+  return {
+    color: "#0F172A",
+    weight: 1.5,
+    fillOpacity: 0,
+    dashArray: "5 4",
+  };
+}
+
 function getBoundaryStyle(feature) {
-  const level = feature.properties?.admin_level;
+  const props = feature.properties || {};
+  const priorityColor = PRIORITY_COLOR_BY_LEVEL[props.priority_level];
+
+  // A priority-ranked area (has a priority_level from the Priority
+  // Intervention Areas table) is colored by its Trigger/Warning/Watch/No
+  // alert classification instead of the generic admin-level coloring, so
+  // the map visually agrees with that table's own classification.
+  if (priorityColor) {
+    return {
+      color: priorityColor,
+      weight: 3.2,
+      fillColor: priorityColor,
+      fillOpacity: 0.28,
+    };
+  }
+
+  const level = props.admin_level;
 
   if (level === "admin3") {
     return {
@@ -116,8 +147,33 @@ function getBoundaryStyle(feature) {
 
 function onEachBoundaryFeature(feature, layer) {
   const props = feature.properties || {};
-
   const labelParts = [];
+
+  // Enriched by TopInterventionAreas.jsx's buildBoundaryGeojsonFromItem when
+  // this boundary came from a ranked priority area -- every column's current
+  // value for this specific area, already labeled/formatted, so nothing
+  // here needs its own copy of layer metadata.
+  if (Array.isArray(props.metrics_display) && props.metrics_display.length) {
+    if (props.priority_label) {
+      labelParts.push(
+        `<p><strong>Priority:</strong> ${escapeHtml(props.priority_label)}` +
+          (Number.isFinite(props.priority_score)
+            ? ` (${Number(props.priority_score).toFixed(2)})`
+            : "") +
+          `</p>`,
+      );
+    }
+
+    if (props.rank) {
+      labelParts.push(`<p><strong>Rank:</strong> ${escapeHtml(props.rank)}</p>`);
+    }
+
+    props.metrics_display.forEach((item) => {
+      labelParts.push(
+        `<p><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.value)}</p>`,
+      );
+    });
+  }
 
   if (props.region) {
     labelParts.push(
@@ -144,6 +200,25 @@ function onEachBoundaryFeature(feature, layer) {
 }
 
 function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
+  const [countryBoundary, setCountryBoundary] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch(apiUrl("/api/admin-boundaries/geojson?level=admin0"), {
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data) {
+          setCountryBoundary(data);
+        }
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, []);
+
   const hasPrioritySelection = Boolean(selectedPriorityArea?.area_name);
   const hasPriorityBoundary = Boolean(selectedPriorityArea?.boundaryGeojson);
 
@@ -154,21 +229,6 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
   const activeBoundaryKey = hasPriorityBoundary
     ? `priority-${selectedPriorityArea.selected_at}-${selectedPriorityArea.area_name}-${selectedPriorityArea.boundary_feature_count}`
     : `shared-${adminSelection?.boundaryLevel}-${adminSelection?.regionId}-${adminSelection?.zoneId}-${adminSelection?.woredaId}`;
-
-  const selectedAdminLabel =
-    selectedPriorityArea?.area_name ||
-    adminSelection?.woredaLabel ||
-    adminSelection?.zoneLabel ||
-    adminSelection?.regionLabel ||
-    "All Ethiopia administrative areas";
-
-  const selectedAreaSource = hasPrioritySelection
-    ? "Priority Intervention Areas"
-    : "Administrative Area Selection";
-
-  const boundaryFeatureCount = hasPriorityBoundary
-    ? selectedPriorityArea?.boundary_feature_count
-    : activeBoundaryGeojson?.metadata?.feature_count || 0;
 
   const selectedBoundaryPointCount = getGeojsonLatLngs(
     activeBoundaryGeojson,
@@ -181,9 +241,9 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           <h2>Priority Intervention Area Layers</h2>
         </div>
 
-        <div className="map-legend" aria-label="Risk legend">
-          {Object.entries(RISK_STYLE).map(([key, item]) => (
-            <span key={key}>
+        <div className="map-legend" aria-label="Priority legend">
+          {PRIORITY_LEVELS.map((item) => (
+            <span key={item.level}>
               <i
                 className="legend-dot"
                 style={{ backgroundColor: item.color }}
@@ -219,6 +279,7 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           maxBoundsViscosity={1.0}
           scrollWheelZoom={false}
           className="risk-map"
+          preferCanvas
         >
           <LayersControl position="topright">
             {BASEMAP_OPTIONS.map((basemap, index) => (
@@ -237,6 +298,15 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           </LayersControl>
 
           <FitMapToEthiopiaDomain activeBoundaryKey={activeBoundaryKey} />
+
+          {countryBoundary && (
+            <GeoJSON
+              key="ethiopia-country-outline"
+              data={countryBoundary}
+              style={getCountryOutlineStyle}
+              interactive={false}
+            />
+          )}
 
           {activeBoundaryGeojson && (
             <GeoJSON

@@ -24,6 +24,7 @@ from app.ml.risk_scoring import classify_risk, score_districts
 
 from app.api.ai_map_interpretation import router as ai_map_interpretation_router
 from app.api.hazard_risk_maps import router as hazard_risk_maps_router
+from app.api.hazard_risk_ranking import router as hazard_risk_ranking_router
 from app.api.seasonal_maps import router as seasonal_maps_router
 from app.api.seasonal_raster_maps import prewarm_all_maps
 from app.api.seasonal_raster_maps import router as seasonal_raster_maps_router
@@ -54,6 +55,7 @@ app.include_router(seasonal_maps_router)
 app.include_router(ai_map_interpretation_router)
 app.include_router(seasonal_raster_maps_router)
 app.include_router(hazard_risk_maps_router)
+app.include_router(hazard_risk_ranking_router)
 
 
 @app.on_event("startup")
