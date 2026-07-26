@@ -178,26 +178,7 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
     <section className="panel map-panel" id="interactive-risk-map">
       <div className="map-header">
         <div>
-          <h2>Interactive Administrative Risk Map</h2>
-
-          <p>
-            This map uses the same Ethiopia forecast-domain extent and
-            highlights the selected administrative boundary.
-          </p>
-
-          <p className="map-selected-area">
-            Active area: <strong>{selectedAdminLabel}</strong>
-          </p>
-
-          <p className="map-selected-area">
-            Selection source: <strong>{selectedAreaSource}</strong>
-          </p>
-
-          {hasPrioritySelection && (
-            <p className="map-selected-area">
-              Boundary features loaded: <strong>{boundaryFeatureCount}</strong>
-            </p>
-          )}
+          <h2>Priority Intervention Area Layers</h2>
         </div>
 
         <div className="map-legend" aria-label="Risk legend">
@@ -212,12 +193,6 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           ))}
         </div>
       </div>
-
-      <p className="map-admin-note">
-        Domain: Lat 3–15°N · Lon 33–48°E. The old prototype pilot circles have
-        been removed so only the selected administrative boundary is displayed.
-      </p>
-
       {hasPrioritySelection && !hasPriorityBoundary && (
         <div className="error-banner">
           The selected priority area was received, but no boundary geometry was

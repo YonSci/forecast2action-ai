@@ -119,12 +119,6 @@ function Dashboard() {
         adminSelection={adminSelection}
         onForecastSelectionChange={setForecastSelection}
       />
-      <AIMapInterpretation
-        forecastSelection={forecastSelection}
-        adminSelection={adminSelection}
-        selectedPriorityArea={selectedPriorityArea}
-        selectedLanguage={selectedLanguage}
-      />
       <TopInterventionAreas
         adminSelection={adminSelection}
         forecastSelection={forecastSelection}
@@ -134,6 +128,12 @@ function Dashboard() {
       <RiskMap
         adminSelection={adminSelection}
         selectedPriorityArea={selectedPriorityArea}
+      />
+      <AIMapInterpretation
+        forecastSelection={forecastSelection}
+        adminSelection={adminSelection}
+        selectedPriorityArea={selectedPriorityArea}
+        selectedLanguage={selectedLanguage}
       />
       <SelectedAreaAdvisory
         selectedPriorityArea={selectedPriorityArea}

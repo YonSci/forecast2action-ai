@@ -334,7 +334,6 @@
   display: grid;
   grid-template-columns: minmax(210px, 1fr) minmax(250px, 1.2fr) minmax(220px, 1fr);
   gap: 12px;
-  flex: 1 1 520px;
   align-items: end;
 }
 

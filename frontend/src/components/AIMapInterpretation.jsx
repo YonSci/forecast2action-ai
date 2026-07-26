@@ -250,7 +250,11 @@ function getLanguageLabel(value) {
 // working. This only fixes what's DISPLAYED for that case, so it reads "4
 // Months" instead of the misleading "Month 1".
 function getLeadLabel(value, seasonalPeriod) {
-  if (String(seasonalPeriod || "").trim().toLowerCase() === "jjas") {
+  if (
+    String(seasonalPeriod || "")
+      .trim()
+      .toLowerCase() === "jjas"
+  ) {
     return "4 Months";
   }
   return LEAD_LABELS[value] || titleCase(value || "week_1");
@@ -893,9 +897,10 @@ function AIMapInterpretation({
   const contextSummary = useMemo(() => {
     return {
       forecastScale: getForecastScaleLabel(forecastSelection.forecastScale),
-      lead: getLeadLabel(forecastSelection.lead, forecastSelection.seasonalPeriod),
-      activeMapGroup: getMapGroupLabel(forecastSelection),
-      displayedMap: getDisplayedMapLabel(forecastSelection),
+      lead: getLeadLabel(
+        forecastSelection.lead,
+        forecastSelection.seasonalPeriod,
+      ),
       seasonalPeriod:
         forecastSelection?.seasonalPeriodLabel ||
         forecastSelection?.seasonalPeriod ||
@@ -1051,7 +1056,8 @@ function AIMapInterpretation({
           hazard_risk_map_units: forecastSelection?.hazardRiskMap?.units || "",
           hazard_risk_map_statistics:
             forecastSelection?.hazardRiskMap?.statistics || null,
-          hazard_risk_map_legend: forecastSelection?.hazardRiskMap?.legend || null,
+          hazard_risk_map_legend:
+            forecastSelection?.hazardRiskMap?.legend || null,
         },
         top_admin_areas: topAreas,
         all_map_layer_summaries: allMapLayerSummaries,
@@ -1119,110 +1125,56 @@ function AIMapInterpretation({
         </div>
       </div>
 
-      <div className="ai-context-grid">
-        <div>
-          <span>Forecast window</span>
-          <strong>{contextSummary.forecastScale}</strong>
-        </div>
-        <div>
-          <span>Lead / horizon</span>
-          <strong>{contextSummary.lead}</strong>
-        </div>
-        <div>
-          <span>Active map group</span>
-          <strong>{contextSummary.activeMapGroup}</strong>
-        </div>
-        <div>
-          <span>Displayed map</span>
-          <strong>{contextSummary.displayedMap}</strong>
-        </div>
-        <div>
-          <span>Seasonal period</span>
-          <strong>{contextSummary.seasonalPeriod}</strong>
-        </div>
-        <div>
-          <span>Admin scope</span>
-          <strong>{contextSummary.adminScope}</strong>
-        </div>
-        <div>
-          <span>Output language</span>
-          <strong>{contextSummary.language}</strong>
-        </div>
-        <div>
+      <div className="ai-provider-selectors">
+        <label>
           <span>AI provider</span>
-          <strong>{contextSummary.provider}</strong>
-        </div>
-        <div>
-          <span>AI model</span>
-          <strong>{contextSummary.model}</strong>
-        </div>
-      </div>
+          <select
+            value={selectedProvider}
+            onChange={handleProviderChange}
+            disabled={loading}
+          >
+            {providerOptions.map((provider) => (
+              <option key={provider.value} value={provider.value}>
+                {provider.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <div className="ai-included-data">
-        <div>
-          <span>Map layers used</span>
-          <strong>
-            Hazard · Risk score · Hazard probability · Exposure · Vulnerability
-          </strong>
-        </div>
-        <div>
-          <span>Climate indicators used</span>
-          <strong>
-            {VISIBLE_CLIMATE_INDICATORS.map((item) => item.label).join(" · ")}
-          </strong>
-        </div>
+        <label>
+          <span>Model</span>
+          <select
+            value={selectedModel}
+            onChange={handleModelChange}
+            disabled={loading}
+          >
+            {(
+              selectedProviderConfig?.models || [
+                { value: "auto", label: "Automatic" },
+              ]
+            ).map((model) => (
+              <option key={model.value} value={model.value}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {selectedModel === "custom" && (
+          <label className="ai-custom-model-field">
+            <span>Custom model ID</span>
+            <input
+              type="text"
+              value={customModel}
+              onChange={(event) => setCustomModel(event.target.value)}
+              placeholder="provider/model-id"
+              disabled={loading}
+            />
+          </label>
+        )}
       </div>
 
       <div className="ai-action-bar">
-        <div className="ai-provider-selectors">
-          <label>
-            <span>AI provider</span>
-            <select
-              value={selectedProvider}
-              onChange={handleProviderChange}
-              disabled={loading}
-            >
-              {providerOptions.map((provider) => (
-                <option key={provider.value} value={provider.value}>
-                  {provider.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>Model</span>
-            <select
-              value={selectedModel}
-              onChange={handleModelChange}
-              disabled={loading}
-            >
-              {(
-                selectedProviderConfig?.models || [
-                  { value: "auto", label: "Automatic" },
-                ]
-              ).map((model) => (
-                <option key={model.value} value={model.value}>
-                  {model.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedModel === "custom" && (
-            <label className="ai-custom-model-field">
-              <span>Custom model ID</span>
-              <input
-                type="text"
-                value={customModel}
-                onChange={(event) => setCustomModel(event.target.value)}
-                placeholder="provider/model-id"
-                disabled={loading}
-              />
-            </label>
-          )}
-        </div>
-
         <label className="ai-toggle">
           <input
             type="checkbox"
@@ -1260,6 +1212,52 @@ function AIMapInterpretation({
         >
           Clear saved
         </button>
+      </div>
+
+      <div className="ai-context-grid">
+        <div>
+          <span>Forecast window</span>
+          <strong>{contextSummary.forecastScale}</strong>
+        </div>
+        <div>
+          <span>Lead / horizon</span>
+          <strong>{contextSummary.lead}</strong>
+        </div>
+        <div>
+          <span>Seasonal period</span>
+          <strong>{contextSummary.seasonalPeriod}</strong>
+        </div>
+        <div>
+          <span>Admin scope</span>
+          <strong>{contextSummary.adminScope}</strong>
+        </div>
+        <div>
+          <span>Output language</span>
+          <strong>{contextSummary.language}</strong>
+        </div>
+        <div>
+          <span>AI provider</span>
+          <strong>{contextSummary.provider}</strong>
+        </div>
+        <div>
+          <span>AI model</span>
+          <strong>{contextSummary.model}</strong>
+        </div>
+      </div>
+
+      <div className="ai-included-data">
+        <div>
+          <span>Map layers used</span>
+          <strong>
+            Hazard · Risk score · Hazard probability · Exposure · Vulnerability
+          </strong>
+        </div>
+        <div>
+          <span>Climate indicators</span>
+          <strong>
+            {VISIBLE_CLIMATE_INDICATORS.map((item) => item.label).join(" · ")}
+          </strong>
+        </div>
       </div>
 
       {selectedProviderConfig?.description && (
@@ -1351,8 +1349,6 @@ function AIMapInterpretation({
               <strong>Forecast window:</strong> {contextSummary.forecastScale} ·{" "}
               <strong>Lead / horizon:</strong> {contextSummary.lead} ·{" "}
               <strong>Admin scope:</strong> {contextSummary.adminScope} ·{" "}
-              <strong>Active map group:</strong> {contextSummary.activeMapGroup}{" "}
-              · <strong>Displayed map:</strong> {contextSummary.displayedMap} ·{" "}
               <strong>Seasonal period:</strong> {contextSummary.seasonalPeriod}{" "}
               · <strong>Output language:</strong> {contextSummary.language}
             </p>

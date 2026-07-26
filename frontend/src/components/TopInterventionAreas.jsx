@@ -152,7 +152,7 @@ function TopInterventionAreas({
   const selectedIndicator = forecastSelection.indicator || "spi";
 
   const [rankingLayer, setRankingLayer] = useState(
-    isRankingLayer(selectedMapLayer) ? selectedMapLayer : "risk_score"
+    isRankingLayer(selectedMapLayer) ? selectedMapLayer : "risk_score",
   );
   const [adminLevel, setAdminLevel] = useState("admin3");
   const [selectionMode, setSelectionMode] = useState("top");
@@ -210,7 +210,7 @@ function TopInterventionAreas({
 
         const response = await fetch(
           apiUrl(`/api/intervention-ranking?${params.toString()}`),
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
@@ -224,7 +224,7 @@ function TopInterventionAreas({
           console.error(error);
           setRankingData(null);
           setErrorMessage(
-            "Could not load priority intervention ranking. Check the backend /api/intervention-ranking endpoint."
+            "Could not load priority intervention ranking. Check the backend /api/intervention-ranking endpoint.",
           );
         }
       } finally {
@@ -305,15 +305,7 @@ function TopInterventionAreas({
     <section className="panel intervention-panel">
       <div className="section-heading intervention-heading">
         <div>
-          <h2>Priority Intervention Areas and Action Queue</h2>
-          <p>
-            Ranked administrative areas needing early action, combining forecast
-            hazard, impact-based risk, exposure, vulnerability, and priority
-            score.
-          </p>
-          <p className="map-selected-area">
-            Current administrative selection: <strong>{selectedAreaLabel}</strong>
-          </p>
+          <h2>Priority Intervention Areas</h2>
         </div>
 
         {loading && (
@@ -409,7 +401,9 @@ function TopInterventionAreas({
 
         <div>
           <span>Display mode</span>
-          <strong>{selectionMode === "top" ? `Top ${topN}` : "Threshold"}</strong>
+          <strong>
+            {selectionMode === "top" ? `Top ${topN}` : "Threshold"}
+          </strong>
         </div>
 
         <div>
@@ -461,7 +455,9 @@ function TopInterventionAreas({
                   <td>{titleCase(item.hazard)}</td>
 
                   <td>
-                    <span className={`risk-pill ${getRiskClass(item.risk_level)}`}>
+                    <span
+                      className={`risk-pill ${getRiskClass(item.risk_level)}`}
+                    >
                       {titleCase(item.risk_level)}
                     </span>
                   </td>
@@ -474,7 +470,7 @@ function TopInterventionAreas({
                   <td>
                     <span
                       className={`priority-score-pill ${getPriorityClass(
-                        item.priority_level
+                        item.priority_level,
                       )}`}
                     >
                       {formatNumber(item.priority_score)}
@@ -504,13 +500,6 @@ function TopInterventionAreas({
           </tbody>
         </table>
       </div>
-
-      <p className="intervention-method-note">
-        Method: priority score combines mean value, maximum value, and the share
-        of grid cells above threshold. Risk score, hazard probability, exposure,
-        and vulnerability are averaged across forecast grid cells inside the
-        selected administrative boundary.
-      </p>
     </section>
   );
 }
