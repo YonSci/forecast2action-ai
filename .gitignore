@@ -251,6 +251,16 @@ forecast2action_action_tracker_*.csv
 !data/maps/Risk/
 !data/maps/Risk/**
 
+# Real WorldPop Ethiopia 2020 1km population-count raster, read directly by
+# app/api/hazard_risk_ranking.py's population_stats_for_all_districts() to
+# compute real Population Exposed counts for the Priority Intervention Areas
+# table -- same "Render deploys from git" reasoning as the Hazard/Risk
+# rasters above. Only this one file is un-ignored (not the whole
+# data/raw/exposure/ folder): the other rasters there (cattle/goats/sheep
+# livestock counts) only feed the older, currently-unused /api/risk grid
+# pipeline, so there's no reason to push that extra ~30MB to the deployed repo.
+!data/raw/exposure/eth_population_2020_1km.tif
+
 # Ethiopia admin boundary shapefile used by seasonal_raster_maps.py to clip
 # rendered maps to the real country border, and by the admin boundary
 # selector API. Also required at runtime on Render -- without it, deploys
