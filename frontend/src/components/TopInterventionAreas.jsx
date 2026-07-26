@@ -193,6 +193,7 @@ function TopInterventionAreas({
   forecastSelection = {},
   selectedPriorityArea = null,
   onPriorityAreaSelect,
+  onRankingContextChange,
 }) {
   const period = forecastSelection.seasonalPeriod || "JJAS";
 
@@ -467,6 +468,29 @@ function TopInterventionAreas({
   const vulnerabilityLayerMeta =
     layerMetaByValue[selectedByCategory.vulnerability];
   const riskLayerMeta = layerMetaByValue[selectedByCategory.risk];
+
+  // Reports the currently-active layer for each category up to Dashboard.jsx
+  // (which passes it to RiskMap.jsx) so its "Key terms" glossary panel can
+  // describe the same drought/wet-flavored metrics this table is showing,
+  // instead of needing its own separate copy of this selection state.
+  useEffect(() => {
+    if (typeof onRankingContextChange === "function") {
+      onRankingContextChange({
+        hazardLayerMeta,
+        probabilityLayerMeta,
+        exposureLayerMeta,
+        vulnerabilityLayerMeta,
+        riskLayerMeta,
+      });
+    }
+  }, [
+    onRankingContextChange,
+    hazardLayerMeta,
+    probabilityLayerMeta,
+    exposureLayerMeta,
+    vulnerabilityLayerMeta,
+    riskLayerMeta,
+  ]);
 
   const sortColumnGetters = {
     hazard: (item) => item.metrics[selectedByCategory.hazard],

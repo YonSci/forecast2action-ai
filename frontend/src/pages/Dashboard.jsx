@@ -50,6 +50,7 @@ function Dashboard() {
     indicator: "spi",
   });
   const [selectedPriorityArea, setSelectedPriorityArea] = useState(null);
+  const [rankingContext, setRankingContext] = useState(null);
   async function loadRiskData() {
     try {
       const response = await fetchJson("/api/risk");
@@ -124,10 +125,12 @@ function Dashboard() {
         forecastSelection={forecastSelection}
         selectedPriorityArea={selectedPriorityArea}
         onPriorityAreaSelect={setSelectedPriorityArea}
+        onRankingContextChange={setRankingContext}
       />
       <RiskMap
         adminSelection={adminSelection}
         selectedPriorityArea={selectedPriorityArea}
+        rankingContext={rankingContext}
       />
       <AIMapInterpretation
         forecastSelection={forecastSelection}

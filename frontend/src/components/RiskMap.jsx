@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   GeoJSON,
   LayersControl,
@@ -10,6 +10,12 @@ import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
 import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
 import { PRIORITY_LEVELS } from "../constants/priorityLevels.js";
+import {
+  EXPOSURE_TERM_DEFINITION,
+  PRIORITY_SCORE_DEFINITION,
+  getTermDefinition,
+} from "../constants/hazardRiskGlossary.js";
+import "../styles/mapSwitcher.css";
 
 const ETHIOPIA_CENTER = [9, 40.5];
 
@@ -199,7 +205,11 @@ function onEachBoundaryFeature(feature, layer) {
   `);
 }
 
-function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
+function RiskMap({
+  adminSelection = {},
+  selectedPriorityArea = null,
+  rankingContext = null,
+}) {
   const [countryBoundary, setCountryBoundary] = useState(null);
 
   useEffect(() => {
@@ -234,23 +244,54 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
     activeBoundaryGeojson,
   ).length;
 
+  // Brief definitions for whichever drought/wet-flavored metrics the
+  // Priority Intervention Areas table is currently ranking by, so this map's
+  // "Key terms" panel always describes the same terms that table is
+  // showing (Drought Hazard vs. Wetness Hazard, etc.) instead of a fixed,
+  // possibly-stale set.
+  const glossaryEntries = useMemo(() => {
+    if (!rankingContext) {
+      return [];
+    }
+
+    const {
+      hazardLayerMeta,
+      probabilityLayerMeta,
+      exposureLayerMeta,
+      vulnerabilityLayerMeta,
+      riskLayerMeta,
+    } = rankingContext;
+
+    return [
+      hazardLayerMeta && {
+        label: hazardLayerMeta.label,
+        definition: getTermDefinition(hazardLayerMeta.value),
+      },
+      probabilityLayerMeta && {
+        label: probabilityLayerMeta.label,
+        definition: getTermDefinition(probabilityLayerMeta.value),
+      },
+      exposureLayerMeta && {
+        label: `Exposure: ${exposureLayerMeta.label}`,
+        definition: EXPOSURE_TERM_DEFINITION,
+      },
+      vulnerabilityLayerMeta && {
+        label: vulnerabilityLayerMeta.label,
+        definition: getTermDefinition(vulnerabilityLayerMeta.value),
+      },
+      riskLayerMeta && {
+        label: riskLayerMeta.label,
+        definition: getTermDefinition(riskLayerMeta.value),
+      },
+      { label: "Priority score", definition: PRIORITY_SCORE_DEFINITION },
+    ].filter(Boolean);
+  }, [rankingContext]);
+
   return (
     <section className="panel map-panel" id="interactive-risk-map">
       <div className="map-header">
         <div>
           <h2>Priority Intervention Area Layers</h2>
-        </div>
-
-        <div className="map-legend" aria-label="Priority legend">
-          {PRIORITY_LEVELS.map((item) => (
-            <span key={item.level}>
-              <i
-                className="legend-dot"
-                style={{ backgroundColor: item.color }}
-              />
-              {item.label}
-            </span>
-          ))}
         </div>
       </div>
       {hasPrioritySelection && !hasPriorityBoundary && (
@@ -267,56 +308,90 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
         </div>
       )}
 
-      <div className="map-wrapper">
-        <MapContainer
-          center={ETHIOPIA_CENTER}
-          zoom={6.25}
-          minZoom={5.75}
-          maxZoom={9}
-          zoomSnap={0.25}
-          zoomDelta={0.25}
-          maxBounds={ETHIOPIA_MAX_BOUNDS}
-          maxBoundsViscosity={1.0}
-          scrollWheelZoom={false}
-          className="risk-map"
-          preferCanvas
-        >
-          <LayersControl position="topright">
-            {BASEMAP_OPTIONS.map((basemap, index) => (
-              <LayersControl.BaseLayer
-                key={basemap.value}
-                name={basemap.label}
-                checked={index === 0}
-              >
-                <TileLayer
-                  attribution={basemap.attribution}
-                  url={basemap.url}
-                  maxZoom={basemap.maxZoom}
+      <div className="seasonal-single-map-layout">
+        <div className="seasonal-raster-map-frame">
+          <MapContainer
+            center={ETHIOPIA_CENTER}
+            zoom={6.25}
+            minZoom={5.75}
+            maxZoom={9}
+            zoomSnap={0.25}
+            zoomDelta={0.25}
+            maxBounds={ETHIOPIA_MAX_BOUNDS}
+            maxBoundsViscosity={1.0}
+            scrollWheelZoom={false}
+            className="seasonal-raster-map"
+            preferCanvas
+          >
+            <LayersControl position="topright">
+              {BASEMAP_OPTIONS.map((basemap, index) => (
+                <LayersControl.BaseLayer
+                  key={basemap.value}
+                  name={basemap.label}
+                  checked={index === 0}
+                >
+                  <TileLayer
+                    attribution={basemap.attribution}
+                    url={basemap.url}
+                    maxZoom={basemap.maxZoom}
+                  />
+                </LayersControl.BaseLayer>
+              ))}
+            </LayersControl>
+
+            <FitMapToEthiopiaDomain activeBoundaryKey={activeBoundaryKey} />
+
+            {countryBoundary && (
+              <GeoJSON
+                key="ethiopia-country-outline"
+                data={countryBoundary}
+                style={getCountryOutlineStyle}
+                interactive={false}
+              />
+            )}
+
+            {activeBoundaryGeojson && (
+              <GeoJSON
+                key={activeBoundaryKey}
+                data={activeBoundaryGeojson}
+                style={getBoundaryStyle}
+                onEachFeature={onEachBoundaryFeature}
+              />
+            )}
+          </MapContainer>
+        </div>
+
+        <aside className="forecast-legend-card">
+          <h3>Key terms</h3>
+
+          <div className="forecast-hazard-legend" aria-label="Priority legend">
+            {PRIORITY_LEVELS.map((item) => (
+              <span key={item.level}>
+                <i
+                  className="legend-dot"
+                  style={{ backgroundColor: item.color }}
                 />
-              </LayersControl.BaseLayer>
+                {item.label}
+              </span>
             ))}
-          </LayersControl>
+          </div>
 
-          <FitMapToEthiopiaDomain activeBoundaryKey={activeBoundaryKey} />
-
-          {countryBoundary && (
-            <GeoJSON
-              key="ethiopia-country-outline"
-              data={countryBoundary}
-              style={getCountryOutlineStyle}
-              interactive={false}
-            />
+          {glossaryEntries.length > 0 ? (
+            <div className="risk-map-glossary">
+              {glossaryEntries.map((entry) => (
+                <div key={entry.label} className="risk-map-glossary-item">
+                  <strong>{entry.label}</strong>
+                  <p>{entry.definition}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>
+              Select a ranking metric in Priority Intervention Areas to see
+              its definition here.
+            </p>
           )}
-
-          {activeBoundaryGeojson && (
-            <GeoJSON
-              key={activeBoundaryKey}
-              data={activeBoundaryGeojson}
-              style={getBoundaryStyle}
-              onEachFeature={onEachBoundaryFeature}
-            />
-          )}
-        </MapContainer>
+        </aside>
       </div>
     </section>
   );

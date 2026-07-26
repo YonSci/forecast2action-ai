@@ -1024,6 +1024,29 @@ tbody td {
   font-size: 0.92rem;
 }
 
+.risk-map-glossary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.risk-map-glossary-item strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+}
+
+.risk-map-glossary-item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 0.85rem;
+}
+
 .forecast-hazard-legend {
   display: flex;
   flex-direction: column;
