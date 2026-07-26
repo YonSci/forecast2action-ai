@@ -81,12 +81,11 @@ LAYER_DEFINITIONS = [
     {"value": "population_normalized", "category": "exposure", "hazard_type": None, "label": "Population Exposure", "units": "normalized", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low exposure", "high_label": "High exposure", "is_categorical": False},
     {"value": "v_drought", "category": "vulnerability", "hazard_type": "drought", "label": "Drought Vulnerability", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low vulnerability", "high_label": "High vulnerability", "is_categorical": False},
     {"value": "v_wet", "category": "vulnerability", "hazard_type": "wet", "label": "Wet Vulnerability", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "Blues", "low_label": "Low vulnerability", "high_label": "High vulnerability", "is_categorical": False},
-    # Risk (r_drought/r_wet/r_dominant) = 100 * P * S_effective * E * V, so it
-    # is a 0-100 relative score, NOT a 0-1 probability -- confirmed against
-    # real data (max observed r_dominant so far is ~56.6).
+    # Risk (r_drought/r_wet) = 100 * P * S_effective * E * V, so it is a
+    # 0-100 relative score, NOT a 0-1 probability -- confirmed against real
+    # data (max observed r_dominant so far is ~56.6).
     {"value": "population_r_drought", "category": "risk", "hazard_type": "drought", "label": "Drought Risk", "units": "score", "vmin": 0.0, "vmax": 100.0, "cmap": "YlOrRd", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
     {"value": "population_r_wet", "category": "risk", "hazard_type": "wet", "label": "Wet Risk", "units": "score", "vmin": 0.0, "vmax": 100.0, "cmap": "Blues", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
-    {"value": "population_r_dominant", "category": "risk", "hazard_type": "dominant", "label": "Dominant Risk", "units": "score", "vmin": 0.0, "vmax": 100.0, "cmap": "RdPu", "low_label": "Low risk", "high_label": "High risk", "is_categorical": False},
     {"value": "population_risk_class", "category": "risk", "hazard_type": "dominant", "label": "Risk Class", "units": "class", "vmin": 0, "vmax": 4, "cmap": None, "low_label": "Very low", "high_label": "Very high", "is_categorical": True},
     # dominant_code = 0 if neither R_drought nor R_wet exceeds
     # DOMINANT_HAZARD_CODE_THRESHOLD, 1 if only R_drought does, 2 if only

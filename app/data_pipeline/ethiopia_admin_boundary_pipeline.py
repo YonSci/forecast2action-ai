@@ -264,12 +264,14 @@ def write_json(path: Path, data: Dict) -> None:
 def run_ethiopia_admin_boundary_pipeline() -> Dict:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    admin0 = read_layer("admin0")
     admin1 = read_layer("admin1")
     admin2 = read_layer("admin2")
     admin3 = read_layer("admin3")
 
     options = build_options(admin1, admin2, admin3)
 
+    write_json(OUTPUT_DIR / "eth_admin0.json", admin0)
     write_json(OUTPUT_DIR / "eth_admin1.json", admin1)
     write_json(OUTPUT_DIR / "eth_admin2.json", admin2)
     write_json(OUTPUT_DIR / "eth_admin3.json", admin3)
@@ -277,11 +279,13 @@ def run_ethiopia_admin_boundary_pipeline() -> Dict:
 
     print("Ethiopia administrative boundary pipeline completed.")
     print(f"Output folder: {OUTPUT_DIR}")
+    print(f"Country features: {len(admin0['features'])}")
     print(f"Regions: {len(options['regions'])}")
     print(f"Zones: {len(options['zones'])}")
     print(f"Woredas: {len(options['woredas'])}")
 
     return {
+        "admin0": admin0,
         "admin1": admin1,
         "admin2": admin2,
         "admin3": admin3,

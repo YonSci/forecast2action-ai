@@ -1579,7 +1579,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       <section className="panel forecast-layer-section climate-indicator-section">
         <div className="forecast-layer-header">
           <div>
-            <h2>Seasonal Climate Indices</h2>
+            <h2>Climate Indices</h2>
             <p className="map-selected-area">
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>
@@ -1802,7 +1802,7 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
       <section className="panel forecast-layer-section hazard-risk-raster-section">
         <div className="forecast-layer-header">
           <div>
-            <h2>Ethiopia Hazard / Risk Layers</h2>
+            <h2>Hazard / Exposure / Vulnerability / Risk Layers</h2>
             <p className="map-selected-area">
               Selected area: <strong>{selectedAdminLabel}</strong>
             </p>

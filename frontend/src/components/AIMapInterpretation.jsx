@@ -10,9 +10,17 @@ const CACHE_VERSION = "v16-shared-climate-indicator-constants";
 const MAP_LAYERS = [
   { key: "hazard", label: "Hazard map", rankingLayer: "risk_score" },
   { key: "risk_score", label: "Risk score map", rankingLayer: "risk_score" },
-  { key: "hazard_probability", label: "Hazard probability map", rankingLayer: "hazard_probability" },
+  {
+    key: "hazard_probability",
+    label: "Hazard probability map",
+    rankingLayer: "hazard_probability",
+  },
   { key: "exposure", label: "Exposure map", rankingLayer: "exposure" },
-  { key: "vulnerability", label: "Vulnerability map", rankingLayer: "vulnerability" },
+  {
+    key: "vulnerability",
+    label: "Vulnerability map",
+    rankingLayer: "vulnerability",
+  },
 ];
 
 const LEAD_LABELS = {
@@ -60,7 +68,8 @@ const FALLBACK_AI_PROVIDER_OPTIONS = [
   {
     value: "free_auto",
     label: "Automatic free-provider chain",
-    description: "NVIDIA NIM → Gemini → Groq if screenshot is off → OpenRouter → OpenAI → fallback",
+    description:
+      "NVIDIA NIM → Gemini → Groq if screenshot is off → OpenRouter → OpenAI → fallback",
     supports_screenshot: true,
     models: [{ value: "auto", label: "Automatic model per provider chain" }],
   },
@@ -70,9 +79,18 @@ const FALLBACK_AI_PROVIDER_OPTIONS = [
     description: "Best for map screenshot + structured JSON summaries.",
     supports_screenshot: true,
     models: [
-      { value: "nvidia/llama-3.1-nemotron-nano-vl-8b-v1", label: "NVIDIA Llama 3.1 Nemotron Nano VL 8B" },
-      { value: "meta/llama-3.2-11b-vision-instruct", label: "Meta Llama 3.2 11B Vision Instruct" },
-      { value: "meta/llama-3.2-90b-vision-instruct", label: "Meta Llama 3.2 90B Vision Instruct" },
+      {
+        value: "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+        label: "NVIDIA Llama 3.1 Nemotron Nano VL 8B",
+      },
+      {
+        value: "meta/llama-3.2-11b-vision-instruct",
+        label: "Meta Llama 3.2 11B Vision Instruct",
+      },
+      {
+        value: "meta/llama-3.2-90b-vision-instruct",
+        label: "Meta Llama 3.2 90B Vision Instruct",
+      },
       { value: "custom", label: "Custom NVIDIA NIM model ID" },
     ],
   },
@@ -94,7 +112,10 @@ const FALLBACK_AI_PROVIDER_OPTIONS = [
     supports_screenshot: false,
     models: [
       { value: "openai/gpt-oss-120b", label: "GPT-OSS 120B on Groq" },
-      { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile on Groq" },
+      {
+        value: "llama-3.3-70b-versatile",
+        label: "Llama 3.3 70B Versatile on Groq",
+      },
       { value: "custom", label: "Custom Groq model ID" },
     ],
   },
@@ -140,17 +161,33 @@ function getModelLabel(providerConfig, modelValue, customModel) {
     return customModel?.trim() || "Custom model ID";
   }
 
-  return providerConfig?.models?.find((item) => item.value === modelValue)?.label || modelValue || "Automatic";
+  return (
+    providerConfig?.models?.find((item) => item.value === modelValue)?.label ||
+    modelValue ||
+    "Automatic"
+  );
 }
 
 function normalizeLanguageCode(value) {
-  const text = String(value || "en").trim().toLowerCase();
+  const text = String(value || "en")
+    .trim()
+    .toLowerCase();
 
   if (["am", "amh", "amharic", "am-et", "አማርኛ"].includes(text)) {
     return "am";
   }
 
-  if (["om", "orm", "oromo", "oromifa", "afaan oromo", "afan oromo", "or"].includes(text)) {
+  if (
+    [
+      "om",
+      "orm",
+      "oromo",
+      "oromifa",
+      "afaan oromo",
+      "afan oromo",
+      "or",
+    ].includes(text)
+  ) {
     return "om";
   }
 
@@ -158,7 +195,11 @@ function normalizeLanguageCode(value) {
     return "ti";
   }
 
-  if (["so", "som", "somali", "af-soomaali", "af soomaali", "soomaali"].includes(text)) {
+  if (
+    ["so", "som", "somali", "af-soomaali", "af soomaali", "soomaali"].includes(
+      text,
+    )
+  ) {
     return "so";
   }
 
@@ -207,11 +248,17 @@ function getForecastScaleLabel(value) {
 }
 
 function getLayerLabel(value) {
-  return MAP_LAYERS.find((item) => item.key === value)?.label || titleCase(value || "risk_score");
+  return (
+    MAP_LAYERS.find((item) => item.key === value)?.label ||
+    titleCase(value || "risk_score")
+  );
 }
 
 function getIndicatorLabel(value) {
-  return CLIMATE_INDICATORS.find((item) => item.value === value)?.label || titleCase(value || "spi");
+  return (
+    CLIMATE_INDICATORS.find((item) => item.value === value)?.label ||
+    titleCase(value || "spi")
+  );
 }
 
 // Both the climate indicator maps section and the hazard/risk layers section
@@ -231,7 +278,9 @@ function getDisplayedMapLabel(forecastSelection = {}) {
     return forecastSelection.activeMapLabel;
   }
 
-  const indicatorLabel = getIndicatorLabel(forecastSelection.seasonalIndicator || forecastSelection.indicator);
+  const indicatorLabel = getIndicatorLabel(
+    forecastSelection.seasonalIndicator || forecastSelection.indicator,
+  );
   const layerLabel = getLayerLabel(forecastSelection.layer);
   return `${indicatorLabel} (climate indicator) and ${layerLabel} (hazard/risk)`;
 }
@@ -287,7 +336,10 @@ function buildCacheKey({
     activeMapGroup: forecastSelection?.activeMapGroup || "",
     activeMapLabel: forecastSelection?.activeMapLabel || "",
     seasonalScale: forecastSelection?.seasonalScale || "seasonal",
-    seasonalIndicator: forecastSelection?.seasonalIndicator || forecastSelection?.indicator || "",
+    seasonalIndicator:
+      forecastSelection?.seasonalIndicator ||
+      forecastSelection?.indicator ||
+      "",
     seasonalPeriod: forecastSelection?.seasonalPeriod || "",
     seasonalProduct: forecastSelection?.seasonalProduct || "",
     climateMapView: forecastSelection?.climateMapView || "",
@@ -342,7 +394,7 @@ function saveCachedReport(cacheKey, report) {
       JSON.stringify({
         createdAt: Date.now(),
         report,
-      })
+      }),
     );
   } catch (error) {
     console.warn("Could not save AI report cache", error);
@@ -376,10 +428,19 @@ function normalizeArea(item = {}) {
   };
 }
 
-async function fetchRanking({ forecastSelection, adminSelection, layer, indicator, topN = 2500 }) {
+async function fetchRanking({
+  forecastSelection,
+  adminSelection,
+  layer,
+  indicator,
+  topN = 2500,
+}) {
   const params = new URLSearchParams();
 
-  params.set("forecast_scale", forecastSelection.forecastScale || "subseasonal");
+  params.set(
+    "forecast_scale",
+    forecastSelection.forecastScale || "subseasonal",
+  );
   params.set("lead", forecastSelection.lead || "week_1");
   params.set("layer", layer || "risk_score");
   params.set("indicator", indicator || "spi");
@@ -397,7 +458,9 @@ async function fetchRanking({ forecastSelection, adminSelection, layer, indicato
   }
 
   try {
-    const response = await fetch(apiUrl(`/api/intervention-ranking?${params.toString()}`));
+    const response = await fetch(
+      apiUrl(`/api/intervention-ranking?${params.toString()}`),
+    );
 
     if (!response.ok) {
       throw new Error(`Ranking request failed: ${response.status}`);
@@ -421,7 +484,9 @@ function quantile(sortedValues, q) {
   const rest = position - base;
 
   if (sortedValues[base + 1] !== undefined) {
-    return sortedValues[base] + rest * (sortedValues[base + 1] - sortedValues[base]);
+    return (
+      sortedValues[base] + rest * (sortedValues[base + 1] - sortedValues[base])
+    );
   }
 
   return sortedValues[base];
@@ -496,7 +561,10 @@ function summarizeHazardCategories(items) {
 
 function summarizeRanking(items, valueKey) {
   const validItems = items
-    .map((item) => ({ ...normalizeArea(item), _value: Number(item?.[valueKey]) }))
+    .map((item) => ({
+      ...normalizeArea(item),
+      _value: Number(item?.[valueKey]),
+    }))
     .filter((item) => Number.isFinite(item._value));
 
   const values = validItems.map((item) => item._value).sort((a, b) => a - b);
@@ -517,7 +585,8 @@ function summarizeRanking(items, valueKey) {
     };
   }
 
-  const mean = values.reduce((total, value) => total + value, 0) / values.length;
+  const mean =
+    values.reduce((total, value) => total + value, 0) / values.length;
   const regional = summarizeByRegion(validItems, valueKey);
 
   return {
@@ -526,13 +595,17 @@ function summarizeRanking(items, valueKey) {
     min: values[0],
     max: values[values.length - 1],
     mean,
-    q10: quantile(values, 0.10),
+    q10: quantile(values, 0.1),
     q25: quantile(values, 0.25),
-    median: quantile(values, 0.50),
+    median: quantile(values, 0.5),
     q75: quantile(values, 0.75),
-    q90: quantile(values, 0.90),
-    highest_value_areas: highToLow.slice(0, 8).map(({ _value, ...item }) => ({ ...item, value: _value })),
-    lowest_value_areas: lowToHigh.slice(0, 8).map(({ _value, ...item }) => ({ ...item, value: _value })),
+    q90: quantile(values, 0.9),
+    highest_value_areas: highToLow
+      .slice(0, 8)
+      .map(({ _value, ...item }) => ({ ...item, value: _value })),
+    lowest_value_areas: lowToHigh
+      .slice(0, 8)
+      .map(({ _value, ...item }) => ({ ...item, value: _value })),
     hotspot_regions: regional.top_regions_by_mean,
     low_value_regions: regional.bottom_regions_by_mean,
     hazard_risk_categories: summarizeHazardCategories(items),
@@ -561,12 +634,15 @@ async function buildAllLayerSummaries(forecastSelection, adminSelection) {
           ...summarizeRanking(ranking, valueKey),
         },
       ];
-    })
+    }),
   );
   return Object.fromEntries(entries);
 }
 
-async function buildAllClimateIndicatorSummaries(forecastSelection, adminSelection) {
+async function buildAllClimateIndicatorSummaries(
+  forecastSelection,
+  adminSelection,
+) {
   const entries = await Promise.all(
     CLIMATE_INDICATORS.map(async (indicator) => {
       const ranking = await fetchRanking({
@@ -584,7 +660,7 @@ async function buildAllClimateIndicatorSummaries(forecastSelection, adminSelecti
           ...summarizeRanking(ranking, indicator.value),
         },
       ];
-    })
+    }),
   );
   return Object.fromEntries(entries);
 }
@@ -660,7 +736,9 @@ function copyReport(report) {
 }
 
 function downloadReport(report) {
-  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json;charset=utf-8;" });
+  const blob = new Blob([JSON.stringify(report, null, 2)], {
+    type: "application/json;charset=utf-8;",
+  });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = "ai_map_interpretation_report.json";
@@ -675,7 +753,9 @@ function AIMapInterpretation({
   selectedLanguage = "en",
 }) {
   const [useScreenshot, setUseScreenshot] = useState(true);
-  const [providerOptions, setProviderOptions] = useState(FALLBACK_AI_PROVIDER_OPTIONS);
+  const [providerOptions, setProviderOptions] = useState(
+    FALLBACK_AI_PROVIDER_OPTIONS,
+  );
   const [selectedProvider, setSelectedProvider] = useState("free_auto");
   const [selectedModel, setSelectedModel] = useState("auto");
   const [customModel, setCustomModel] = useState("");
@@ -687,9 +767,8 @@ function AIMapInterpretation({
 
   const normalizedLanguage = useMemo(
     () => normalizeLanguageCode(selectedLanguage),
-    [selectedLanguage]
+    [selectedLanguage],
   );
-
 
   useEffect(() => {
     let isActive = true;
@@ -704,7 +783,10 @@ function AIMapInterpretation({
         if (!isActive) {
           return;
         }
-        const options = Array.isArray(data?.providers) && data.providers.length > 0 ? data.providers : FALLBACK_AI_PROVIDER_OPTIONS;
+        const options =
+          Array.isArray(data?.providers) && data.providers.length > 0
+            ? data.providers
+            : FALLBACK_AI_PROVIDER_OPTIONS;
         setProviderOptions(options);
         setProviderStatus(data);
       } catch (error) {
@@ -743,7 +825,15 @@ function AIMapInterpretation({
       selectedProvider,
       selectedModel: resolvedSelectedModel || selectedModel,
     });
-  }, [forecastSelection, adminSelection, normalizedLanguage, useScreenshot, selectedProvider, selectedModel, resolvedSelectedModel]);
+  }, [
+    forecastSelection,
+    adminSelection,
+    normalizedLanguage,
+    useScreenshot,
+    selectedProvider,
+    selectedModel,
+    resolvedSelectedModel,
+  ]);
 
   useEffect(() => {
     const cached = getCachedReport(cacheKey);
@@ -752,7 +842,7 @@ function AIMapInterpretation({
     setStatusMessage(
       cached
         ? `Loaded saved ${getLanguageLabel(normalizedLanguage)} advisory from this browser cache.`
-        : ""
+        : "",
     );
   }, [cacheKey, normalizedLanguage]);
 
@@ -763,18 +853,38 @@ function AIMapInterpretation({
       activeMapGroup: getMapGroupLabel(forecastSelection),
       displayedMap: getDisplayedMapLabel(forecastSelection),
       activeLayer: getLayerLabel(forecastSelection.layer),
-      activeIndicator: getIndicatorLabel(forecastSelection.seasonalIndicator || forecastSelection.indicator),
-      seasonalScale: forecastSelection?.seasonalScaleLabel || titleCase(forecastSelection?.seasonalScale || "seasonal"),
-      seasonalPeriod: forecastSelection?.seasonalPeriodLabel || forecastSelection?.seasonalPeriod || getLeadLabel(forecastSelection.lead),
-      seasonalProduct: forecastSelection?.seasonalProductLabel || forecastSelection?.seasonalProduct || "Forecast",
-      climateMapView: forecastSelection?.climateMapView === "compare" ? "Forecast vs Climatology vs Anomaly" : "Single map",
+      activeIndicator: getIndicatorLabel(
+        forecastSelection.seasonalIndicator || forecastSelection.indicator,
+      ),
+      seasonalScale:
+        forecastSelection?.seasonalScaleLabel ||
+        titleCase(forecastSelection?.seasonalScale || "seasonal"),
+      seasonalPeriod:
+        forecastSelection?.seasonalPeriodLabel ||
+        forecastSelection?.seasonalPeriod ||
+        getLeadLabel(forecastSelection.lead),
+      seasonalProduct:
+        forecastSelection?.seasonalProductLabel ||
+        forecastSelection?.seasonalProduct ||
+        "Forecast",
+      climateMapView:
+        forecastSelection?.climateMapView === "compare"
+          ? "Forecast vs Climatology vs Anomaly"
+          : "Single map",
       seasonalMap: forecastSelection?.seasonalMap || null,
       adminScope: getAdminScope(adminSelection),
       language: getLanguageLabel(normalizedLanguage),
       provider: selectedProviderConfig?.label || selectedProvider,
       model: selectedModelLabel,
     };
-  }, [forecastSelection, adminSelection, normalizedLanguage, selectedProviderConfig, selectedProvider, selectedModelLabel]);
+  }, [
+    forecastSelection,
+    adminSelection,
+    normalizedLanguage,
+    selectedProviderConfig,
+    selectedProvider,
+    selectedModelLabel,
+  ]);
 
   function handleProviderChange(event) {
     const nextProvider = event.target.value;
@@ -797,7 +907,9 @@ function AIMapInterpretation({
         const cached = getCachedReport(cacheKey);
         if (cached) {
           setReport(cached);
-          setStatusMessage(`Loaded saved ${getLanguageLabel(normalizedLanguage)} advisory. No new AI provider API call was made.`);
+          setStatusMessage(
+            `Loaded saved ${getLanguageLabel(normalizedLanguage)} advisory. No new AI provider API call was made.`,
+          );
           setLoading(false);
           return;
         }
@@ -805,14 +917,20 @@ function AIMapInterpretation({
 
       if (selectedProvider === "groq" && useScreenshot) {
         setUseScreenshot(false);
-        throw new Error("Groq is configured as text-only in this workflow. Turn off 'Use current map screenshot' or select NVIDIA, Gemini, OpenRouter, OpenAI, or Automatic.");
+        throw new Error(
+          "Groq is configured as text-only in this workflow. Turn off 'Use current map screenshot' or select NVIDIA, Gemini, OpenRouter, OpenAI, or Automatic.",
+        );
       }
 
       if (selectedModel === "custom" && !customModel.trim()) {
-        throw new Error("Please enter a custom model ID, or choose a model from the list.");
+        throw new Error(
+          "Please enter a custom model ID, or choose a model from the list.",
+        );
       }
 
-      setStatusMessage("Preparing Ethiopia-wide spatial summaries for all map layers and climate indicators...");
+      setStatusMessage(
+        "Preparing Ethiopia-wide spatial summaries for all map layers and climate indicators...",
+      );
 
       const rankingLayer =
         forecastSelection.layer && forecastSelection.layer !== "hazard"
@@ -845,8 +963,11 @@ function AIMapInterpretation({
 
       const languageLabel = getLanguageLabel(normalizedLanguage);
       const providerLabel = selectedProviderConfig?.label || selectedProvider;
-      const modelLabel = selectedModelLabel || resolvedSelectedModel || "Automatic";
-      setStatusMessage(`Generating ${languageLabel} Ethiopia-wide spatial interpretation using ${providerLabel} / ${modelLabel}...`);
+      const modelLabel =
+        selectedModelLabel || resolvedSelectedModel || "Automatic";
+      setStatusMessage(
+        `Generating ${languageLabel} Ethiopia-wide spatial interpretation using ${providerLabel} / ${modelLabel}...`,
+      );
 
       const payload = {
         forecast_selection: forecastSelection,
@@ -856,11 +977,21 @@ function AIMapInterpretation({
           active_map_group: getMapGroupLabel(forecastSelection),
           displayed_map: getDisplayedMapLabel(forecastSelection),
           seasonal_scale: forecastSelection?.seasonalScale || "",
-          seasonal_scale_label: forecastSelection?.seasonalScaleLabel || titleCase(forecastSelection?.seasonalScale || "seasonal"),
-          seasonal_indicator: forecastSelection?.seasonalIndicator || forecastSelection?.indicator || "",
-          seasonal_indicator_label: forecastSelection?.seasonalIndicatorLabel || getIndicatorLabel(forecastSelection?.indicator),
-          seasonal_period: forecastSelection?.seasonalPeriod || forecastSelection?.lead || "",
-          seasonal_period_label: forecastSelection?.seasonalPeriodLabel || getLeadLabel(forecastSelection?.lead),
+          seasonal_scale_label:
+            forecastSelection?.seasonalScaleLabel ||
+            titleCase(forecastSelection?.seasonalScale || "seasonal"),
+          seasonal_indicator:
+            forecastSelection?.seasonalIndicator ||
+            forecastSelection?.indicator ||
+            "",
+          seasonal_indicator_label:
+            forecastSelection?.seasonalIndicatorLabel ||
+            getIndicatorLabel(forecastSelection?.indicator),
+          seasonal_period:
+            forecastSelection?.seasonalPeriod || forecastSelection?.lead || "",
+          seasonal_period_label:
+            forecastSelection?.seasonalPeriodLabel ||
+            getLeadLabel(forecastSelection?.lead),
           seasonal_product: forecastSelection?.seasonalProduct || "",
           seasonal_product_label: forecastSelection?.seasonalProductLabel || "",
           climate_map_view: forecastSelection?.climateMapView || "",
@@ -868,7 +999,8 @@ function AIMapInterpretation({
           seasonal_compare_maps: forecastSelection?.seasonalCompareMaps || null,
           seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} ${forecastSelection?.seasonalPeriodLabel || getLeadLabel(forecastSelection.lead)}`,
           current_seasonal_context: `${getForecastScaleLabel(forecastSelection.forecastScale)} forecast for ${forecastSelection?.seasonalPeriodLabel || getLeadLabel(forecastSelection.lead)}`,
-          hazard_type: selectedPriorityArea?.hazard || getDefaultHazard(topAreas),
+          hazard_type:
+            selectedPriorityArea?.hazard || getDefaultHazard(topAreas),
           admin_scope: getAdminScope(adminSelection),
         },
         top_admin_areas: topAreas,
@@ -900,12 +1032,21 @@ function AIMapInterpretation({
       saveCachedReport(cacheKey, data);
 
       const engine = data?._metadata?.ai_engine || "AI";
-      const provider = data?._metadata?.provider || selectedProviderConfig?.label || "AI provider";
-      const model = data?._metadata?.model || selectedModelLabel || "selected model";
-      setStatusMessage(`Generated and saved ${languageLabel} advisory using ${provider} / ${model} (${engine}).`);
+      const provider =
+        data?._metadata?.provider ||
+        selectedProviderConfig?.label ||
+        "AI provider";
+      const model =
+        data?._metadata?.model || selectedModelLabel || "selected model";
+      setStatusMessage(
+        `Generated and saved ${languageLabel} advisory using ${provider} / ${model} (${engine}).`,
+      );
     } catch (error) {
       console.error(error);
-      setErrorMessage(error.message || "Could not generate AI map interpretation. Check backend endpoint and API key.");
+      setErrorMessage(
+        error.message ||
+          "Could not generate AI map interpretation. Check backend endpoint and API key.",
+      );
     } finally {
       setLoading(false);
     }
@@ -914,7 +1055,9 @@ function AIMapInterpretation({
   function handleClearSavedReport() {
     localStorage.removeItem(cacheKey);
     setReport(null);
-    setStatusMessage(`Saved ${getLanguageLabel(normalizedLanguage)} advisory cleared for the current parameters.`);
+    setStatusMessage(
+      `Saved ${getLanguageLabel(normalizedLanguage)} advisory cleared for the current parameters.`,
+    );
   }
 
   return (
@@ -923,11 +1066,6 @@ function AIMapInterpretation({
         <div>
           <span className="ai-map-kicker">AI capability</span>
           <h2>AI Map Interpretation & Advisory</h2>
-          <p>
-            Interprets Ethiopia-wide spatial distribution for all hazard/risk layers and climate indicators,
-            explains why priority areas were selected, and generates focused farmer and humanitarian advisories
-            in the selected community message language.
-          </p>
         </div>
       </div>
 
@@ -993,11 +1131,16 @@ function AIMapInterpretation({
       <div className="ai-included-data">
         <div>
           <span>Map layers used</span>
-          <strong>Hazard · Risk score · Hazard probability · Exposure · Vulnerability</strong>
+          <strong>
+            Hazard · Risk score · Hazard probability · Exposure · Vulnerability
+          </strong>
         </div>
         <div>
           <span>Climate indicators used</span>
-          <strong>Rainfall Total · SPI · CDD · CWD · dryspell ≥5/7/9 days · Rainfall Percentile</strong>
+          <strong>
+            Rainfall Total · SPI · CDD · CWD · dryspell ≥5/7/9 days · Rainfall
+            Percentile
+          </strong>
         </div>
       </div>
 
@@ -1005,7 +1148,11 @@ function AIMapInterpretation({
         <div className="ai-provider-selectors">
           <label>
             <span>AI provider</span>
-            <select value={selectedProvider} onChange={handleProviderChange} disabled={loading}>
+            <select
+              value={selectedProvider}
+              onChange={handleProviderChange}
+              disabled={loading}
+            >
               {providerOptions.map((provider) => (
                 <option key={provider.value} value={provider.value}>
                   {provider.label}
@@ -1016,8 +1163,16 @@ function AIMapInterpretation({
 
           <label>
             <span>Model</span>
-            <select value={selectedModel} onChange={handleModelChange} disabled={loading}>
-              {(selectedProviderConfig?.models || [{ value: "auto", label: "Automatic" }]).map((model) => (
+            <select
+              value={selectedModel}
+              onChange={handleModelChange}
+              disabled={loading}
+            >
+              {(
+                selectedProviderConfig?.models || [
+                  { value: "auto", label: "Automatic" },
+                ]
+              ).map((model) => (
                 <option key={model.value} value={model.value}>
                   {model.label}
                 </option>
@@ -1054,7 +1209,9 @@ function AIMapInterpretation({
           onClick={() => handleGenerateReport({ forceRefresh: false })}
           disabled={loading}
         >
-          {loading ? "Generating..." : `Generate ${contextSummary.language} advisory`}
+          {loading
+            ? "Generating..."
+            : `Generate ${contextSummary.language} advisory`}
         </button>
 
         <button
@@ -1078,9 +1235,16 @@ function AIMapInterpretation({
 
       {selectedProviderConfig?.description && (
         <div className="ai-provider-note">
-          <strong>{selectedProviderConfig.label}:</strong> {selectedProviderConfig.description}
-          {selectedProvider === "groq" && useScreenshot ? " Groq is text-only in this app, so disable the screenshot toggle before generating." : ""}
-          {providerStatus?.configured && selectedProvider !== "free_auto" && providerStatus.configured[selectedProvider] === false ? " API key is not configured for this provider, so the backend will fall back if you generate." : ""}
+          <strong>{selectedProviderConfig.label}:</strong>{" "}
+          {selectedProviderConfig.description}
+          {selectedProvider === "groq" && useScreenshot
+            ? " Groq is text-only in this app, so disable the screenshot toggle before generating."
+            : ""}
+          {providerStatus?.configured &&
+          selectedProvider !== "free_auto" &&
+          providerStatus.configured[selectedProvider] === false
+            ? " API key is not configured for this provider, so the backend will fall back if you generate."
+            : ""}
         </div>
       )}
 
@@ -1091,11 +1255,11 @@ function AIMapInterpretation({
         <div className="ai-empty-state">
           <h3>No AI interpretation generated yet</h3>
           <p>
-            Click <strong>Generate {contextSummary.language} advisory</strong>. The system will use all map
-            layers, all climate indicators, local RAG guidance, the selected
-            language, and an optional map screenshot. If the same request was
-            already generated, it will load the saved advisory instead of making
-            another AI provider API call.
+            Click <strong>Generate {contextSummary.language} advisory</strong>.
+            The system will use all map layers, all climate indicators, local
+            RAG guidance, the selected language, and an optional map screenshot.
+            If the same request was already generated, it will load the saved
+            advisory instead of making another AI provider API call.
           </p>
         </div>
       )}
@@ -1106,50 +1270,89 @@ function AIMapInterpretation({
             <div>
               <h3>{report.title || "AI Map Interpretation & Advisory"}</h3>
               <p>
-                Engine: <strong>{report?._metadata?.ai_engine || "AI provider / fallback"}</strong>
-                {report?._metadata?.provider ? ` · Provider: ${report._metadata.provider}` : ""}
-                {report?._metadata?.model ? ` · Model: ${report._metadata.model}` : ""}
-                {report?._metadata?.target_language ? ` · Language: ${report._metadata.target_language}` : report?.target_language ? ` · Language: ${report.target_language}` : ""}
+                Engine:{" "}
+                <strong>
+                  {report?._metadata?.ai_engine || "AI provider / fallback"}
+                </strong>
+                {report?._metadata?.provider
+                  ? ` · Provider: ${report._metadata.provider}`
+                  : ""}
+                {report?._metadata?.model
+                  ? ` · Model: ${report._metadata.model}`
+                  : ""}
+                {report?._metadata?.target_language
+                  ? ` · Language: ${report._metadata.target_language}`
+                  : report?.target_language
+                    ? ` · Language: ${report.target_language}`
+                    : ""}
               </p>
             </div>
             <div className="ai-report-buttons">
-              <button type="button" className="ai-secondary-action" onClick={() => copyReport(report)}>
+              <button
+                type="button"
+                className="ai-secondary-action"
+                onClick={() => copyReport(report)}
+              >
                 Copy report
               </button>
-              <button type="button" className="ai-secondary-action" onClick={() => downloadReport(report)}>
+              <button
+                type="button"
+                className="ai-secondary-action"
+                onClick={() => downloadReport(report)}
+              >
                 Export JSON
               </button>
             </div>
           </div>
 
           <div className="ai-first-output-grid">
-            <ReportList title="Layer-by-layer map summary" items={report.layer_by_layer_summary} />
-            <ReportList title="Indicator-by-indicator summary" items={report.indicator_by_indicator_summary} />
+            <ReportList
+              title="Layer-by-layer map summary"
+              items={report.layer_by_layer_summary}
+            />
+            <ReportList
+              title="Indicator-by-indicator summary"
+              items={report.indicator_by_indicator_summary}
+            />
           </div>
 
           <div className="ai-executive-summary">
             <h4>Executive summary</h4>
             <p className="ai-executive-meta">
-              <strong>Forecast window:</strong> {contextSummary.forecastScale} · {" "}
-              <strong>Lead / horizon:</strong> {contextSummary.lead} · {" "}
-              <strong>Admin scope:</strong> {contextSummary.adminScope} · {" "}
-              <strong>Active map group:</strong> {contextSummary.activeMapGroup} · {" "}
-              <strong>Displayed map:</strong> {contextSummary.displayedMap} · {" "}
-              <strong>Climate indicator scale:</strong> {contextSummary.seasonalScale} · {" "}
-              <strong>Seasonal period:</strong> {contextSummary.seasonalPeriod} · {" "}
-              <strong>Map product:</strong> {contextSummary.seasonalProduct} · {" "}
-              <strong>Active climate indicator:</strong> {contextSummary.activeIndicator} · {" "}
-              <strong>Active map layer:</strong> {contextSummary.activeLayer} · {" "}
+              <strong>Forecast window:</strong> {contextSummary.forecastScale} ·{" "}
+              <strong>Lead / horizon:</strong> {contextSummary.lead} ·{" "}
+              <strong>Admin scope:</strong> {contextSummary.adminScope} ·{" "}
+              <strong>Active map group:</strong> {contextSummary.activeMapGroup}{" "}
+              · <strong>Displayed map:</strong> {contextSummary.displayedMap} ·{" "}
+              <strong>Climate indicator scale:</strong>{" "}
+              {contextSummary.seasonalScale} · <strong>Seasonal period:</strong>{" "}
+              {contextSummary.seasonalPeriod} · <strong>Map product:</strong>{" "}
+              {contextSummary.seasonalProduct} ·{" "}
+              <strong>Active climate indicator:</strong>{" "}
+              {contextSummary.activeIndicator} ·{" "}
+              <strong>Active map layer:</strong> {contextSummary.activeLayer} ·{" "}
               <strong>Output language:</strong> {contextSummary.language}
             </p>
             <p>{report.executive_summary}</p>
           </div>
 
           <div className="ai-report-grid ai-focused-report-grid">
-            <ReportList title="Ethiopia-wide spatial overview" items={report.national_spatial_overview} />
-            <ReportList title="Why priority areas were selected" items={report.priority_area_justification} />
-            <ReportList title="Farmer and agro-pastoral advisory" items={report.farmer_advisory} />
-            <ReportList title="Humanitarian priorities" items={report.humanitarian_priorities} />
+            <ReportList
+              title="Ethiopia-wide spatial overview"
+              items={report.national_spatial_overview}
+            />
+            <ReportList
+              title="Why priority areas were selected"
+              items={report.priority_area_justification}
+            />
+            <ReportList
+              title="Farmer and agro-pastoral advisory"
+              items={report.farmer_advisory}
+            />
+            <ReportList
+              title="Humanitarian priorities"
+              items={report.humanitarian_priorities}
+            />
           </div>
 
           {report.sms_summary && (

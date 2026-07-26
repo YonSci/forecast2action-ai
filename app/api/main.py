@@ -123,6 +123,7 @@ VALID_FORECAST_LEADS = {item["value"] for item in FORECAST_LEADS}
 
 ADMIN_OPTIONS_PATH = ADMIN_BOUNDARY_OUTPUT_DIR / "ethiopia_admin_options.json"
 ADMIN_GEOJSON_PATHS = {
+    "admin0": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin0.json",
     "admin1": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin1.json",
     "admin2": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin2.json",
     "admin3": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin3.json",
@@ -761,7 +762,11 @@ def build_intervention_ranking_cached(
 
 
 def ensure_admin_boundaries() -> None:
-    if not ADMIN_OPTIONS_PATH.exists():
+    # Also checks admin0 specifically (not just the options file) so existing
+    # deployments/local checkouts that already have eth_admin1/2/3.json from
+    # before the Country tier was added still self-heal by regenerating once,
+    # instead of staying stuck without eth_admin0.json forever.
+    if not ADMIN_OPTIONS_PATH.exists() or not ADMIN_GEOJSON_PATHS["admin0"].exists():
         run_ethiopia_admin_boundary_pipeline()
 
 

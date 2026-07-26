@@ -9,6 +9,25 @@ const LANGUAGE_OPTIONS = [
   { value: "so", label: "Somali" },
 ];
 
+// This app only ever covers Ethiopia, so there's exactly one Country option
+// -- it exists as its own tier (rather than folded into "no selection") so
+// it can carry the same explicit-intent behavior as "All zones"/"All
+// woredas": picking it means "show the whole-country admin0 boundary",
+// synchronized with Region/Zone/Woreda via the same selectedLevel mechanism
+// (see getBoundaryLevel below).
+const COUNTRY_OPTIONS = [{ value: "ethiopia", label: "Ethiopia" }];
+const DEFAULT_COUNTRY_ID = COUNTRY_OPTIONS[0].value;
+
+// Region/Zone/Woreda need THREE distinct states, not two: genuinely
+// unselected (blank placeholder, "" -- the true default, doesn't turn the
+// tier on), explicitly "All regions/zones/woredas" (a real, deliberate
+// choice that DOES turn the tier on, showing every area at that level), and
+// a specific area. Reusing "" for both "unselected" and "All X" (the old
+// behavior) made the dropdown look pre-selected by default even though
+// nothing had been chosen -- this sentinel gives "All X" its own value so
+// "" can mean only "nothing chosen yet".
+const ALL_VALUE = "__all__";
+
 function normalizeOption(item, fallbackPrefix = "") {
   if (typeof item === "string") {
     return {
@@ -64,17 +83,25 @@ function getOptionsList(data, key) {
   return [];
 }
 
-function getBoundaryLevel(regionId, zoneId, woredaId) {
-  if (woredaId) {
+// Which selector the user most recently interacted with -- NOT the same as
+// which IDs are currently set. Picking "All zones" from the Zone dropdown
+// still leaves selectedZoneId === "" (same as never having touched it), so
+// deriving the admin level purely from ID presence can't tell "show
+// zone-level detail for everything" apart from "nothing chosen yet, stay at
+// region level". Tracking intent explicitly lets "All zones"/"All woredas"
+// mean what they say: admin2/admin3 boundaries for whatever region/zone
+// scope is (or isn't) set, rather than silently falling back to admin1.
+function getBoundaryLevel(selectedLevel) {
+  if (selectedLevel === "woreda") {
     return "admin3";
   }
 
-  if (zoneId) {
+  if (selectedLevel === "zone") {
     return "admin2";
   }
 
-  if (regionId) {
-    return "admin1";
+  if (selectedLevel === "country") {
+    return "admin0";
   }
 
   return "admin1";
@@ -101,14 +128,27 @@ function AdminBoundarySelector({
   });
 
   const [optionsLoaded, setOptionsLoaded] = useState(false);
+  const [selectedCountryId, setSelectedCountryId] =
+    useState(DEFAULT_COUNTRY_ID);
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [selectedWoredaId, setSelectedWoredaId] = useState("");
+  // "country" | "region" | "zone" | "woreda" -- see getBoundaryLevel above
+  // for why this is tracked separately from the selected IDs themselves.
+  // Defaults to "country" (not "region") so the initial view -- before the
+  // user has touched Region/Zone/Woreda at all -- matches what the Country
+  // selector already shows ("Ethiopia"): just the national outline, not
+  // every region's boundary at once. Region/Zone/Woreda only take over
+  // (become "active") once the user actually changes one of them.
+  const [selectedLevel, setSelectedLevel] = useState("country");
   const [boundaryLoading, setBoundaryLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const hasActiveSelection =
-    selectedRegionId !== "" || selectedZoneId !== "" || selectedWoredaId !== "";
+    selectedRegionId !== "" ||
+    selectedZoneId !== "" ||
+    selectedWoredaId !== "" ||
+    selectedLevel !== "country";
 
   useEffect(() => {
     onSelectionChangeRef.current = onSelectionChange;
@@ -119,7 +159,7 @@ function AdminBoundarySelector({
   }, [onClearPrioritySelection]);
 
   const filteredZones = useMemo(() => {
-    if (!selectedRegionId) {
+    if (!selectedRegionId || selectedRegionId === ALL_VALUE) {
       return adminOptions.zones || [];
     }
 
@@ -136,11 +176,19 @@ function AdminBoundarySelector({
       const itemRegionId = item.region_id || item.regionId || "";
       const itemZoneId = item.zone_id || item.zoneId || "";
 
-      if (selectedRegionId && itemRegionId !== selectedRegionId) {
+      if (
+        selectedRegionId &&
+        selectedRegionId !== ALL_VALUE &&
+        itemRegionId !== selectedRegionId
+      ) {
         return false;
       }
 
-      if (selectedZoneId && itemZoneId !== selectedZoneId) {
+      if (
+        selectedZoneId &&
+        selectedZoneId !== ALL_VALUE &&
+        itemZoneId !== selectedZoneId
+      ) {
         return false;
       }
 
@@ -200,24 +248,20 @@ function AdminBoundarySelector({
       setErrorMessage("");
 
       try {
-        const level = getBoundaryLevel(
-          selectedRegionId,
-          selectedZoneId,
-          selectedWoredaId,
-        );
+        const level = getBoundaryLevel(selectedLevel);
 
         const params = new URLSearchParams();
         params.set("level", level);
 
-        if (selectedRegionId) {
+        if (selectedRegionId && selectedRegionId !== ALL_VALUE) {
           params.set("region_id", selectedRegionId);
         }
 
-        if (selectedZoneId) {
+        if (selectedZoneId && selectedZoneId !== ALL_VALUE) {
           params.set("zone_id", selectedZoneId);
         }
 
-        if (selectedWoredaId) {
+        if (selectedWoredaId && selectedWoredaId !== ALL_VALUE) {
           params.set("woreda_id", selectedWoredaId);
         }
 
@@ -232,15 +276,18 @@ function AdminBoundarySelector({
 
         const boundaryGeojson = await response.json();
 
+        const countryLabel = findLabel(COUNTRY_OPTIONS, selectedCountryId);
         const regionLabel = findLabel(adminOptions.regions, selectedRegionId);
         const zoneLabel = findLabel(adminOptions.zones, selectedZoneId);
         const woredaLabel = findLabel(adminOptions.woredas, selectedWoredaId);
 
         if (typeof onSelectionChangeRef.current === "function") {
           onSelectionChangeRef.current({
+            countryId: selectedCountryId,
             regionId: selectedRegionId,
             zoneId: selectedZoneId,
             woredaId: selectedWoredaId,
+            countryLabel,
             regionLabel,
             zoneLabel,
             woredaLabel,
@@ -266,9 +313,11 @@ function AdminBoundarySelector({
     return () => controller.abort();
   }, [
     optionsLoaded,
+    selectedCountryId,
     selectedRegionId,
     selectedZoneId,
     selectedWoredaId,
+    selectedLevel,
     adminOptions.regions,
     adminOptions.zones,
     adminOptions.woredas,
@@ -280,21 +329,42 @@ function AdminBoundarySelector({
     }
   }
 
-  function handleRegionChange(event) {
-    setSelectedRegionId(event.target.value);
+  function handleCountryChange(event) {
+    setSelectedCountryId(event.target.value);
+    setSelectedRegionId("");
     setSelectedZoneId("");
     setSelectedWoredaId("");
+    setSelectedLevel("country");
+    clearPrioritySelection();
+  }
+
+  function handleRegionChange(event) {
+    const value = event.target.value;
+    setSelectedRegionId(value);
+    setSelectedZoneId("");
+    setSelectedWoredaId("");
+    // Picking the blank placeholder again clears Region back to "not
+    // chosen", which falls back to the Country-level view -- any other
+    // value (a specific region, or the explicit "All regions" option) turns
+    // Region on.
+    setSelectedLevel(value === "" ? "country" : "region");
     clearPrioritySelection();
   }
 
   function handleZoneChange(event) {
-    setSelectedZoneId(event.target.value);
+    const value = event.target.value;
+    setSelectedZoneId(value);
     setSelectedWoredaId("");
+    // Same clear-vs-choose logic as Region, but falls back to Region-level
+    // (using whatever Region is currently set to) instead of Country.
+    setSelectedLevel(value === "" ? "region" : "zone");
     clearPrioritySelection();
   }
 
   function handleWoredaChange(event) {
-    setSelectedWoredaId(event.target.value);
+    const value = event.target.value;
+    setSelectedWoredaId(value);
+    setSelectedLevel(value === "" ? "zone" : "woreda");
     clearPrioritySelection();
   }
 
@@ -305,9 +375,11 @@ function AdminBoundarySelector({
   }
 
   function handleResetSelection() {
+    setSelectedCountryId(DEFAULT_COUNTRY_ID);
     setSelectedRegionId("");
     setSelectedZoneId("");
     setSelectedWoredaId("");
+    setSelectedLevel("country");
     setErrorMessage("");
     clearPrioritySelection();
   }
@@ -316,7 +388,7 @@ function AdminBoundarySelector({
     <section className="panel admin-selector-panel">
       <div className="admin-selector-header">
         <div>
-          <h2>Administrative Area Selection</h2>
+          <h2>Administrative Area</h2>
         </div>
 
         <div className="admin-selector-actions">
@@ -339,13 +411,29 @@ function AdminBoundarySelector({
 
       <div className="map-admin-controls shared-admin-controls">
         <div className="map-control">
+          <label htmlFor="shared-country-select">Select Country</label>
+          <select
+            id="shared-country-select"
+            value={selectedCountryId}
+            onChange={handleCountryChange}
+          >
+            {COUNTRY_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="map-control">
           <label htmlFor="shared-region-select">Select Region</label>
           <select
             id="shared-region-select"
             value={selectedRegionId}
             onChange={handleRegionChange}
           >
-            <option value="">All regions</option>
+            <option value=""></option>
+            <option value={ALL_VALUE}>All regions</option>
             {adminOptions.regions.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
@@ -360,9 +448,9 @@ function AdminBoundarySelector({
             id="shared-zone-select"
             value={selectedZoneId}
             onChange={handleZoneChange}
-            disabled={!selectedRegionId}
           >
-            <option value="">All zones</option>
+            <option value=""></option>
+            <option value={ALL_VALUE}>All zones</option>
             {filteredZones.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
@@ -377,9 +465,9 @@ function AdminBoundarySelector({
             id="shared-woreda-select"
             value={selectedWoredaId}
             onChange={handleWoredaChange}
-            disabled={!selectedZoneId}
           >
-            <option value="">All woredas</option>
+            <option value=""></option>
+            <option value={ALL_VALUE}>All woredas</option>
             {filteredWoredas.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}

@@ -113,7 +113,9 @@ function onEachBoundaryFeature(feature, layer) {
   const labelParts = [];
 
   if (props.region) {
-    labelParts.push(`<p><strong>Region:</strong> ${escapeHtml(props.region)}</p>`);
+    labelParts.push(
+      `<p><strong>Region:</strong> ${escapeHtml(props.region)}</p>`,
+    );
   }
 
   if (props.zone) {
@@ -121,7 +123,9 @@ function onEachBoundaryFeature(feature, layer) {
   }
 
   if (props.woreda) {
-    labelParts.push(`<p><strong>Woreda:</strong> ${escapeHtml(props.woreda)}</p>`);
+    labelParts.push(
+      `<p><strong>Woreda:</strong> ${escapeHtml(props.woreda)}</p>`,
+    );
   }
 
   layer.bindPopup(`
@@ -159,7 +163,9 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
     ? selectedPriorityArea?.boundary_feature_count
     : activeBoundaryGeojson?.metadata?.feature_count || 0;
 
-  const selectedBoundaryPointCount = getGeojsonLatLngs(activeBoundaryGeojson).length;
+  const selectedBoundaryPointCount = getGeojsonLatLngs(
+    activeBoundaryGeojson,
+  ).length;
 
   return (
     <section className="panel map-panel" id="interactive-risk-map">
@@ -168,8 +174,8 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           <h2>Interactive Administrative Risk Map</h2>
 
           <p>
-            This map uses the same Ethiopia forecast-domain extent and highlights
-            the selected administrative boundary.
+            This map uses the same Ethiopia forecast-domain extent and
+            highlights the selected administrative boundary.
           </p>
 
           <p className="map-selected-area">
@@ -233,7 +239,7 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           className="risk-map"
         >
           <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
+            attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
