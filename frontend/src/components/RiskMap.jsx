@@ -1,6 +1,13 @@
 import { useEffect } from "react";
-import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
+import {
+  GeoJSON,
+  LayersControl,
+  MapContainer,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
 
 const ETHIOPIA_CENTER = [9, 40.5];
 
@@ -238,10 +245,21 @@ function RiskMap({ adminSelection = {}, selectedPriorityArea = null }) {
           scrollWheelZoom={false}
           className="risk-map"
         >
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <LayersControl position="topright">
+            {BASEMAP_OPTIONS.map((basemap, index) => (
+              <LayersControl.BaseLayer
+                key={basemap.value}
+                name={basemap.label}
+                checked={index === 0}
+              >
+                <TileLayer
+                  attribution={basemap.attribution}
+                  url={basemap.url}
+                  maxZoom={basemap.maxZoom}
+                />
+              </LayersControl.BaseLayer>
+            ))}
+          </LayersControl>
 
           <FitMapToEthiopiaDomain activeBoundaryKey={activeBoundaryKey} />
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useState } from "react";
 import {
   GeoJSON,
   ImageOverlay,
+  LayersControl,
   MapContainer,
   TileLayer,
   useMap,
@@ -9,6 +10,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
+import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
 import {
   ALL_SEASONAL_PERIODS,
   CLIMATE_INDICATORS,
@@ -986,11 +988,22 @@ function SeasonalInteractiveMapCard({
             className="seasonal-raster-map"
             preferCanvas
           >
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              keepBuffer={4}
-            />
+            <LayersControl position="topright">
+              {BASEMAP_OPTIONS.map((basemap, index) => (
+                <LayersControl.BaseLayer
+                  key={basemap.value}
+                  name={basemap.label}
+                  checked={index === 0}
+                >
+                  <TileLayer
+                    attribution={basemap.attribution}
+                    url={basemap.url}
+                    maxZoom={basemap.maxZoom}
+                    keepBuffer={4}
+                  />
+                </LayersControl.BaseLayer>
+              ))}
+            </LayersControl>
             <ImageOverlay
               key={`seasonal-raster-${mapKey}`}
               attribution={map?.attribution || "Seasonal climate raster"}
