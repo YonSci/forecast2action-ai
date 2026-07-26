@@ -27,7 +27,6 @@ async function fetchJson(path, options = {}) {
 }
 
 function Dashboard() {
-  const [riskData, setRiskData] = useState([]);
   const [communityReports, setCommunityReports] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [loading, setLoading] = useState(true);
@@ -51,23 +50,6 @@ function Dashboard() {
   });
   const [selectedPriorityArea, setSelectedPriorityArea] = useState(null);
   const [rankingContext, setRankingContext] = useState(null);
-  async function loadRiskData() {
-    try {
-      const response = await fetchJson("/api/risk");
-      const items = safeArray(response, [
-        "risk_data",
-        "data",
-        "items",
-        "districts",
-      ]);
-      setRiskData(items);
-      return items;
-    } catch (error) {
-      console.error(error);
-      setRiskData([]);
-      return [];
-    }
-  }
   async function loadCommunityReports() {
     try {
       const response = await fetchJson("/api/community-reports");
@@ -84,7 +66,7 @@ function Dashboard() {
     setLoading(true);
     setErrorMessage("");
     try {
-      await Promise.all([loadRiskData(), loadCommunityReports()]);
+      await Promise.all([loadCommunityReports()]);
     } catch (error) {
       console.error(error);
       setErrorMessage(
@@ -100,11 +82,12 @@ function Dashboard() {
   return (
     <main className="app-shell">
       <DashboardHero
-        riskItems={riskData}
         communityReports={communityReports}
         selectedPriorityArea={selectedPriorityArea}
         forecastSelection={forecastSelection}
-        priorityInterventionCount={3}
+        priorityInterventionCount={rankingContext?.rankingCount}
+        triggerAlertCount={rankingContext?.triggerCount}
+        topRankedArea={rankingContext?.topRankedArea}
       />
       {loading && (
         <div className="status-banner">Loading dashboard summary data...</div>

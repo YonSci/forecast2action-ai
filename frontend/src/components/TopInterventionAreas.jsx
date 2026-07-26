@@ -78,6 +78,49 @@ function formatMetricValue(value, layerMeta) {
   return numberValue.toFixed(2);
 }
 
+// Real WorldPop-derived person count within the area where the currently
+// ranked metric exceeds its threshold, not a per-pixel index -- see
+// app/api/hazard_risk_ranking.py's population_stats_for_all_districts.
+function formatPopulationExposed(item) {
+  if (!Number.isFinite(Number(item.population_exposed))) {
+    return "N/A";
+  }
+
+  const count = Number(item.population_exposed).toLocaleString();
+  const pct = Number.isFinite(Number(item.population_exposed_pct))
+    ? `${Number(item.population_exposed_pct).toFixed(1)}%`
+    : "N/A";
+
+  return `${count} (${pct})`;
+}
+
+// Real ground area (km^2, area-weighted for latitude) where the currently
+// ranked metric exceeds its threshold.
+function formatAreaExtent(item) {
+  if (!Number.isFinite(Number(item.area_extent_km2))) {
+    return "N/A";
+  }
+
+  const area = `${Number(item.area_extent_km2).toLocaleString()} km²`;
+  const pct = Number.isFinite(Number(item.area_extent_pct))
+    ? `${Number(item.area_extent_pct).toFixed(1)}%`
+    : "N/A";
+
+  return `${area} (${pct})`;
+}
+
+// % of district area only (not km^2) -- the only real source for this
+// layer is a coarse (0.25-degree) normalized 0-1 index with no documented
+// real-world units, so a literal cropland hectare/km^2 figure would be a
+// guess dressed up as precision. See getTermDefinition/CROPLAND_EXTENT
+// entry in hazardRiskGlossary.js.
+function formatCroplandExtentPct(item) {
+  if (!Number.isFinite(Number(item.cropland_extent_pct))) {
+    return "N/A";
+  }
+
+  return `${Number(item.cropland_extent_pct).toFixed(1)}%`;
+}
 
 function getOptionLabel(options, value) {
   const match = options.find((item) => item.value === value);
@@ -216,7 +259,14 @@ function TopInterventionAreas({
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("desc");
 
-  const rankingItems = rankingData?.ranking || [];
+  // Memoized so this stays referentially stable across renders while
+  // rankingData is null (e.g. still loading) -- otherwise `|| []` mints a
+  // brand-new empty array every render, and this value is a dependency of
+  // the onRankingContextChange effect below, which would then re-fire (and
+  // re-trigger a parent re-render) every single render, an infinite loop
+  // that only becomes visible once a request is slow enough to keep
+  // rankingData null for more than a few render cycles.
+  const rankingItems = useMemo(() => rankingData?.ranking || [], [rankingData]);
 
   const layerMetaByValue = useMemo(() => {
     return Object.fromEntries(rankingLayers.map((item) => [item.value, item]));
@@ -394,13 +444,6 @@ function TopInterventionAreas({
         ),
       },
       {
-        label: exposureLayerMeta?.label || "Exposure",
-        value: formatMetricValue(
-          item.metrics[selectedByCategory.exposure],
-          exposureLayerMeta,
-        ),
-      },
-      {
         label: vulnerabilityLayerMeta?.label || "Vulnerability",
         value: formatMetricValue(
           item.metrics[selectedByCategory.vulnerability],
@@ -414,6 +457,15 @@ function TopInterventionAreas({
           riskLayerMeta,
         ),
       },
+      {
+        label: `Population exposed (to ${rankByLabel})`,
+        value: formatPopulationExposed(item),
+      },
+      {
+        label: `Area extent (of ${rankByLabel})`,
+        value: formatAreaExtent(item),
+      },
+      { label: "Cropland extent", value: formatCroplandExtentPct(item) },
     ];
 
     const selectedArea = {
@@ -469,18 +521,37 @@ function TopInterventionAreas({
     layerMetaByValue[selectedByCategory.vulnerability];
   const riskLayerMeta = layerMetaByValue[selectedByCategory.risk];
 
-  // Reports the currently-active layer for each category up to Dashboard.jsx
-  // (which passes it to RiskMap.jsx) so its "Key terms" glossary panel can
-  // describe the same drought/wet-flavored metrics this table is showing,
-  // instead of needing its own separate copy of this selection state.
+  // Population Exposed/Area Extent are computed against whichever metric is
+  // currently ranked by (rankBy) -- NOT the Exposure category's own selected
+  // metric (e.g. the "Population" normalized-density column can read 1.00
+  // while ranking by Drought Risk, so "Population exposed: 64,073 (94.1%)"
+  // would otherwise look like a second view of that same 1.00, when it's
+  // really "94.1% of this area's people live where Drought Risk clears its
+  // threshold" -- naming the column headers after rankBy's own label avoids
+  // that mix-up.
+  const rankByLabel = layerMetaByValue[rankBy]?.label || titleCase(rankBy);
+
+  // Reports the currently-active layer for each category, plus the real
+  // ranking result itself (count + how many are Trigger-level + the current
+  // #1 area), up to Dashboard.jsx. RiskMap.jsx's "Key terms" glossary panel
+  // uses the layer metadata; DashboardHero's KPI tiles use the counts/area
+  // -- both read live off this table's own real ranking instead of each
+  // keeping a separate, possibly-stale copy of this state.
   useEffect(() => {
     if (typeof onRankingContextChange === "function") {
+      const triggerCount = rankingItems.filter(
+        (item) => getPriorityLevel(item.priority_score).level === "trigger",
+      ).length;
+
       onRankingContextChange({
         hazardLayerMeta,
         probabilityLayerMeta,
         exposureLayerMeta,
         vulnerabilityLayerMeta,
         riskLayerMeta,
+        rankingCount: rankingItems.length,
+        triggerCount,
+        topRankedArea: rankingItems[0] || null,
       });
     }
   }, [
@@ -490,15 +561,18 @@ function TopInterventionAreas({
     exposureLayerMeta,
     vulnerabilityLayerMeta,
     riskLayerMeta,
+    rankingItems,
   ]);
 
   const sortColumnGetters = {
     hazard: (item) => item.metrics[selectedByCategory.hazard],
     probability: (item) => item.metrics[selectedByCategory.probability],
-    exposure: (item) => item.metrics[selectedByCategory.exposure],
     vulnerability: (item) => item.metrics[selectedByCategory.vulnerability],
     risk: (item) => item.metrics[selectedByCategory.risk],
     priority_score: (item) => item.priority_score,
+    population_exposed: (item) => item.population_exposed,
+    area_extent_km2: (item) => item.area_extent_km2,
+    cropland_extent_pct: (item) => item.cropland_extent_pct,
   };
 
   const sortedItems = useMemo(() => {
@@ -679,13 +753,6 @@ function TopInterventionAreas({
                 onSort={handleSortClick}
               />
               <SortableColumnHeader
-                column="exposure"
-                label={exposureLayerMeta?.label || "Exposure"}
-                sortColumn={sortColumn}
-                sortDirection={sortDirection}
-                onSort={handleSortClick}
-              />
-              <SortableColumnHeader
                 column="vulnerability"
                 label={vulnerabilityLayerMeta?.label || "Vulnerability"}
                 sortColumn={sortColumn}
@@ -702,6 +769,27 @@ function TopInterventionAreas({
               <SortableColumnHeader
                 column="priority_score"
                 label="Priority score"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="population_exposed"
+                label={`Population exposed (to ${rankByLabel})`}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="area_extent_km2"
+                label={`Area extent (of ${rankByLabel})`}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortClick}
+              />
+              <SortableColumnHeader
+                column="cropland_extent_pct"
+                label="Cropland extent"
                 sortColumn={sortColumn}
                 sortDirection={sortDirection}
                 onSort={handleSortClick}
@@ -748,12 +836,6 @@ function TopInterventionAreas({
                   </td>
                   <td>
                     {formatMetricValue(
-                      item.metrics[selectedByCategory.exposure],
-                      exposureLayerMeta,
-                    )}
-                  </td>
-                  <td>
-                    {formatMetricValue(
                       item.metrics[selectedByCategory.vulnerability],
                       vulnerabilityLayerMeta,
                     )}
@@ -773,6 +855,10 @@ function TopInterventionAreas({
                     </span>
                   </td>
 
+                  <td>{formatPopulationExposed(item)}</td>
+                  <td>{formatAreaExtent(item)}</td>
+                  <td>{formatCroplandExtentPct(item)}</td>
+
                   <td>
                     <button
                       type="button"
@@ -788,7 +874,7 @@ function TopInterventionAreas({
 
             {rankingItems.length === 0 && (
               <tr>
-                <td colSpan="9">
+                <td colSpan="11">
                   No areas matched the selected ranking configuration.
                 </td>
               </tr>

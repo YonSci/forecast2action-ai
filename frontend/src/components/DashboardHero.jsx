@@ -47,14 +47,6 @@ function getForecastScaleLabel(value) {
   return FORECAST_SCALE_LABELS[value] || titleCase(value || "subseasonal");
 }
 
-function countByRiskLevel(items, riskLevel) {
-  if (!Array.isArray(items) || items.length === 0) {
-    return null;
-  }
-
-  return items.filter((item) => item?.risk_level === riskLevel).length;
-}
-
 function getCommunityReportCount(communityReports, fallbackValue) {
   if (Array.isArray(communityReports)) {
     return communityReports.length;
@@ -79,24 +71,30 @@ function getPriorityCount(value) {
   return DEFAULT_COUNTS.priorityInterventions;
 }
 
-function getSelectedAreaName(selectedPriorityArea) {
-  return selectedPriorityArea?.area_name || "Gode";
+function getSelectedAreaName(selectedPriorityArea, topRankedArea) {
+  return (
+    selectedPriorityArea?.area_name || topRankedArea?.area_name || "N/A"
+  );
 }
 
-function getSelectedAreaSubtitle(selectedPriorityArea) {
-  if (!selectedPriorityArea?.area_name) {
-    return "Zone · Somali Region";
+function getSelectedAreaSubtitle(selectedPriorityArea, topRankedArea) {
+  const area = selectedPriorityArea?.area_name
+    ? selectedPriorityArea
+    : topRankedArea;
+
+  if (!area?.area_name) {
+    return "";
   }
 
-  if (selectedPriorityArea.zone && selectedPriorityArea.region) {
-    return `${selectedPriorityArea.zone} · ${selectedPriorityArea.region}`;
+  if (area.zone && area.region) {
+    return `${area.zone} · ${area.region}`;
   }
 
-  if (selectedPriorityArea.region) {
-    return selectedPriorityArea.region;
+  if (area.region) {
+    return area.region;
   }
 
-  return titleCase(selectedPriorityArea.admin_level || "selected area");
+  return titleCase(area.admin_level || "selected area");
 }
 
 function IconLayers() {
@@ -246,15 +244,17 @@ function HeroPanel({ title, children }) {
 }
 
 function DashboardHero({
-  riskItems = [],
   communityReports = [],
   communityReportCount = null,
   selectedPriorityArea = null,
   forecastSelection = {},
   priorityInterventionCount = DEFAULT_COUNTS.priorityInterventions,
+  triggerAlertCount = null,
+  topRankedArea = null,
 }) {
-  const triggerCount =
-    countByRiskLevel(riskItems, "trigger") ?? DEFAULT_COUNTS.trigger;
+  const triggerCount = Number.isFinite(Number(triggerAlertCount))
+    ? Number(triggerAlertCount)
+    : DEFAULT_COUNTS.trigger;
 
   const priorityCount = getPriorityCount(priorityInterventionCount);
 
@@ -263,10 +263,19 @@ function DashboardHero({
     DEFAULT_COUNTS.communityReports,
   );
 
-  const selectedAreaName = getSelectedAreaName(selectedPriorityArea);
-  const selectedAreaSubtitle = getSelectedAreaSubtitle(selectedPriorityArea);
-  const forecastScale = getForecastScaleLabel(forecastSelection.forecastScale);
-  const lead = getLeadLabel(forecastSelection.lead);
+  const selectedAreaName = getSelectedAreaName(
+    selectedPriorityArea,
+    topRankedArea,
+  );
+  const selectedAreaSubtitle = getSelectedAreaSubtitle(
+    selectedPriorityArea,
+    topRankedArea,
+  );
+  const forecastScale =
+    forecastSelection.seasonalScaleLabel ||
+    getForecastScaleLabel(forecastSelection.forecastScale);
+  const lead =
+    forecastSelection.seasonalPeriodLabel || getLeadLabel(forecastSelection.lead);
 
   return (
     <section className="f2a-dashboard-hero">
@@ -375,7 +384,7 @@ function DashboardHero({
           icon={<IconAlert />}
           label="Trigger alerts"
           value={triggerCount}
-          trend="↑ 1 from yesterday"
+          subtitle="Areas above trigger threshold"
           tone="red"
         />
 

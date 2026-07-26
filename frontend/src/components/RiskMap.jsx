@@ -11,7 +11,10 @@ import { apiUrl } from "../config.js";
 import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
 import { PRIORITY_LEVELS } from "../constants/priorityLevels.js";
 import {
+  AREA_EXTENT_DEFINITION,
+  CROPLAND_EXTENT_DEFINITION,
   EXPOSURE_TERM_DEFINITION,
+  POPULATION_EXPOSED_DEFINITION,
   PRIORITY_SCORE_DEFINITION,
   getTermDefinition,
 } from "../constants/hazardRiskGlossary.js";
@@ -284,6 +287,9 @@ function RiskMap({
         definition: getTermDefinition(riskLayerMeta.value),
       },
       { label: "Priority score", definition: PRIORITY_SCORE_DEFINITION },
+      { label: "Population exposed", definition: POPULATION_EXPOSED_DEFINITION },
+      { label: "Area extent", definition: AREA_EXTENT_DEFINITION },
+      { label: "Cropland extent", definition: CROPLAND_EXTENT_DEFINITION },
     ].filter(Boolean);
   }, [rankingContext]);
 
@@ -362,20 +368,6 @@ function RiskMap({
         </div>
 
         <aside className="forecast-legend-card">
-          <h3>Key terms</h3>
-
-          <div className="forecast-hazard-legend" aria-label="Priority legend">
-            {PRIORITY_LEVELS.map((item) => (
-              <span key={item.level}>
-                <i
-                  className="legend-dot"
-                  style={{ backgroundColor: item.color }}
-                />
-                {item.label}
-              </span>
-            ))}
-          </div>
-
           {glossaryEntries.length > 0 ? (
             <div className="risk-map-glossary">
               {glossaryEntries.map((entry) => (

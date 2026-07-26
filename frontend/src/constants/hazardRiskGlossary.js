@@ -30,6 +30,15 @@ export const EXPOSURE_TERM_DEFINITION =
 export const PRIORITY_SCORE_DEFINITION =
   "Composite 0-1 score blending the ranked metric's area mean, peak value, and share of the area above threshold.";
 
+export const POPULATION_EXPOSED_DEFINITION =
+  "Real WorldPop 2020 population count (people) living within the part of the area where the ranked metric exceeds its threshold, and that as a % of the area's total population.";
+
+export const AREA_EXTENT_DEFINITION =
+  "Real ground area (km²), and % of the area's total, where the ranked metric exceeds its threshold.";
+
+export const CROPLAND_EXTENT_DEFINITION =
+  "% of the area's total land where the cropland exposure index exceeds its threshold. Shown as a percentage only -- the source raster is a coarse, unitless 0-1 index with no documented real-world hectare/km² basis.";
+
 export function getTermDefinition(layerValue) {
   return HAZARD_RISK_TERM_DEFINITIONS[layerValue] || "";
 }

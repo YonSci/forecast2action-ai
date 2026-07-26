@@ -11,6 +11,7 @@ whichever one metric the caller names as `rank_by`.
 """
 
 import json
+import math
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -21,10 +22,20 @@ from app.data_pipeline.ethiopia_admin_boundary_pipeline import (
     OUTPUT_DIR as ADMIN_BOUNDARY_OUTPUT_DIR,
 )
 
-from app.api.hazard_risk_catalog_shared import LAYER_BY_VALUE
+from app.api.hazard_risk_catalog_shared import LAYER_BY_VALUE, PROJECT_ROOT
 from app.api.hazard_risk_maps import find_map_record, load_display_array
 
 router = APIRouter(prefix="/api/hazard-risk", tags=["Ethiopia Hazard/Risk Layers"])
+
+# Real WorldPop Ethiopia 2020 1km population-count raster (the same source
+# app/data_pipeline/exposure_data_pipeline.py uses) -- much finer resolution
+# than the 0.25-degree Hazard/Risk grid, so "population exposed" is computed
+# by resampling the ranked metric's own above-threshold mask onto this raster
+# (see population_exposed_stats_for_all_districts) rather than the other way
+# around, to avoid losing the population raster's real spatial detail.
+POPULATION_RAW_PATH = PROJECT_ROOT / "data" / "raw" / "exposure" / "eth_population_2020_1km.tif"
+
+KM_PER_DEGREE_LAT = 110.574
 
 ADMIN_GEOJSON_PATHS = {
     "admin1": ADMIN_BOUNDARY_OUTPUT_DIR / "eth_admin1.json",
@@ -39,6 +50,12 @@ ADMIN_GEOJSON_PATHS = {
 # rank below a 100%-wet district (code 2) purely because of encoding order,
 # not actual severity. It's still a fine map layer (see hazard_risk_maps.py),
 # just not a ranking metric.
+#
+# population_normalized itself stays a valid ranking metric (ranking by "who
+# has the most exposed people" is genuinely useful) -- the earlier confusion
+# between it and the real population_exposed count is fixed on the frontend
+# instead, by dropping the raw normalized Exposure column from the table
+# (see TopInterventionAreas.jsx) rather than removing the ranking option.
 RANKING_EXCLUDED_LAYERS = {"population_dominant_code"}
 
 RANKING_LAYER_VALUES = [
@@ -105,7 +122,7 @@ def build_district_label_array(features: List[Dict[str, Any]], out_shape, transf
 
 
 def zonal_stats_for_all_districts(
-    arr, label_array, district_ids: List[int], threshold: float
+    arr, label_array, district_ids: List[int], threshold: float, area_array=None
 ) -> Dict[int, Dict[str, float]]:
     """Per-district {mean, max, valid_count, above_threshold_fraction} for one layer's array.
 
@@ -113,6 +130,13 @@ def zonal_stats_for_all_districts(
     NaN in this particular layer (e.g. outside Ethiopia's real border, per
     clip_array_to_country) -- those cells are excluded from labels here so
     they don't pull a district's mean/max toward NaN.
+
+    When `area_array` (real ground km^2 per pixel, see pixel_area_km2_array)
+    is passed, also returns real-unit `area_total_km2`/`above_threshold_area_km2`
+    -- an area-weighted alternative to `above_threshold_fraction` (a plain
+    pixel-count fraction), since Ethiopia's 3-15N span means cells near the
+    north edge cover meaningfully less real ground than cells near the south
+    edge at this grid's coarse (0.25-degree) resolution.
     """
     import numpy as np
     from scipy import ndimage
@@ -141,17 +165,133 @@ def zonal_stats_for_all_districts(
     above = (arr >= threshold).astype("float32")
     above_fraction = ndimage.mean(above, labels=labels_valid_only, index=present_ids)
 
+    area_totals = area_above = None
+    if area_array is not None:
+        area_totals = ndimage.sum(area_array, labels=labels_valid_only, index=present_ids)
+        area_above = ndimage.sum(area_array * above, labels=labels_valid_only, index=present_ids)
+
     results: Dict[int, Dict[str, float]] = {}
-    for district_id, mean_value, max_value, count_value, fraction_value in zip(
-        present_ids, means, maxes, counts, above_fraction
+    for position, (district_id, mean_value, max_value, count_value, fraction_value) in enumerate(
+        zip(present_ids, means, maxes, counts, above_fraction)
     ):
         if not count_value or count_value <= 0:
             continue
-        results[district_id] = {
+        entry = {
             "mean": float(mean_value),
             "max": float(max_value),
             "valid_count": int(count_value),
             "above_threshold_fraction": float(fraction_value) if fraction_value == fraction_value else 0.0,
+        }
+        if area_totals is not None:
+            entry["area_total_km2"] = float(area_totals[position])
+            entry["above_threshold_area_km2"] = float(area_above[position])
+        results[district_id] = entry
+    return results
+
+
+def pixel_area_km2_array(transform, shape: Tuple[int, int]):
+    """Per-row real ground area (km^2) for a north-up EPSG:4326 grid.
+
+    Longitude degrees compress with latitude (cos(lat)) while latitude
+    degrees don't, so cell area only varies row-by-row (by latitude), not
+    column-by-column -- computed once per row and broadcast across columns.
+    """
+    import numpy as np
+
+    rows, cols = shape
+    row_indices = np.arange(rows)
+    lat_centers = transform.f + (row_indices + 0.5) * transform.e
+
+    pixel_height_km = abs(transform.e) * KM_PER_DEGREE_LAT
+    pixel_width_km = transform.a * KM_PER_DEGREE_LAT * np.cos(np.radians(lat_centers))
+    row_area_km2 = pixel_height_km * pixel_width_km
+
+    return np.repeat(row_area_km2[:, None], cols, axis=1)
+
+
+@lru_cache(maxsize=1)
+def load_population_raw_array():
+    """Real WorldPop Ethiopia 2020 population count, 1km -- not the coarse
+    0.25-degree 'population_normalized' index used elsewhere in this catalog.
+    """
+    import numpy as np
+    import rasterio
+
+    with rasterio.open(POPULATION_RAW_PATH) as src:
+        arr = src.read(1, masked=True).astype("float64")
+        arr = arr.filled(0.0)
+        arr[arr < 0] = 0.0
+        transform = src.transform
+        shape = arr.shape
+    return arr, transform, shape
+
+
+def resample_mask_nearest(mask, src_transform, src_crs, dst_transform, dst_shape, dst_crs):
+    """Nearest-neighbor-resample a boolean/float mask onto a different EPSG:4326 grid."""
+    import numpy as np
+    from rasterio.warp import Resampling, reproject
+
+    destination = np.zeros(dst_shape, dtype="float32")
+    reproject(
+        source=mask.astype("float32"),
+        destination=destination,
+        src_transform=src_transform,
+        src_crs=src_crs,
+        dst_transform=dst_transform,
+        dst_crs=dst_crs,
+        resampling=Resampling.nearest,
+    )
+    return destination > 0.5
+
+
+def population_stats_for_all_districts(
+    features: List[Dict[str, Any]],
+    admin_level: str,
+    above_threshold_mask,
+    hazard_transform,
+) -> Dict[int, Dict[str, float]]:
+    """Per-district {population_total, population_exposed} using the real WorldPop raster.
+
+    `above_threshold_mask` is the ranked metric's own above-threshold boolean
+    array on the (coarse) Hazard/Risk grid -- resampled onto the population
+    raster's much finer grid so "population exposed" reflects real population
+    distribution within the ranked metric's affected area, not a uniform
+    per-pixel assumption.
+    """
+    import numpy as np
+    from scipy import ndimage
+
+    population_arr, population_transform, population_shape = load_population_raw_array()
+
+    label_array = build_district_label_array(features, population_shape, population_transform)
+    if label_array is None:
+        return {}
+
+    district_ids = list(range(1, len(features) + 1))
+    present_id_set = set(np.unique(label_array).tolist()) - {0}
+    present_ids = [district_id for district_id in district_ids if district_id in present_id_set]
+    if not present_ids:
+        return {}
+
+    exposed_mask = resample_mask_nearest(
+        above_threshold_mask,
+        hazard_transform,
+        "EPSG:4326",
+        population_transform,
+        population_shape,
+        "EPSG:4326",
+    )
+
+    totals = ndimage.sum(population_arr, labels=label_array, index=present_ids)
+    exposed = ndimage.sum(
+        population_arr * exposed_mask, labels=label_array, index=present_ids
+    )
+
+    results: Dict[int, Dict[str, float]] = {}
+    for district_id, total_value, exposed_value in zip(present_ids, totals, exposed):
+        results[district_id] = {
+            "population_total": float(total_value),
+            "population_exposed": float(exposed_value),
         }
     return results
 
@@ -173,7 +313,10 @@ def compute_district_ranking(
     region_id: str,
     zone_id: str,
 ) -> Dict[str, Any]:
-    ordered_metrics = list(dict.fromkeys([rank_by] + metrics))
+    # cropland_total_normalized is always computed (regardless of what the
+    # caller asked for in `metrics`) so every ranked item can carry a real
+    # cropland_extent_pct alongside whatever's being ranked by.
+    ordered_metrics = list(dict.fromkeys([rank_by, "cropland_total_normalized"] + metrics))
 
     for metric in ordered_metrics:
         if metric not in LAYER_BY_VALUE:
@@ -181,7 +324,7 @@ def compute_district_ranking(
         if metric in RANKING_EXCLUDED_LAYERS:
             raise HTTPException(
                 status_code=400,
-                detail=f"'{metric}' is a nominal code, not a valid ranking metric.",
+                detail=f"'{metric}' is excluded from ranking (see RANKING_EXCLUDED_LAYERS).",
             )
 
     features = filter_admin_features(
@@ -199,6 +342,9 @@ def compute_district_ranking(
 
     district_ids = list(range(1, len(features) + 1))
     label_array = None
+    area_array = None
+    rank_by_arr = None
+    rank_by_transform = None
     metric_stats: Dict[str, Dict[int, Dict[str, float]]] = {}
 
     for metric in ordered_metrics:
@@ -212,10 +358,26 @@ def compute_district_ranking(
 
         if label_array is None:
             label_array = build_district_label_array(features, arr.shape, transform)
+            area_array = pixel_area_km2_array(transform, arr.shape)
+
+        if metric == rank_by:
+            rank_by_arr = arr
+            rank_by_transform = transform
 
         metric_threshold = threshold if metric == rank_by else default_threshold_for(metric)
         metric_stats[metric] = zonal_stats_for_all_districts(
-            arr, label_array, district_ids, metric_threshold
+            arr, label_array, district_ids, metric_threshold, area_array=area_array
+        )
+
+    # Real-people/real-ground-area context for whichever metric is being
+    # ranked by -- see population_stats_for_all_districts's docstring for why
+    # this needs its own (much finer) raster and resampled mask rather than
+    # reusing the coarse Hazard/Risk grid's own pixel counts.
+    population_stats: Dict[int, Dict[str, float]] = {}
+    if rank_by_arr is not None and POPULATION_RAW_PATH.exists():
+        above_threshold_mask = rank_by_arr >= threshold
+        population_stats = population_stats_for_all_districts(
+            features, admin_level, above_threshold_mask, rank_by_transform
         )
 
     items = []
@@ -241,6 +403,30 @@ def compute_district_ranking(
             + 0.25 * rank_stats["above_threshold_fraction"]
         )
 
+        pop_stats = population_stats.get(district_id)
+        population_total = pop_stats["population_total"] if pop_stats else None
+        population_exposed = pop_stats["population_exposed"] if pop_stats else None
+        population_exposed_pct = (
+            round(population_exposed / population_total * 100, 1)
+            if population_total
+            else None
+        )
+
+        area_total_km2 = rank_stats.get("area_total_km2")
+        area_extent_km2 = rank_stats.get("above_threshold_area_km2")
+        area_extent_pct = (
+            round(area_extent_km2 / area_total_km2 * 100, 1)
+            if area_total_km2
+            else None
+        )
+
+        cropland_stats = metric_stats.get("cropland_total_normalized", {}).get(district_id)
+        cropland_extent_pct = (
+            round(cropland_stats["above_threshold_fraction"] * 100, 1)
+            if cropland_stats
+            else None
+        )
+
         items.append(
             {
                 "admin_level": admin_level,
@@ -254,6 +440,13 @@ def compute_district_ranking(
                 "metrics": metrics_out,
                 "rank_value": rank_stats["mean"],
                 "priority_score": round(max(0.0, min(1.0, priority_score)), 3),
+                "population_total": round(population_total) if population_total is not None else None,
+                "population_exposed": round(population_exposed) if population_exposed is not None else None,
+                "population_exposed_pct": population_exposed_pct,
+                "area_total_km2": round(area_total_km2, 1) if area_total_km2 is not None else None,
+                "area_extent_km2": round(area_extent_km2, 1) if area_extent_km2 is not None else None,
+                "area_extent_pct": area_extent_pct,
+                "cropland_extent_pct": cropland_extent_pct,
                 "boundary_feature": {
                     "type": "Feature",
                     "id": feature.get("id") or props.get("id"),
