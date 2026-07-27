@@ -23,9 +23,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 // Which layer each category starts on, and what stays remembered per
-// category as the user switches "Rank by" back and forth. Risk defaults to
-// the drought score (not Risk Class) so the initial hazard-type sync below
-// has something concrete to lock onto.
+// category as the user switches "Rank by" back and forth.
 const DEFAULT_SELECTED_BY_CATEGORY = {
   hazard: "h_dry_mean",
   probability: "p_drought",
@@ -128,8 +126,7 @@ function getOptionLabel(options, value) {
 }
 
 // A single shared "hazard type" (drought/wet) applies across Hazard,
-// Probability, Vulnerability, and Risk (when Risk isn't on the
-// hazard-type-agnostic Risk Class option) -- picking any drought- or
+// Probability, Vulnerability, and Risk -- picking any drought- or
 // wet-flavored metric in one category re-points all the others at their
 // matching drought/wet layer too, instead of leaving them on whatever they
 // were previously set to.
@@ -138,10 +135,7 @@ function applyHazardTypeSync(current, hazardType) {
   next.hazard = hazardType === "drought" ? "h_dry_mean" : "h_wet_mean";
   next.probability = hazardType === "drought" ? "p_drought" : "p_wet";
   next.vulnerability = hazardType === "drought" ? "v_drought" : "v_wet";
-  if (next.risk !== "population_risk_class") {
-    next.risk =
-      hazardType === "drought" ? "population_r_drought" : "population_r_wet";
-  }
+  next.risk = hazardType === "drought" ? "population_r_drought" : "population_r_wet";
   return next;
 }
 
@@ -238,14 +232,20 @@ function TopInterventionAreas({
   onPriorityAreaSelect,
   onRankingContextChange,
 }) {
-  const period = forecastSelection.seasonalPeriod || "JJAS";
+  // hazardRiskPeriod (from the "Hazard/Risk Layers" viewer's own June/July/
+  // August/September/JJAS selector), NOT seasonalPeriod -- that's a
+  // completely separate control belonging to the unrelated Seasonal climate
+  // indicator map (SPI/rainfall/CDD/CWD rasters). This table ranks the same
+  // Hazard/Risk catalog the Hazard/Risk Layers viewer shows, so it needs to
+  // follow that viewer's own period control, not the climate map's.
+  const period = forecastSelection.hazardRiskPeriod || "JJAS";
 
   const [rankingLayers, setRankingLayers] = useState([]);
-  const [category, setCategory] = useState("risk");
+  const [category, setCategory] = useState("hazard");
   const [selectedByCategory, setSelectedByCategory] = useState(
     DEFAULT_SELECTED_BY_CATEGORY,
   );
-  const [adminLevel, setAdminLevel] = useState("admin3");
+  const [adminLevel, setAdminLevel] = useState("admin1");
   const [selectionMode, setSelectionMode] = useState("top");
   const [topN, setTopN] = useState(5);
   const [threshold, setThreshold] = useState(null);

@@ -23,7 +23,11 @@ from app.data_pipeline.ethiopia_admin_boundary_pipeline import (
 )
 
 from app.api.hazard_risk_catalog_shared import LAYER_BY_VALUE, PROJECT_ROOT
-from app.api.hazard_risk_maps import find_map_record, load_display_array
+from app.api.hazard_risk_maps import (
+    find_map_record,
+    get_map_statistics_cached,
+    load_display_array,
+)
 
 router = APIRouter(prefix="/api/hazard-risk", tags=["Ethiopia Hazard/Risk Layers"])
 
@@ -56,7 +60,14 @@ ADMIN_GEOJSON_PATHS = {
 # between it and the real population_exposed count is fixed on the frontend
 # instead, by dropping the raw normalized Exposure column from the table
 # (see TopInterventionAreas.jsx) rather than removing the ranking option.
-RANKING_EXCLUDED_LAYERS = {"population_dominant_code"}
+#
+# population_risk_class IS excluded (unlike population_normalized above):
+# its hazard_type is "dominant" (drought OR wet, whichever actually
+# dominates per area), so ranking by it left the Hazard/Probability/
+# Vulnerability columns locked to one arbitrary hazard type that often had
+# nothing to do with why a given area's class was high. Still a fine map
+# layer (see hazard_risk_maps.py), just not a ranking metric.
+RANKING_EXCLUDED_LAYERS = {"population_dominant_code", "population_risk_class"}
 
 RANKING_LAYER_VALUES = [
     value for value in LAYER_BY_VALUE if value not in RANKING_EXCLUDED_LAYERS
@@ -296,9 +307,34 @@ def population_stats_for_all_districts(
     return results
 
 
-def default_threshold_for(layer_value: str) -> float:
+def default_threshold_for(layer_value: str, period: str = "jjas") -> float:
+    """60% of the way from vmin to the metric's REAL observed ceiling.
+
+    Not 60% of the fixed catalog vmax -- for population_r_drought/
+    population_r_wet (0-100 "score" units), real data never gets anywhere
+    near the catalog vmax (confirmed: nationwide max drought/wet risk score
+    is only ~54/43 out of 100). A default threshold computed against the
+    fixed vmax is literally unreachable for these layers -- every pixel
+    always falls below it -- which silently zeroes out
+    above_threshold_fraction (25% of priority_score) AND the real
+    Population Exposed / Area Extent columns for every area, even the
+    single most severe one in the country. See the mean/max ceiling fix in
+    compute_district_ranking for the same root cause on priority_score's
+    normalization.
+    """
     definition = LAYER_BY_VALUE[layer_value]
-    vmin, vmax = float(definition["vmin"]), float(definition["vmax"])
+    vmin = float(definition["vmin"])
+    catalog_vmax = float(definition["vmax"])
+
+    vmax = catalog_vmax
+    record = find_map_record(layer_value, period)
+    if record:
+        try:
+            observed_max = float(get_map_statistics_cached(record["id"])["max"])
+            vmax = max(observed_max, vmin + 1e-9)
+        except (KeyError, TypeError):
+            vmax = catalog_vmax
+
     return round(vmin + 0.6 * (vmax - vmin), 3)
 
 
@@ -345,6 +381,7 @@ def compute_district_ranking(
     area_array = None
     rank_by_arr = None
     rank_by_transform = None
+    rank_by_record = None
     metric_stats: Dict[str, Dict[int, Dict[str, float]]] = {}
 
     for metric in ordered_metrics:
@@ -363,8 +400,11 @@ def compute_district_ranking(
         if metric == rank_by:
             rank_by_arr = arr
             rank_by_transform = transform
+            rank_by_record = record
 
-        metric_threshold = threshold if metric == rank_by else default_threshold_for(metric)
+        metric_threshold = (
+            threshold if metric == rank_by else default_threshold_for(metric, period)
+        )
         metric_stats[metric] = zonal_stats_for_all_districts(
             arr, label_array, district_ids, metric_threshold, area_array=area_array
         )
@@ -382,8 +422,31 @@ def compute_district_ranking(
 
     items = []
     rank_definition = LAYER_BY_VALUE[rank_by]
-    layer_span = max(float(rank_definition["vmax"]) - float(rank_definition["vmin"]), 1e-9)
     layer_vmin = float(rank_definition["vmin"])
+
+    # priority_score's mean/max terms normalize against the metric's REAL
+    # observed nationwide ceiling, not its fixed catalog vmax -- for a 0-1
+    # index like h_dry_mean the two are close (real data reaches ~0.9-0.95),
+    # but for the 0-100 Risk score (100 * P * Severity * Exposure *
+    # Vulnerability, a product of several 0-1 factors) real values never get
+    # near the theoretical 100: the worst observed drought-risk woreda in all
+    # of Ethiopia only reaches ~54. Normalizing against a fixed vmax=100
+    # would cap every possible priority_score at ~0.40 for that metric,
+    # making the Trigger (>=0.8) and Warning (>=0.6) alert levels
+    # mathematically unreachable no matter how severe conditions get. Using
+    # the metric's own real ceiling (already computed and cached by
+    # get_map_statistics_cached for the map legend/statistics endpoints)
+    # keeps every rank_by metric's priority_score comparable against the
+    # same 0-1 Trigger/Warning/Watch thresholds. Catalog vmax stays the
+    # fallback for the rare case statistics can't be computed (e.g. an
+    # entirely NaN raster).
+    catalog_vmax = float(rank_definition["vmax"])
+    try:
+        observed_max = float(get_map_statistics_cached(rank_by_record["id"])["max"])
+    except (KeyError, TypeError):
+        observed_max = catalog_vmax
+    layer_vmax = max(observed_max, layer_vmin + 1e-9)
+    layer_span = max(layer_vmax - layer_vmin, 1e-9)
 
     for feature, district_id in zip(features, district_ids):
         rank_stats = metric_stats[rank_by].get(district_id)
@@ -508,7 +571,7 @@ async def get_hazard_risk_ranking(
         raise HTTPException(status_code=400, detail=f"Unknown hazard/risk layer: {rank_by}")
 
     resolved_threshold = (
-        float(threshold) if threshold is not None else default_threshold_for(rank_by)
+        float(threshold) if threshold is not None else default_threshold_for(rank_by, period)
     )
 
     return compute_district_ranking(
