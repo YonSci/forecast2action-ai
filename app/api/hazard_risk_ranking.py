@@ -349,10 +349,21 @@ def compute_district_ranking(
     region_id: str,
     zone_id: str,
 ) -> Dict[str, Any]:
-    # cropland_total_normalized is always computed (regardless of what the
-    # caller asked for in `metrics`) so every ranked item can carry a real
-    # cropland_extent_pct alongside whatever's being ranked by.
-    ordered_metrics = list(dict.fromkeys([rank_by, "cropland_total_normalized"] + metrics))
+    # cropland_total_normalized (+ livestock/built-up/roads exposure) is
+    # always computed (regardless of what the caller asked for in `metrics`)
+    # so every ranked item can carry these real extent percentages alongside
+    # whatever's being ranked by -- same reasoning/pattern as cropland,
+    # extended for SelectedAreaAdvisory.jsx's "Impact-based risk evidence"
+    # cards, which previously had no real livestock/built-up/roads figures.
+    ALWAYS_COMPUTED_EXPOSURE_METRICS = [
+        "cropland_total_normalized",
+        "livestock_cattle_normalized",
+        "built_up_normalized",
+        "roads_normalized",
+    ]
+    ordered_metrics = list(
+        dict.fromkeys([rank_by, *ALWAYS_COMPUTED_EXPOSURE_METRICS] + metrics)
+    )
 
     for metric in ordered_metrics:
         if metric not in LAYER_BY_VALUE:
@@ -490,6 +501,27 @@ def compute_district_ranking(
             else None
         )
 
+        livestock_stats = metric_stats.get("livestock_cattle_normalized", {}).get(district_id)
+        livestock_extent_pct = (
+            round(livestock_stats["above_threshold_fraction"] * 100, 1)
+            if livestock_stats
+            else None
+        )
+
+        built_up_stats = metric_stats.get("built_up_normalized", {}).get(district_id)
+        built_up_extent_pct = (
+            round(built_up_stats["above_threshold_fraction"] * 100, 1)
+            if built_up_stats
+            else None
+        )
+
+        roads_stats = metric_stats.get("roads_normalized", {}).get(district_id)
+        roads_extent_pct = (
+            round(roads_stats["above_threshold_fraction"] * 100, 1)
+            if roads_stats
+            else None
+        )
+
         items.append(
             {
                 "admin_level": admin_level,
@@ -510,6 +542,9 @@ def compute_district_ranking(
                 "area_extent_km2": round(area_extent_km2, 1) if area_extent_km2 is not None else None,
                 "area_extent_pct": area_extent_pct,
                 "cropland_extent_pct": cropland_extent_pct,
+                "livestock_extent_pct": livestock_extent_pct,
+                "built_up_extent_pct": built_up_extent_pct,
+                "roads_extent_pct": roads_extent_pct,
                 "boundary_feature": {
                     "type": "Feature",
                     "id": feature.get("id") or props.get("id"),

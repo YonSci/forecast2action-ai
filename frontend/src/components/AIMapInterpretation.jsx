@@ -4,7 +4,6 @@ import { apiUrl } from "../config.js";
 import {
   CLIMATE_INDICATORS,
   getCurrentSeasonalPeriod,
-  VISIBLE_CLIMATE_INDICATORS,
 } from "../constants/climateIndicators.js";
 import ContextAuditDrawer from "./context/ContextAuditDrawer.jsx";
 import ContextQualityBadge from "./context/ContextQualityBadge.jsx";
@@ -569,7 +568,6 @@ function AIMapInterpretation({
   const [selectedProvider, setSelectedProvider] = useState("gemini");
   const [selectedModel, setSelectedModel] = useState("gemini-flash-lite-latest");
   const [selectedPromptVersion, setSelectedPromptVersion] = useState("auto");
-  const [providerStatus, setProviderStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -599,7 +597,6 @@ function AIMapInterpretation({
             ? data.providers
             : FALLBACK_AI_PROVIDER_OPTIONS;
         setProviderOptions(options);
-        setProviderStatus(data);
       } catch (error) {
         console.warn("Could not load AI model options", error);
         if (isActive) {
@@ -1025,63 +1022,6 @@ function AIMapInterpretation({
           Clear saved
         </button>
       </div>
-
-      <div className="ai-context-grid">
-        <div>
-          <span>Forecast window</span>
-          <strong>{contextSummary.forecastScale}</strong>
-        </div>
-        <div>
-          <span>Lead / horizon</span>
-          <strong>{contextSummary.lead}</strong>
-        </div>
-        <div>
-          <span>Seasonal period</span>
-          <strong>{contextSummary.seasonalPeriod}</strong>
-        </div>
-        <div>
-          <span>Admin scope</span>
-          <strong>{contextSummary.adminScope}</strong>
-        </div>
-        <div>
-          <span>Output language</span>
-          <strong>{contextSummary.language}</strong>
-        </div>
-        <div>
-          <span>AI provider</span>
-          <strong>{contextSummary.provider}</strong>
-        </div>
-        <div>
-          <span>AI model</span>
-          <strong>{contextSummary.model}</strong>
-        </div>
-      </div>
-
-      <div className="ai-included-data">
-        <div>
-          <span>Map layers used</span>
-          <strong>
-            Hazard · Risk score · Hazard probability · Exposure · Vulnerability
-          </strong>
-        </div>
-        <div>
-          <span>Climate indicators</span>
-          <strong>
-            {VISIBLE_CLIMATE_INDICATORS.map((item) => item.label).join(" · ")}
-          </strong>
-        </div>
-      </div>
-
-      {selectedProviderConfig?.description && (
-        <div className="ai-provider-note">
-          <strong>{selectedProviderConfig.label}:</strong>{" "}
-          {selectedProviderConfig.description}
-          {providerStatus?.configured &&
-          providerStatus.configured[selectedProvider] === false
-            ? " API key is not configured for this provider, so the backend will fall back if you generate."
-            : ""}
-        </div>
-      )}
 
       {statusMessage && <div className="ai-status-note">{statusMessage}</div>}
       {errorMessage && <div className="error-banner">{errorMessage}</div>}

@@ -121,6 +121,34 @@ function formatCroplandExtentPct(item) {
   return `${Number(item.cropland_extent_pct).toFixed(1)}%`;
 }
 
+// Same reasoning/precision caveat as formatCroplandExtentPct -- livestock
+// (GLW4 cattle density), built-up (WorldPop/GHSL-derived), and roads
+// (OSM-derived) are all coarse normalized 0-1 indices too, so these stay a
+// % of district area, not a fabricated head-count/km^2 figure.
+function formatLivestockExtentPct(item) {
+  if (!Number.isFinite(Number(item.livestock_extent_pct))) {
+    return "N/A";
+  }
+
+  return `${Number(item.livestock_extent_pct).toFixed(1)}%`;
+}
+
+function formatBuiltUpExtentPct(item) {
+  if (!Number.isFinite(Number(item.built_up_extent_pct))) {
+    return "N/A";
+  }
+
+  return `${Number(item.built_up_extent_pct).toFixed(1)}%`;
+}
+
+function formatRoadsExtentPct(item) {
+  if (!Number.isFinite(Number(item.roads_extent_pct))) {
+    return "N/A";
+  }
+
+  return `${Number(item.roads_extent_pct).toFixed(1)}%`;
+}
+
 function getOptionLabel(options, value) {
   const match = options.find((item) => item.value === value);
   return match?.label || titleCase(value);
@@ -467,6 +495,9 @@ function TopInterventionAreas({
         value: formatAreaExtent(item),
       },
       { label: "Cropland extent", value: formatCroplandExtentPct(item) },
+      { label: "Livestock extent", value: formatLivestockExtentPct(item) },
+      { label: "Built-up extent", value: formatBuiltUpExtentPct(item) },
+      { label: "Roads extent", value: formatRoadsExtentPct(item) },
     ];
 
     const selectedArea = {

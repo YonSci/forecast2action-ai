@@ -113,6 +113,41 @@ function getRankedAreaName(item) {
   return item.area_name || item.woreda || item.zone || item.region || "Selected area";
 }
 
+// Standard ColorBrewer "YlOrRd" 5-class sequential ramp -- the SAME color
+// scheme already used for this app's own raster exposure/hazard layers (see
+// "cmap": "YlOrRd" in app/api/hazard_risk_catalog_shared.py), reused here so
+// a marker's color intensity reads consistently with the rest of the app's
+// low-to-high visual language instead of a new invented palette.
+const INTENSITY_COLOR_STOPS = [
+  { stop: 0.0, color: [255, 255, 178] },
+  { stop: 0.35, color: [254, 204, 92] },
+  { stop: 0.6, color: [253, 141, 60] },
+  { stop: 0.8, color: [227, 26, 28] },
+  { stop: 1.0, color: [128, 0, 38] },
+];
+
+function getIntensityColor(score) {
+  const value = Math.max(0, Math.min(1, Number(score) || 0));
+
+  let lower = INTENSITY_COLOR_STOPS[0];
+  let upper = INTENSITY_COLOR_STOPS[INTENSITY_COLOR_STOPS.length - 1];
+  for (let i = 0; i < INTENSITY_COLOR_STOPS.length - 1; i += 1) {
+    if (value >= INTENSITY_COLOR_STOPS[i].stop && value <= INTENSITY_COLOR_STOPS[i + 1].stop) {
+      lower = INTENSITY_COLOR_STOPS[i];
+      upper = INTENSITY_COLOR_STOPS[i + 1];
+      break;
+    }
+  }
+
+  const span = upper.stop - lower.stop || 1;
+  const t = (value - lower.stop) / span;
+  const rgb = lower.color.map((channel, index) =>
+    Math.round(channel + (upper.color[index] - channel) * t),
+  );
+
+  return `rgb(${rgb.join(",")})`;
+}
+
 function FitMapToEthiopiaDomain({ activeBoundaryKey }) {
   const map = useMap();
 
@@ -423,7 +458,7 @@ function RiskMap({
               const isActive =
                 hasPrioritySelection &&
                 getRankedAreaName(item) === selectedPriorityArea.area_name;
-              const color = PRIORITY_COLOR_BY_LEVEL[priorityInfo.level] || "#1849A9";
+              const color = getIntensityColor(item.priority_score);
 
               return (
                 <CircleMarker
@@ -453,11 +488,27 @@ function RiskMap({
 
         <aside className="forecast-legend-card">
           {rankedAreaMarkers.length > 0 && (
-            <p className="risk-map-marker-hint">
-              Points show the {rankedAreaMarkers.length} ranked areas from the
-              Priority Intervention Areas table. Click a point to open its
-              Forecast-to-Action Advisory.
-            </p>
+            <div className="risk-map-marker-hint">
+              <p>
+                Points show the {rankedAreaMarkers.length} ranked areas from
+                the Priority Intervention Areas table. Click a point to open
+                its Forecast-to-Action Advisory.
+              </p>
+              <div className="risk-map-intensity-scale">
+                <span
+                  className="risk-map-intensity-bar"
+                  style={{
+                    background: `linear-gradient(90deg, ${INTENSITY_COLOR_STOPS.map(
+                      (entry) => getIntensityColor(entry.stop),
+                    ).join(", ")})`,
+                  }}
+                />
+                <div className="risk-map-intensity-labels">
+                  <span>Lower priority</span>
+                  <span>Higher priority</span>
+                </div>
+              </div>
+            </div>
           )}
           {glossaryEntries.length > 0 ? (
             <div className="risk-map-glossary">

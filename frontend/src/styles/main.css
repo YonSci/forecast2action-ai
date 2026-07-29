@@ -1029,9 +1029,31 @@ tbody td {
   border-radius: 14px;
   background: #f0f6ff;
   border: 1px solid #d9e8fb;
+  margin-bottom: 16px;
+}
+
+.forecast-legend-card .risk-map-marker-hint p {
+  margin: 0 0 10px;
   color: #1849a9;
   font-weight: 600;
   font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.risk-map-intensity-bar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 39, 77, 0.12);
+}
+
+.risk-map-intensity-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: #475467;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .risk-map-glossary {
