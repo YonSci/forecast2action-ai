@@ -1,0 +1,677 @@
+{
+  "context_id": "b8fc02e7-3dda-40d9-bb61-9b3627793d83",
+  "forecast": {
+    "forecast_scale": "subseasonal",
+    "lead": "",
+    "hazard_risk_period": "JJAS",
+    "rank_by": "h_dry_mean",
+    "admin_selection_mode": "top",
+    "top_n": 5,
+    "threshold": 0.555,
+    "evidence_status": "forecast_signal"
+  },
+  "geography": {
+    "country": "ethiopia",
+    "admin_level": "admin3",
+    "area_name": "Sheko town",
+    "region": "South West Ethiopia",
+    "zone": "Bench Sheko",
+    "woreda": "Sheko town",
+    "region_id": "south_west_ethiopia",
+    "zone_id": "south_west_ethiopia_bench_sheko",
+    "woreda_id": "south_west_ethiopia_bench_sheko_sheko_town",
+    "boundary_version": "eth_admin_boundary_pipeline_v1",
+    "boundary_feature": {
+      "type": "Feature",
+      "id": "admin3_south_west_ethiopia_bench_sheko_sheko_town_1017",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              35.45654180400015,
+              7.031191204000095
+            ],
+            [
+              35.45756263900017,
+              7.033726492000085
+            ],
+            [
+              35.458440572000086,
+              7.036454269999979
+            ],
+            [
+              35.459312964000105,
+              7.038127468000084
+            ],
+            [
+              35.459902941000166,
+              7.040832784000088
+            ],
+            [
+              35.46092332500007,
+              7.043272179000041
+            ],
+            [
+              35.461318009000024,
+              7.045331373000067
+            ],
+            [
+              35.46265477800006,
+              7.047817475000045
+            ],
+            [
+              35.466424014000154,
+              7.049187293000045
+            ],
+            [
+              35.46805825700011,
+              7.049753895000038
+            ],
+            [
+              35.47344140000007,
+              7.05157095200002
+            ],
+            [
+              35.47604282200007,
+              7.053570474000082
+            ],
+            [
+              35.477679377000186,
+              7.054568445000143
+            ],
+            [
+              35.4793205310001,
+              7.056429227000081
+            ],
+            [
+              35.48029564100011,
+              7.059348132000139
+            ],
+            [
+              35.48102922200013,
+              7.061956732000112
+            ],
+            [
+              35.48113414400012,
+              7.063660298000059
+            ],
+            [
+              35.482430534000116,
+              7.0638187670001
+            ],
+            [
+              35.4846762520001,
+              7.0620811140001365
+            ],
+            [
+              35.48706665100008,
+              7.060486491000063
+            ],
+            [
+              35.48969563100019,
+              7.0586509100001535
+            ],
+            [
+              35.49113056800019,
+              7.057828345000075
+            ],
+            [
+              35.492469545000176,
+              7.057006289000071
+            ],
+            [
+              35.49371513000011,
+              7.05666408400009
+            ],
+            [
+              35.496642703000134,
+              7.056840166000086
+            ],
+            [
+              35.49933154900003,
+              7.057233217000032
+            ],
+            [
+              35.503269445000115,
+              7.057931126000142
+            ],
+            [
+              35.506206097000074,
+              7.058796781000069
+            ],
+            [
+              35.50827768400012,
+              7.058976088000065
+            ],
+            [
+              35.50995070600004,
+              7.059175894000077
+            ],
+            [
+              35.51145608700011,
+              7.0592930739999815
+            ],
+            [
+              35.513380905000076,
+              7.059679437999989
+            ],
+            [
+              35.51566043700018,
+              7.059959474999971
+            ],
+            [
+              35.51781141400011,
+              7.05965553600015
+            ],
+            [
+              35.51960688300005,
+              7.059311747000038
+            ],
+            [
+              35.52156840400011,
+              7.058758248000174
+            ],
+            [
+              35.52367733800014,
+              7.058412751000105
+            ],
+            [
+              35.52478042500019,
+              7.057571557000131
+            ],
+            [
+              35.52602730500013,
+              7.056270211000083
+            ],
+            [
+              35.52773348500011,
+              7.054882854000141
+            ],
+            [
+              35.52959701900011,
+              7.0536694860001035
+            ],
+            [
+              35.52951304599998,
+              7.051615851000122
+            ],
+            [
+              35.52865264800005,
+              7.0497671250000735
+            ],
+            [
+              35.52751221800003,
+              7.048766054000112
+            ],
+            [
+              35.526564908000125,
+              7.047497466000152
+            ],
+            [
+              35.52630012300017,
+              7.045936703000052
+            ],
+            [
+              35.5250293740001,
+              7.045087280000018
+            ],
+            [
+              35.525161101000094,
+              7.0428336570001875
+            ],
+            [
+              35.52519947800016,
+              7.0410598810001375
+            ],
+            [
+              35.52461705600007,
+              7.0398167340000555
+            ],
+            [
+              35.52350978200013,
+              7.039103696000041
+            ],
+            [
+              35.52239992200015,
+              7.037911325000039
+            ],
+            [
+              35.51946579400004,
+              7.036489104000054
+            ],
+            [
+              35.5175901880001,
+              7.035636380000028
+            ],
+            [
+              35.51600113400008,
+              7.03454243200008
+            ],
+            [
+              35.51239180500011,
+              7.032452695000131
+            ],
+            [
+              35.509985943000174,
+              7.031123427000068
+            ],
+            [
+              35.50892642100007,
+              7.030362149000155
+            ],
+            [
+              35.507174146000125,
+              7.029399897000133
+            ],
+            [
+              35.505422593000105,
+              7.030045366000138
+            ],
+            [
+              35.502882201000034,
+              7.030466401000069
+            ],
+            [
+              35.50139631400009,
+              7.03071401700015
+            ],
+            [
+              35.499549343000126,
+              7.030723882000132
+            ],
+            [
+              35.49760770200015,
+              7.030973921000168
+            ],
+            [
+              35.49607562400007,
+              7.031557316000033
+            ],
+            [
+              35.49439808500006,
+              7.03185387000002
+            ],
+            [
+              35.49223952500017,
+              7.031913303000067
+            ],
+            [
+              35.48974718800008,
+              7.032357986000022
+            ],
+            [
+              35.487040043000036,
+              7.033007525000187
+            ],
+            [
+              35.4849088310001,
+              7.033701930000177
+            ],
+            [
+              35.48444081600019,
+              7.035909459000152
+            ],
+            [
+              35.48461714199999,
+              7.037490402000117
+            ],
+            [
+              35.48366440700016,
+              7.0387657600001035
+            ],
+            [
+              35.48181164600004,
+              7.037697040000182
+            ],
+            [
+              35.480074374000026,
+              7.035788819000118
+            ],
+            [
+              35.47872599900012,
+              7.0348372450000625
+            ],
+            [
+              35.477184459000114,
+              7.033647009000163
+            ],
+            [
+              35.47617166100014,
+              7.0326457110001
+            ],
+            [
+              35.47496671599998,
+              7.031597490000138
+            ],
+            [
+              35.47390519100003,
+              7.030452634000085
+            ],
+            [
+              35.472262659000194,
+              7.028304181000067
+            ],
+            [
+              35.47182303800014,
+              7.026820479000037
+            ],
+            [
+              35.470282618000056,
+              7.025833926000018
+            ],
+            [
+              35.46725804700014,
+              7.025430422000056
+            ],
+            [
+              35.464526307000085,
+              7.0259720990000005
+            ],
+            [
+              35.46299315300007,
+              7.026363655000068
+            ],
+            [
+              35.46131304500017,
+              7.02618073900004
+            ],
+            [
+              35.459828364000145,
+              7.026667903000032
+            ],
+            [
+              35.457292270000096,
+              7.027927567000177
+            ],
+            [
+              35.455705632000104,
+              7.027795432000175
+            ],
+            [
+              35.45654180400015,
+              7.031191204000095
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "admin3_south_west_ethiopia_bench_sheko_sheko_town_1017",
+        "admin_level": "admin3",
+        "name": "Sheko town",
+        "region": "South West Ethiopia",
+        "region_id": "south_west_ethiopia",
+        "zone": "Bench Sheko",
+        "zone_id": "south_west_ethiopia_bench_sheko",
+        "woreda": "Sheko town",
+        "woreda_id": "south_west_ethiopia_bench_sheko_sheko_town"
+      }
+    }
+  },
+  "hazard_evidence": {
+    "layer_value": "h_dry_mean",
+    "layer_label": "Drought Hazard (mean)",
+    "hazard_type": "drought",
+    "category": "hazard",
+    "units": "index",
+    "rank_value": 0.9142534732818604,
+    "priority_score": 0.992,
+    "rank": 1,
+    "metrics": {
+      "h_dry_mean": 0.9142534732818604,
+      "cropland_total_normalized": 0.16516517102718353
+    },
+    "observed_ceiling": 0.9245162010192871
+  },
+  "impact": {
+    "population_total": 20049,
+    "population_exposed": 20049,
+    "population_exposed_pct": 100.0,
+    "area_total_km2": 758.3,
+    "area_extent_km2": 758.3,
+    "area_extent_pct": 100.0,
+    "cropland_extent_pct": 0.0
+  },
+  "community": {
+    "feedback_signal": "no_ground_signal",
+    "total_reports": 0,
+    "by_severity": {},
+    "by_type": {},
+    "recent_reports": []
+  },
+  "operational": {
+    "audience": "disaster_manager",
+    "language": "en",
+    "requested_provider": "free_auto",
+    "requested_model": "auto"
+  },
+  "policy": {
+    "policy_id": "drought_ethiopia_v1",
+    "thresholds": {
+      "trigger": 0.8,
+      "warning": 0.6,
+      "watch": 0.35
+    },
+    "trigger_status": "trigger",
+    "approval_rules_version": "v1"
+  },
+  "knowledge": {
+    "retrieved_items": [
+      {
+        "id": "drought_trigger_disaster_manager_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "disaster_manager",
+        "sector": "Disaster Risk Management",
+        "title": "Activate drought anticipatory action coordination",
+        "rationale": "Severe rainfall deficit and high exposure require immediate coordination before impacts worsen.",
+        "actions": [
+          "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+          "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+          "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+          "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+          "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support."
+        ],
+        "source_title": "Forecast2Action drought anticipatory action guidance",
+        "source_note": "Prototype local knowledge item for drought trigger-level early action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 15.0,
+        "final_score": 15.4
+      },
+      {
+        "id": "drought_trigger_extension_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "extension_officer",
+        "sector": "Agriculture and Livestock Extension",
+        "title": "Provide drought advisory to farmers and pastoralists",
+        "rationale": "Farmers and pastoralists need practical guidance on water, pasture, crops and livestock management.",
+        "actions": [
+          "Advise communities to conserve water and protect remaining water sources.",
+          "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+          "Monitor crop wilting, pasture degradation and livestock body condition during field visits.",
+          "Share drought-tolerant crop, forage and animal health messages through extension channels.",
+          "Report worsening field conditions to district coordination structures."
+        ],
+        "source_title": "Forecast2Action extension drought advisory guide",
+        "source_note": "Prototype local knowledge item for agriculture and livestock extension response.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 12.0,
+        "final_score": 12.4
+      },
+      {
+        "id": "drought_trigger_ngo_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "ngo_planner",
+        "sector": "Anticipatory Action and Humanitarian Planning",
+        "title": "Prepare anticipatory drought support package",
+        "rationale": "Trigger-level drought risk requires rapid planning for targeted support before losses escalate.",
+        "actions": [
+          "Review beneficiary targeting using exposure, vulnerability and community ground-truth reports.",
+          "Coordinate with local government to avoid duplication of early action support.",
+          "Pre-position or plan support for water access, livestock feed, animal health and household preparedness.",
+          "Use community reports to verify where field stress is already emerging.",
+          "Prepare monitoring indicators to track whether early actions are reducing impacts."
+        ],
+        "source_title": "Forecast2Action NGO drought early action guide",
+        "source_note": "Prototype local knowledge item for NGO anticipatory action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 12.0,
+        "final_score": 12.4
+      },
+      {
+        "id": "drought_warning_any_001",
+        "hazard": "drought",
+        "risk_level": "warning",
+        "audience": "any",
+        "sector": "Preparedness",
+        "title": "Increase drought preparedness and monitoring",
+        "rationale": "Warning-level drought risk requires intensified monitoring and early preparedness before conditions become critical.",
+        "actions": [
+          "Increase monitoring of rainfall performance, water points, pasture condition and crop stress.",
+          "Brief local officers and community focal persons about the current warning level.",
+          "Prepare drought advisory messages for farmers, pastoralists and vulnerable households.",
+          "Collect community observations to confirm whether impacts are already emerging.",
+          "Review preparedness options for water, feed, veterinary and social protection support."
+        ],
+        "source_title": "Forecast2Action drought preparedness guide",
+        "source_note": "Prototype local knowledge item for drought warning-level preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "warning"
+        ],
+        "retrieval_score": 10.5,
+        "final_score": 10.9
+      },
+      {
+        "id": "heavy_rainfall_trigger_any_001",
+        "hazard": "heavy_rainfall",
+        "risk_level": "trigger",
+        "audience": "any",
+        "sector": "Emergency Preparedness",
+        "title": "Activate flood preparedness and public safety actions",
+        "rationale": "Trigger-level heavy rainfall risk requires immediate preparedness and public safety messaging.",
+        "actions": [
+          "Activate local flood preparedness coordination.",
+          "Issue clear public safety messages for flood-prone areas.",
+          "Prioritize monitoring of river crossings, low-lying settlements and roads.",
+          "Prepare evacuation support for highly exposed communities where needed.",
+          "Use community reports to identify flooded roads, river overflow and blocked drainage."
+        ],
+        "source_title": "Forecast2Action flood trigger early action guide",
+        "source_note": "Prototype local knowledge item for trigger-level heavy rainfall and flood preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 1.0,
+        "final_score": 1.4
+      }
+    ],
+    "retrieval_mode": "keyword_metadata"
+  },
+  "provenance": {
+    "context_id": "b8fc02e7-3dda-40d9-bb61-9b3627793d83",
+    "context_version": "v1",
+    "created_at": "2026-07-27T05:08:14.786062+00:00",
+    "prompt_version": "v1",
+    "context_fingerprint": "43db2f151d524a2d2f78e7216bfd434a5b57873202bcf0f842856b9735913d7e",
+    "ai_provider": "free_auto",
+    "ai_model": "auto",
+    "source_endpoints": [
+      "app.api.hazard_risk_ranking.compute_district_ranking",
+      "app.api.community_reports_store.summarize_reports",
+      "app.decision.policy_engine.load_policy_for_hazard",
+      "app.retrieval.hybrid_retriever.retrieve"
+    ]
+  },
+  "quality_score": 0.85,
+  "quality_flags": [
+    "no_community_reports"
+  ]
+}

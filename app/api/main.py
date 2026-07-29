@@ -23,11 +23,39 @@ from app.advisory.rag_engine import build_rag_advisory
 from app.ml.risk_scoring import classify_risk, score_districts
 
 from app.api.ai_map_interpretation import router as ai_map_interpretation_router
+from app.api.community_reports_store import (
+    CANONICAL_REPORT_TYPES,
+    CommunityReport,
+    REPORTS_PATH,
+    canonical_report_type,
+    load_reports,
+    save_reports,
+    summarize_reports,
+)
+from app.api.context_api import router as context_router
+from app.api.decision_api import router as decision_router
 from app.api.hazard_risk_maps import router as hazard_risk_maps_router
 from app.api.hazard_risk_ranking import router as hazard_risk_ranking_router
 from app.api.seasonal_maps import router as seasonal_maps_router
 from app.api.seasonal_raster_maps import prewarm_all_maps
 from app.api.seasonal_raster_maps import router as seasonal_raster_maps_router
+from app.api.action_tracker_shape import (
+    canonicalize_context_task,
+    canonicalize_legacy_task,
+)
+from app.api.task_inference import (
+    infer_deadline,
+    infer_responsible_sector,
+    infer_task_basis,
+    infer_task_priority,
+    slugify,
+)
+from app.decision.action_selector import build_tasks_from_context, select_actions
+from app.decision.approval_engine import approve_task, get_approval_status, reject_task
+from app.decision.policy_engine import load_policy_for_hazard
+from app.decision.task_store import load_context_tasks, save_context_tasks
+from app.decision.trigger_engine import evaluate as evaluate_trigger
+from app.context.repository import get_repository
 
 from app.data_pipeline.ethiopia_admin_boundary_pipeline import (
     OUTPUT_DIR as ADMIN_BOUNDARY_OUTPUT_DIR,
@@ -56,6 +84,8 @@ app.include_router(ai_map_interpretation_router)
 app.include_router(seasonal_raster_maps_router)
 app.include_router(hazard_risk_maps_router)
 app.include_router(hazard_risk_ranking_router)
+app.include_router(context_router)
+app.include_router(decision_router)
 
 
 @app.on_event("startup")
@@ -89,14 +119,24 @@ app.add_middleware(
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-REPORTS_PATH = Path("data/sample/community_reports.json")
 TASK_STATUS_PATH = Path("data/sample/action_task_status.json")
 
+# Additive over the original 4 -- "Deferred"/"Cancelled" are new (spec §23),
+# old stored task records using only the original 4 remain valid.
 VALID_TASK_STATUSES = {
     "Not started",
     "In progress",
     "Completed",
     "Blocked",
+    "Deferred",
+    "Cancelled",
+}
+
+VALID_APPROVAL_STATUSES = {
+    "Not required",
+    "Pending",
+    "Approved",
+    "Rejected",
 }
 
 
@@ -878,18 +918,6 @@ def load_ethiopia_forecast_grid() -> dict:
         return json.load(file)
 
 
-class CommunityReport(BaseModel):
-    country: str
-    district: str
-    report_type: str
-    severity: str = "medium"
-    description: str = ""
-    reported_by: str = "anonymous"
-    contact: str = ""
-    latitude: float | None = None
-    longitude: float | None = None
-
-
 class TaskStatusUpdate(BaseModel):
     task_id: str
     status: str
@@ -905,22 +933,24 @@ class TaskStatusUpdate(BaseModel):
     updated_by: str = "dashboard_user"
 
 
+class ContextTaskStatusUpdate(BaseModel):
+    task_id: str
+    status: str
+    updated_by: str = "dashboard_user"
+
+
+class ApprovalDecision(BaseModel):
+    task_id: str
+    decision: str  # "approve" | "reject"
+    approver: str = "dashboard_user"
+    reason: str = ""
+
+
 def model_to_dict(model):
     if hasattr(model, "model_dump"):
         return model.model_dump()
 
     return model.dict()
-
-
-def slugify(value: str) -> str:
-    value = str(value or "").strip().lower()
-    value = re.sub(r"[^a-z0-9]+", "_", value)
-    value = value.strip("_")
-
-    if not value:
-        return "item"
-
-    return value
 
 
 def load_scored_data() -> pd.DataFrame:
@@ -934,30 +964,6 @@ def load_scored_data() -> pd.DataFrame:
 
     df = pd.read_csv(data_path)
     return score_districts(df)
-
-
-def ensure_reports_file() -> None:
-    REPORTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    if not REPORTS_PATH.exists():
-        REPORTS_PATH.write_text("[]", encoding="utf-8")
-
-
-def load_reports():
-    ensure_reports_file()
-
-    try:
-        return json.loads(REPORTS_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
-
-
-def save_reports(reports) -> None:
-    ensure_reports_file()
-    REPORTS_PATH.write_text(
-        json.dumps(reports, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
 
 
 def ensure_task_status_file() -> None:
@@ -996,46 +1002,6 @@ def save_task_statuses(statuses: dict) -> None:
         json.dumps(payload, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-
-
-def summarize_reports(district=None):
-    reports = load_reports()
-
-    if district:
-        reports = [
-            report
-            for report in reports
-            if str(report.get("district", "")).lower() == district.lower()
-        ]
-
-    by_severity = {}
-    by_type = {}
-
-    for report in reports:
-        severity = report.get("severity", "medium")
-        report_type = report.get("report_type", "other")
-
-        by_severity[severity] = by_severity.get(severity, 0) + 1
-        by_type[report_type] = by_type.get(report_type, 0) + 1
-
-    high_count = by_severity.get("high", 0)
-
-    if high_count >= 3:
-        feedback_signal = "strong_ground_signal"
-    elif len(reports) >= 3:
-        feedback_signal = "emerging_ground_signal"
-    elif len(reports) > 0:
-        feedback_signal = "limited_ground_signal"
-    else:
-        feedback_signal = "no_ground_signal"
-
-    return {
-        "district": district,
-        "total_reports": len(reports),
-        "by_severity": by_severity,
-        "by_type": by_type,
-        "feedback_signal": feedback_signal,
-    }
 
 
 def safe_float(value, default=None):
@@ -1118,89 +1084,6 @@ def build_why_this_alert(row: dict, hazard_label: str, risk_level: str) -> str:
         f"{row['exposure']}, vulnerability is {row['vulnerability']}, and forecast "
         f"confidence is {row['confidence']}. The combined risk score is {row['risk_score']}."
         f"{climate_clause}"
-    )
-
-
-def infer_responsible_sector(action: str, hazard: str) -> str:
-    text = action.lower()
-
-    if any(word in text for word in ["coordination", "coordinate", "activate"]):
-        return "Disaster Risk Management / Coordination"
-
-    if any(word in text for word in ["water", "water-point", "water trucking"]):
-        return "Water Office / Disaster Risk Management"
-
-    if any(word in text for word in ["livestock", "veterinary", "feed", "pasture"]):
-        return "Livestock Office / Agriculture Extension"
-
-    if any(word in text for word in ["crop", "farmer", "field", "fodder"]):
-        return "Agriculture Extension"
-
-    if any(word in text for word in ["message", "warning", "communication", "sms"]):
-        return "Risk Communication / Local Administration"
-
-    if any(word in text for word in ["cash", "voucher", "beneficiary", "support"]):
-        return "Humanitarian Partners / Social Protection"
-
-    if any(word in text for word in ["verify", "monitor", "report", "observations"]):
-        return "Local Officers / Community Focal Persons"
-
-    if hazard == "drought":
-        return "DRM / Agriculture / Water / Livestock"
-
-    if hazard == "heavy_rainfall":
-        return "DRM / Water / Infrastructure"
-
-    if hazard == "heat_stress":
-        return "Health / Livestock / Local Administration"
-
-    return "District Coordination Team"
-
-
-def infer_task_priority(action: str, risk_level: str) -> str:
-    text = action.lower()
-
-    if risk_level == "trigger":
-        if any(word in text for word in ["activate", "verify", "warning", "coordinate"]):
-            return "Urgent"
-        return "High"
-
-    if risk_level == "warning":
-        if any(word in text for word in ["monitor", "prepare", "brief", "verify"]):
-            return "High"
-        return "Medium"
-
-    if risk_level == "watch":
-        return "Medium"
-
-    return "Routine"
-
-
-def infer_deadline(action: str, risk_level: str) -> str:
-    text = action.lower()
-
-    if risk_level == "trigger":
-        if any(word in text for word in ["activate", "coordinate", "warning", "message"]):
-            return "Within 24 hours"
-        if any(word in text for word in ["verify", "monitor", "report"]):
-            return "Within 48 hours"
-        return "Within 72 hours"
-
-    if risk_level == "warning":
-        if any(word in text for word in ["brief", "prepare", "message"]):
-            return "Within 48 hours"
-        return "Within 3–5 days"
-
-    if risk_level == "watch":
-        return "Within 7 days"
-
-    return "Routine update cycle"
-
-
-def infer_task_basis(action: str, hazard: str, risk_level: str) -> str:
-    return (
-        f"Generated from knowledge-guided advisory action for {hazard.replace('_', ' ')} "
-        f"at {risk_level} level."
     )
 
 
@@ -1556,7 +1439,40 @@ def get_action_tracker(
     district: str,
     audience: str = Query(default="disaster_manager"),
     language: str = Query(default="en"),
+    context_id: str = Query(default=""),
 ):
+    if context_id:
+        # New, context-driven path: serve canonical-schema tasks tied to a
+        # real Decision Context Envelope, with live status/approval merged
+        # in. Falls through to the legacy rag_engine-based path below only
+        # if this context_id has no persisted tasks yet.
+        all_context_tasks = load_context_tasks()
+        district_tasks = [
+            task for task in all_context_tasks.values()
+            if task.get("context_id") == context_id and task.get("district", "").lower() == district.lower()
+        ]
+        if district_tasks:
+            for task in district_tasks:
+                task["approval_status"] = get_approval_status(task["task_id"], task.get("approval_status", "Not required"))
+                canonicalize_context_task(task, audience)
+
+            return {
+                "found": True,
+                "district": district,
+                "context_id": context_id,
+                "audience": audience,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "summary": {
+                    "total_tasks": len(district_tasks),
+                    "urgent_tasks": len([t for t in district_tasks if t["priority"] == "Urgent"]),
+                    "high_priority_tasks": len([t for t in district_tasks if t["priority"] == "High"]),
+                    "in_progress_tasks": len([t for t in district_tasks if t["status"] == "In progress"]),
+                    "completed_tasks": len([t for t in district_tasks if t["status"] == "Completed"]),
+                    "blocked_tasks": len([t for t in district_tasks if t["status"] == "Blocked"]),
+                },
+                "tasks": district_tasks,
+            }
+
     advisory = get_advisory(
         district=district,
         audience=audience,
@@ -1582,6 +1498,8 @@ def get_action_tracker(
         advisory=advisory,
         audience=audience,
     )
+    for task in tasks:
+        canonicalize_legacy_task(task)
 
     urgent_tasks = len([task for task in tasks if task["priority"] == "Urgent"])
     high_priority_tasks = len([task for task in tasks if task["priority"] == "High"])
@@ -1615,11 +1533,13 @@ def export_action_tracker_csv(
     district: str,
     audience: str = Query(default="disaster_manager"),
     language: str = Query(default="en"),
+    context_id: str = Query(default=""),
 ):
     action_tracker = get_action_tracker(
         district=district,
         audience=audience,
         language=language,
+        context_id=context_id,
     )
 
     safe_district = slugify(action_tracker.get("district", district))
@@ -1643,6 +1563,12 @@ def export_action_tracker_csv(
         "updated_at",
         "updated_by",
         "basis",
+        # Appended, not inserted -- existing columns keep their original
+        # order for any positional CSV consumer. Present on both legacy and
+        # context tasks after app.api.action_tracker_shape's canonicalization.
+        "source",
+        "context_id",
+        "approval_status",
     ]
 
     writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -1652,7 +1578,7 @@ def export_action_tracker_csv(
         writer.writerow(
             {
                 "rank": task.get("rank", ""),
-                "task_id": task.get("id", ""),
+                "task_id": task.get("task_id", ""),
                 "district": task.get("district", ""),
                 "country": task.get("country", ""),
                 "hazard": task.get("hazard", ""),
@@ -1666,6 +1592,9 @@ def export_action_tracker_csv(
                 "updated_at": task.get("updated_at", ""),
                 "updated_by": task.get("updated_by", ""),
                 "basis": task.get("basis", ""),
+                "source": task.get("source", ""),
+                "context_id": task.get("context_id") or "",
+                "approval_status": task.get("approval_status", ""),
             }
         )
 
@@ -1726,20 +1655,60 @@ def update_action_task_status(update: TaskStatusUpdate):
     }
 
 
+@app.patch("/api/action-tracker/context-status")
+def update_context_task_status(update: ContextTaskStatusUpdate):
+    """Status updates for the NEW context-driven tasks (see
+    build_tasks_from_context). Storage stays separate from
+    PATCH /api/action-tracker/status (the legacy rag_engine-based tasks) by
+    design -- the two task sources have different persistence lifecycles
+    (see app.decision.task_store's module docstring) -- but both are
+    normalized to the same response shape by app.api.action_tracker_shape
+    when read back via GET /api/action-tracker/{district}.
+    """
+    if update.status not in VALID_TASK_STATUSES:
+        return {
+            "success": False,
+            "message": f"Invalid status '{update.status}'. Valid statuses are: {', '.join(sorted(VALID_TASK_STATUSES))}.",
+        }
+
+    tasks = load_context_tasks()
+    task = tasks.get(update.task_id)
+    if not task:
+        return {"success": False, "message": f"Unknown task_id '{update.task_id}'."}
+
+    task["status"] = update.status
+    task["updated_at"] = datetime.now(timezone.utc).isoformat()
+    task["updated_by"] = update.updated_by
+    if update.status == "Completed":
+        task["completed_at"] = task["updated_at"]
+
+    tasks[update.task_id] = task
+    save_context_tasks(tasks)
+
+    return {"success": True, "message": "Task status updated successfully.", "task": task}
+
+
+@app.patch("/api/action-tracker/approval")
+def update_task_approval(decision: ApprovalDecision):
+    if decision.decision not in ("approve", "reject"):
+        return {"success": False, "message": "decision must be 'approve' or 'reject'."}
+
+    if decision.decision == "approve":
+        record = approve_task(decision.task_id, decision.approver)
+    else:
+        record = reject_task(decision.task_id, decision.approver, decision.reason)
+
+    tasks = load_context_tasks()
+    if decision.task_id in tasks:
+        tasks[decision.task_id]["approval_status"] = record["approval_status"]
+        save_context_tasks(tasks)
+
+    return {"success": True, "approval": record}
+
+
 @app.get("/api/report-types")
 def get_report_types():
-    return [
-        {"id": "water_shortage", "label": "Water shortage / water point drying"},
-        {"id": "crop_wilting", "label": "Crop wilting"},
-        {"id": "pasture_poor", "label": "Poor pasture condition"},
-        {"id": "livestock_stress", "label": "Livestock stress"},
-        {"id": "flooded_road", "label": "Flooded road"},
-        {"id": "river_overflow", "label": "River overflow"},
-        {"id": "unusual_heat", "label": "Unusual heat"},
-        {"id": "disease_concern", "label": "Disease concern"},
-        {"id": "market_disruption", "label": "Market disruption"},
-        {"id": "other", "label": "Other observation"},
-    ]
+    return CANONICAL_REPORT_TYPES
 
 
 @app.post("/api/community-reports")

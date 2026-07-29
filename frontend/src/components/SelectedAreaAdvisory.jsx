@@ -1,4 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { apiUrl } from "../config.js";
+import { getCurrentSeasonalPeriod } from "../constants/climateIndicators.js";
+
+// suffix/digits for formatting each real climate indicator fetched from
+// /api/seasonal-raster/area-indicator-stats (see below) -- purely display
+// formatting, not part of the real computed value.
+const INDICATOR_DISPLAY_FORMAT = {
+  rainfall_total: { suffix: " mm", digits: 1 },
+  spi: { suffix: "", digits: 2 },
+  rainfall_anomaly_pct: { suffix: "%", digits: 1 },
+  rainfall_percentile: { suffix: "", digits: 1 },
+  rx1day: { suffix: " mm", digits: 1 },
+  rx5day: { suffix: " mm", digits: 1 },
+  cdd: { suffix: " days", digits: 1 },
+  cwd: { suffix: " days", digits: 1 },
+};
 
 const FORECAST_SCALE_LABELS = {
   subseasonal: "Subseasonal",
@@ -21,14 +37,6 @@ const LEAD_LABELS = {
   month_6: "Month 6",
 };
 
-const MAP_LAYER_LABELS = {
-  hazard: "Hazard Map",
-  risk_score: "Risk Score Map",
-  hazard_probability: "Hazard Probability Map",
-  exposure: "Exposure Map",
-  vulnerability: "Vulnerability Map",
-};
-
 const LANGUAGE_LABELS = {
   en: "English",
   am: "Amharic",
@@ -36,6 +44,12 @@ const LANGUAGE_LABELS = {
 };
 
 const CLIMATE_INDICATORS = [
+  {
+    key: "rainfall_total",
+    shortLabel: "Rainfall total",
+    label: "Rainfall total",
+    description: "Total forecast rainfall for the period.",
+  },
   {
     key: "spi",
     shortLabel: "SPI",
@@ -53,6 +67,18 @@ const CLIMATE_INDICATORS = [
     shortLabel: "Rainfall percentile",
     label: "Rainfall percentile",
     description: "How unusual the rainfall is compared with historical conditions.",
+  },
+  {
+    key: "rx1day",
+    shortLabel: "Rx1day",
+    label: "Max 1-day rainfall",
+    description: "Highest single-day rainfall total expected in the period.",
+  },
+  {
+    key: "rx5day",
+    shortLabel: "Rx5day",
+    label: "Max 5-day rainfall",
+    description: "Highest consecutive 5-day rainfall total expected in the period.",
   },
   {
     key: "cdd",
@@ -110,12 +136,17 @@ function getLeadLabel(value) {
   return LEAD_LABELS[value] || titleCase(value || "week_1");
 }
 
-function getMapLayerLabel(value) {
-  return MAP_LAYER_LABELS[value] || titleCase(value || "risk_score");
-}
-
-function getIndicatorConfig(indicatorKey) {
-  return CLIMATE_INDICATORS.find((item) => item.key === indicatorKey) || CLIMATE_INDICATORS[0];
+// forecastSelection.lead is an internal engineering label (week_1, month_2,
+// ...) derived from whichever real calendar period is actually selected in
+// the Seasonal Climate Indices panel (ForecastLayerMap.jsx's
+// deriveHazardLeadFromSeasonal) -- seasonalPeriod/seasonalPeriodLabel carry
+// the real value (e.g. "July"), so prefer that for anything user-facing.
+function getPeriodLabel(forecastSelection) {
+  return (
+    forecastSelection.seasonalPeriodLabel ||
+    forecastSelection.seasonalPeriod ||
+    getLeadLabel(forecastSelection.lead)
+  );
 }
 
 function getIndicatorSummary(area, indicatorKey) {
@@ -153,6 +184,18 @@ function formatIndicatorRange(summary) {
 function interpretIndicator(indicatorKey, summary) {
   const value = Number(summary?.mean);
   if (!Number.isFinite(value)) return "No indicator value available for this selected area.";
+
+  if (indicatorKey === "rainfall_total") {
+    return "Absolute forecast rainfall amount for the period.";
+  }
+
+  if (indicatorKey === "rx1day") {
+    return "Peak single-day rainfall intensity signal.";
+  }
+
+  if (indicatorKey === "rx5day") {
+    return "Peak multi-day rainfall accumulation signal.";
+  }
 
   if (indicatorKey === "spi") {
     if (value <= -2) return "Extreme dry signal.";
@@ -197,7 +240,9 @@ function interpretIndicator(indicatorKey, summary) {
 
 function getAreaDisplayName(area) {
   if (!area) return "selected area";
-  return [area.area_name, area.region, area.zone].filter(Boolean).join(", ");
+  const parts = [area.area_name, area.region, area.zone].filter(Boolean);
+  const uniqueParts = parts.filter((part, index) => parts.indexOf(part) === index);
+  return uniqueParts.join(", ");
 }
 
 function getRiskActionPhrase(riskLevel) {
@@ -211,7 +256,7 @@ function getHazardActionPhrase(hazard) {
   if (hazard === "drought" || hazard === "dry_spell") {
     return "save water, protect livestock, monitor pasture and crops, and report emerging stress";
   }
-  if (hazard === "heavy_rainfall" || hazard === "wet_spell" || hazard === "flood") {
+  if (hazard === "wet" || hazard === "heavy_rainfall" || hazard === "wet_spell" || hazard === "flood") {
     return "avoid flood-prone areas, clear drainage, protect assets, and follow local warnings";
   }
   if (hazard === "heat_stress" || hazard === "heat") {
@@ -222,23 +267,21 @@ function getHazardActionPhrase(hazard) {
 
 function buildAdvisoryText(area, forecastSelection) {
   const areaName = area.area_name || "the selected area";
-  const lead = getLeadLabel(forecastSelection.lead);
+  const period = getPeriodLabel(forecastSelection);
   const forecastScale = getForecastScaleLabel(forecastSelection.forecastScale);
-  const mapLayer = getMapLayerLabel(forecastSelection.layer);
-  const indicator = getIndicatorConfig(forecastSelection.indicator || area.selected_indicator || "spi");
   const hazard = titleCase(area.hazard);
   const riskLevel = titleCase(area.risk_level);
   const action = area.recommended_action || "Prioritize local verification, preparedness action, and coordination with responsible sectors.";
 
-  return `${areaName} is identified as a ${riskLevel} priority area for ${lead} under the ${forecastScale} forecast window. The current map layer is ${mapLayer}, and the selected climate indicator is ${indicator.label}. The main hazard signal is ${hazard}, with a risk score of ${formatNumber(area.risk_score)}, hazard probability of ${formatNumber(area.hazard_probability)}, exposure of ${formatNumber(area.exposure)}, and vulnerability of ${formatNumber(area.vulnerability)}. ${action}`;
+  return `${areaName} is identified as a ${riskLevel} priority area for ${period} under the ${forecastScale} forecast window. The main hazard signal is ${hazard}, with a risk score of ${formatNumber(area.risk_score)}, hazard probability of ${formatNumber(area.hazard_probability)}, exposure of ${formatNumber(area.exposure)}, and vulnerability of ${formatNumber(area.vulnerability)}. ${action}`;
 }
 
 function buildKeyMessage(area, forecastSelection) {
   const areaName = area.area_name || "the selected area";
-  const lead = getLeadLabel(forecastSelection.lead);
+  const period = getPeriodLabel(forecastSelection);
   const riskLevel = titleCase(area.risk_level);
   const hazard = titleCase(area.hazard);
-  return `${areaName} requires ${riskLevel.toLowerCase()}-level attention for ${lead}, mainly due to ${hazard.toLowerCase()} risk combined with exposure and vulnerability conditions.`;
+  return `${areaName} requires ${riskLevel.toLowerCase()}-level attention for ${period}, mainly due to ${hazard.toLowerCase()} risk combined with exposure and vulnerability conditions.`;
 }
 
 function getSuggestedActions(area) {
@@ -262,7 +305,7 @@ function getSuggestedActions(area) {
     ];
   }
 
-  if (hazard === "heavy_rainfall" || hazard === "wet_spell") {
+  if (hazard === "wet" || hazard === "heavy_rainfall" || hazard === "wet_spell") {
     return [
       "Monitor flood-prone locations, roads, drainage, and low-lying settlements.",
       "Prepare local warning messages for heavy rainfall and access disruption.",
@@ -279,36 +322,29 @@ function getSuggestedActions(area) {
 
 function buildSmsMessage(area, forecastSelection, language = "en") {
   const areaName = getAreaDisplayName(area);
-  const lead = getLeadLabel(forecastSelection.lead);
+  const period = getPeriodLabel(forecastSelection);
   const riskLevel = titleCase(area.risk_level);
   const hazard = titleCase(area.hazard);
   const actionPhrase = getRiskActionPhrase(area.risk_level);
   const hazardAction = getHazardActionPhrase(area.hazard);
-  const selectedIndicator = forecastSelection.indicator || area.selected_indicator || "spi";
-  const indicatorConfig = getIndicatorConfig(selectedIndicator);
-  const indicatorValue = formatIndicatorValue(getIndicatorSummary(area, selectedIndicator));
 
   if (language === "am") {
-    return `ቅድመ ማስጠንቀቂያ: ${areaName}. ${lead} ውስጥ ${riskLevel} የ${hazard} አደጋ ምልክት ታይቷል. ${indicatorConfig.shortLabel}: ${indicatorValue}. ውሃን በጥንቃቄ ይጠቀሙ፣ እንስሳትን/ሰብልን ይከታተሉ፣ የአካባቢ መመሪያን ይከተሉ።`;
+    return `ቅድመ ማስጠንቀቂያ: ${areaName}. ${period} ውስጥ ${riskLevel} የ${hazard} አደጋ ምልክት ታይቷል. ውሃን በጥንቃቄ ይጠቀሙ፣ እንስሳትን/ሰብልን ይከታተሉ፣ የአካባቢ መመሪያን ይከተሉ።`;
   }
 
   if (language === "sw") {
-    return `TAHADHARI: ${areaName}. Hatari ya ${hazard} kiwango cha ${riskLevel} kwa ${lead}. ${indicatorConfig.shortLabel}: ${indicatorValue}. ${actionPhrase}; ${hazardAction}; fuata maelekezo ya mamlaka za eneo.`;
+    return `TAHADHARI: ${areaName}. Hatari ya ${hazard} kiwango cha ${riskLevel} kwa ${period}. ${actionPhrase}; ${hazardAction}; fuata maelekezo ya mamlaka za eneo.`;
   }
 
-  return `EARLY WARNING: ${areaName}. ${riskLevel}-level ${hazard} risk for ${lead}. ${indicatorConfig.shortLabel}: ${indicatorValue}. ${actionPhrase}; ${hazardAction}; follow local authority guidance.`;
+  return `EARLY WARNING: ${areaName}. ${riskLevel}-level ${hazard} risk for ${period}. ${actionPhrase}; ${hazardAction}; follow local authority guidance.`;
 }
 
 function buildWhatsappMessage(area, forecastSelection, language = "en") {
   const areaName = getAreaDisplayName(area);
-  const lead = getLeadLabel(forecastSelection.lead);
+  const period = getPeriodLabel(forecastSelection);
   const forecastScale = getForecastScaleLabel(forecastSelection.forecastScale);
-  const mapLayer = getMapLayerLabel(forecastSelection.layer);
   const hazard = titleCase(area.hazard);
   const riskLevel = titleCase(area.risk_level);
-  const selectedIndicator = forecastSelection.indicator || area.selected_indicator || "spi";
-  const selectedIndicatorConfig = getIndicatorConfig(selectedIndicator);
-  const selectedIndicatorValue = formatIndicatorValue(getIndicatorSummary(area, selectedIndicator));
   const actions = getSuggestedActions(area);
 
   if (language === "am") {
@@ -316,11 +352,9 @@ function buildWhatsappMessage(area, forecastSelection, language = "en") {
       "⚠️ የትንበያ-ወደ-ተግባር መልዕክት",
       "",
       `አካባቢ: ${areaName}`,
-      `ጊዜ: ${lead} (${forecastScale})`,
+      `ጊዜ: ${period} (${forecastScale})`,
       `አደጋ: ${hazard}`,
       `የአደጋ ደረጃ: ${riskLevel}`,
-      `የተመረጠ አመልካች: ${selectedIndicatorConfig.label} = ${selectedIndicatorValue}`,
-      `የካርታ ሽፋን: ${mapLayer}`,
       "",
       `የስጋት ውጤት: ${formatNumber(area.risk_score)} | የአደጋ ዕድል: ${formatNumber(area.hazard_probability)}`,
       `ተጋላጭነት: ${formatNumber(area.exposure)} | ተጎጂነት: ${formatNumber(area.vulnerability)}`,
@@ -337,11 +371,9 @@ function buildWhatsappMessage(area, forecastSelection, language = "en") {
       "⚠️ Ujumbe wa Tahadhari ya Mapema",
       "",
       `Eneo: ${areaName}`,
-      `Muda wa utabiri: ${lead} (${forecastScale})`,
+      `Muda wa utabiri: ${period} (${forecastScale})`,
       `Hatari: ${hazard}`,
       `Kiwango cha hatari: ${riskLevel}`,
-      `Kiashiria kilichochaguliwa: ${selectedIndicatorConfig.label} = ${selectedIndicatorValue}`,
-      `Tabaka la ramani: ${mapLayer}`,
       "",
       `Alama ya hatari: ${formatNumber(area.risk_score)} | Uwezekano wa hatari: ${formatNumber(area.hazard_probability)}`,
       `Mfiduo: ${formatNumber(area.exposure)} | Uathirikaji: ${formatNumber(area.vulnerability)}`,
@@ -357,11 +389,9 @@ function buildWhatsappMessage(area, forecastSelection, language = "en") {
     "⚠️ Forecast-to-Action Advisory",
     "",
     `Area: ${areaName}`,
-    `Forecast window: ${lead} (${forecastScale})`,
+    `Forecast window: ${period} (${forecastScale})`,
     `Hazard: ${hazard}`,
     `Risk level: ${riskLevel}`,
-    `Selected indicator: ${selectedIndicatorConfig.label} = ${selectedIndicatorValue}`,
-    `Map layer: ${mapLayer}`,
     "",
     `Risk score: ${formatNumber(area.risk_score)} | Hazard probability: ${formatNumber(area.hazard_probability)}`,
     `Exposure: ${formatNumber(area.exposure)} | Vulnerability: ${formatNumber(area.vulnerability)}`,
@@ -431,26 +461,67 @@ function SelectedAreaAdvisory({
   selectedLanguage = "en",
 }) {
   const [copiedMessage, setCopiedMessage] = useState("");
+  const [climateIndicatorStats, setClimateIndicatorStats] = useState(null);
   const hasSelectedArea = Boolean(selectedPriorityArea?.area_name);
 
-  const selectedIndicator =
-    forecastSelection.indicator || selectedPriorityArea?.selected_indicator || "spi";
+  const climatePeriod = forecastSelection.seasonalPeriod || getCurrentSeasonalPeriod();
+  const selectedAdminLevel = selectedPriorityArea?.admin_level || "admin1";
+  const selectedAreaName = selectedPriorityArea?.area_name || "";
 
-  const forecastScale = getForecastScaleLabel(forecastSelection.forecastScale);
-  const lead = getLeadLabel(forecastSelection.lead);
-  const mapLayer = getMapLayerLabel(forecastSelection.layer);
-  const selectedIndicatorConfig = getIndicatorConfig(selectedIndicator);
+  // Real per-area climate indicator stats (SPI/rainfall anomaly/rainfall
+  // percentile/CDD/CWD) -- see app/api/seasonal_raster_maps.py::
+  // get_area_indicator_stats. The ranking table selection itself only
+  // carries hazard/risk/exposure/vulnerability metrics, not climate
+  // indicators, so this is a separate real data source, fetched here.
+  // No guard-branch state reset is needed: Dashboard.jsx only mounts this
+  // component at all once an area is selected (see the "activates on
+  // click" behavior), so selectedAreaName is always real by the time this
+  // effect can run; if it's ever missing, just skip fetching.
+  useEffect(() => {
+    if (!selectedAreaName) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    fetch(
+      apiUrl(
+        `/api/seasonal-raster/area-indicator-stats?admin_level=${encodeURIComponent(selectedAdminLevel)}&area_name=${encodeURIComponent(selectedAreaName)}&period=${encodeURIComponent(climatePeriod)}`,
+      ),
+      { signal: controller.signal },
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setClimateIndicatorStats(data?.indicators || null))
+      .catch(() => setClimateIndicatorStats(null));
+
+    return () => controller.abort();
+  }, [selectedAdminLevel, selectedAreaName, climatePeriod]);
+
+  const area = useMemo(() => {
+    if (!selectedPriorityArea || !climateIndicatorStats) {
+      return selectedPriorityArea;
+    }
+    const climate_indicators = {};
+    for (const [key, stats] of Object.entries(climateIndicatorStats)) {
+      const format = INDICATOR_DISPLAY_FORMAT[key] || { suffix: "", digits: 2 };
+      climate_indicators[key] = { mean: stats.mean, min: stats.min, max: stats.max, ...format, count: null };
+    }
+    return { ...selectedPriorityArea, climate_indicators };
+  }, [selectedPriorityArea, climateIndicatorStats]);
+
+  const selectedIndicator =
+    forecastSelection.indicator || area?.selected_indicator || "spi";
+
   const languageLabel = LANGUAGE_LABELS[selectedLanguage] || "English";
 
   const smsMessage = useMemo(() => {
     if (!hasSelectedArea) return "";
-    return buildSmsMessage(selectedPriorityArea, forecastSelection, selectedLanguage);
-  }, [hasSelectedArea, selectedPriorityArea, forecastSelection, selectedLanguage]);
+    return buildSmsMessage(area, forecastSelection, selectedLanguage);
+  }, [hasSelectedArea, area, forecastSelection, selectedLanguage]);
 
   const whatsappMessage = useMemo(() => {
     if (!hasSelectedArea) return "";
-    return buildWhatsappMessage(selectedPriorityArea, forecastSelection, selectedLanguage);
-  }, [hasSelectedArea, selectedPriorityArea, forecastSelection, selectedLanguage]);
+    return buildWhatsappMessage(area, forecastSelection, selectedLanguage);
+  }, [hasSelectedArea, area, forecastSelection, selectedLanguage]);
 
   function handleCopy(messageType, text) {
     copyText(text, () => {
@@ -482,58 +553,55 @@ function SelectedAreaAdvisory({
     );
   }
 
-  const suggestedActions = getSuggestedActions(selectedPriorityArea);
+  const suggestedActions = getSuggestedActions(area);
 
   return (
     <section className="panel advisory-section selected-area-advisory">
       <div className="selected-advisory-hero">
         <div>
           <span className="advisory-kicker">Forecast-to-action advisory</span>
-          <h2>{selectedPriorityArea.area_name}</h2>
+          <h2>{area.area_name}</h2>
           <p>
-            {getAdminLevelLabel(selectedPriorityArea.admin_level)} · {selectedPriorityArea.region || "Ethiopia"}
-            {selectedPriorityArea.zone ? ` · ${selectedPriorityArea.zone}` : ""}
+            {getAdminLevelLabel(area.admin_level)} · {area.region || "Ethiopia"}
+            {area.zone ? ` · ${area.zone}` : ""}
           </p>
         </div>
         <div className="advisory-hero-badges">
-          <span className={`risk-pill ${getRiskClass(selectedPriorityArea.risk_level)}`}>
-            {titleCase(selectedPriorityArea.risk_level)}
+          <span className={`risk-pill ${getRiskClass(area.risk_level)}`}>
+            {titleCase(area.risk_level)}
           </span>
-          <span className={`priority-score-pill ${getPriorityClass(selectedPriorityArea.priority_level)}`}>
-            Priority {formatNumber(selectedPriorityArea.priority_score)}
+          <span className={`priority-score-pill ${getPriorityClass(area.priority_level)}`}>
+            Priority {formatNumber(area.priority_score)}
           </span>
         </div>
       </div>
 
       <div className="advisory-key-message">
         <h3>Key message</h3>
-        <p>{buildKeyMessage(selectedPriorityArea, forecastSelection)}</p>
-      </div>
-
-      <div className="advisory-section-block">
-        <div className="advisory-block-heading">
-          <h3>Forecast context</h3>
-          <p>The advisory is linked to the current forecast map configuration.</p>
-        </div>
-        <div className="advisory-context-grid">
-          <div><span>Forecast scale</span><strong>{forecastScale}</strong></div>
-          <div><span>Lead / horizon</span><strong>{lead}</strong></div>
-          <div><span>Selected map layer</span><strong>{mapLayer}</strong></div>
-          <div><span>Selected climate indicator</span><strong>{selectedIndicatorConfig.label}</strong></div>
-        </div>
+        <p>{buildKeyMessage(area, forecastSelection)}</p>
       </div>
 
       <div className="advisory-section-block">
         <div className="advisory-block-heading">
           <h3>Impact-based risk evidence</h3>
-          <p>Risk score combines hazard probability, exposure, vulnerability, and priority ranking for the selected administrative area.</p>
+          <p>Every real hazard, probability, vulnerability, risk, exposure, and extent metric computed for the selected area and its currently active map layers.</p>
         </div>
         <div className="risk-driver-grid">
-          <div className="risk-driver-card"><span>Hazard</span><strong>{titleCase(selectedPriorityArea.hazard)}</strong></div>
-          <div className="risk-driver-card"><span>Risk score</span><strong>{formatNumber(selectedPriorityArea.risk_score)}</strong></div>
-          <div className="risk-driver-card"><span>Hazard probability</span><strong>{formatNumber(selectedPriorityArea.hazard_probability)}</strong></div>
-          <div className="risk-driver-card"><span>Exposure</span><strong>{formatNumber(selectedPriorityArea.exposure)}</strong></div>
-          <div className="risk-driver-card"><span>Vulnerability</span><strong>{formatNumber(selectedPriorityArea.vulnerability)}</strong></div>
+          {(Array.isArray(area.metrics_display) && area.metrics_display.length > 0
+            ? area.metrics_display
+            : [
+                { label: "Hazard", value: titleCase(area.hazard) },
+                { label: "Risk score", value: formatNumber(area.risk_score) },
+                { label: "Hazard probability", value: formatNumber(area.hazard_probability) },
+                { label: "Exposure", value: formatNumber(area.exposure) },
+                { label: "Vulnerability", value: formatNumber(area.vulnerability) },
+              ]
+          ).map((item) => (
+            <div className="risk-driver-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -546,7 +614,7 @@ function SelectedAreaAdvisory({
           {CLIMATE_INDICATORS.map((indicator) => (
             <IndicatorCard
               key={indicator.key}
-              area={selectedPriorityArea}
+              area={area}
               indicator={indicator}
               selectedIndicator={selectedIndicator}
             />
@@ -556,11 +624,11 @@ function SelectedAreaAdvisory({
 
       <div className="advisory-two-column">
         <div className="advisory-card enhanced-advisory-card">
-          <h3>Early action advisory</h3>
-          <p>{buildAdvisoryText(selectedPriorityArea, forecastSelection)}</p>
+          <h3><span aria-hidden="true">📋</span> Early action advisory</h3>
+          <p>{buildAdvisoryText(area, forecastSelection)}</p>
         </div>
         <div className="advisory-card enhanced-advisory-card">
-          <h3>Suggested immediate actions</h3>
+          <h3><span aria-hidden="true">✅</span> Suggested immediate actions</h3>
           <ul className="advisory-action-list">
             {suggestedActions.map((action) => <li key={action}>{action}</li>)}
           </ul>
@@ -592,10 +660,6 @@ function SelectedAreaAdvisory({
             onCopy={() => handleCopy("whatsapp", whatsappMessage)}
           />
         </div>
-      </div>
-
-      <div className="advisory-method-note">
-        <strong>Operational interpretation:</strong> the advisory is generated from the selected forecast horizon, selected map layer, all available climate indicators, impact-based risk score, exposure, vulnerability, and administrative-area priority ranking.
       </div>
     </section>
   );

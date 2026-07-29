@@ -1,0 +1,621 @@
+{
+  "tasks": {
+    "erer_hr_ctx_956f88a2_task_1": {
+      "task_id": "erer_hr_ctx_956f88a2_task_1",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_disaster_manager_001_1",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Disaster Risk Management / Coordination",
+      "action": "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+      "priority": "Urgent",
+      "deadline": "Within 24 hours",
+      "status": "Not started",
+      "approval_status": "Approved",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_956f88a2_task_2": {
+      "task_id": "erer_hr_ctx_956f88a2_task_2",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_disaster_manager_001_2",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+      "priority": "Urgent",
+      "deadline": "Within 48 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_956f88a2_task_3": {
+      "task_id": "erer_hr_ctx_956f88a2_task_3",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_disaster_manager_001_3",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Humanitarian Partners / Social Protection",
+      "action": "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_956f88a2_task_4": {
+      "task_id": "erer_hr_ctx_956f88a2_task_4",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_disaster_manager_001_4",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Risk Communication / Local Administration",
+      "action": "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+      "priority": "Urgent",
+      "deadline": "Within 24 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_956f88a2_task_5": {
+      "task_id": "erer_hr_ctx_956f88a2_task_5",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_disaster_manager_001_5",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Pending",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_956f88a2_task_6": {
+      "task_id": "erer_hr_ctx_956f88a2_task_6",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_extension_001_6",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Advise communities to conserve water and protect remaining water sources.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_extension_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_956f88a2_task_7": {
+      "task_id": "erer_hr_ctx_956f88a2_task_7",
+      "context_id": "956f88a2-af49-4938-afa5-4dbe6fad07a3",
+      "action_id": "drought_trigger_extension_001_7",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Livestock Office / Agriculture Extension",
+      "action": "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_extension_001"
+      ],
+      "created_at": "2026-07-27T02:20:57.402502+00:00",
+      "updated_at": "2026-07-27T02:20:57.402502+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_1": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_1",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_disaster_manager_001_1",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Disaster Risk Management / Coordination",
+      "action": "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+      "priority": "Urgent",
+      "deadline": "Within 24 hours",
+      "status": "Not started",
+      "approval_status": "Approved",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_2": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_2",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_disaster_manager_001_2",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+      "priority": "Urgent",
+      "deadline": "Within 48 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_3": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_3",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_disaster_manager_001_3",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Humanitarian Partners / Social Protection",
+      "action": "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_4": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_4",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_disaster_manager_001_4",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Risk Communication / Local Administration",
+      "action": "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+      "priority": "Urgent",
+      "deadline": "Within 24 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_5": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_5",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_disaster_manager_001_5",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Pending",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_6": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_6",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_extension_001_6",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Advise communities to conserve water and protect remaining water sources.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_extension_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_854eb4cf_task_7": {
+      "task_id": "erer_hr_ctx_854eb4cf_task_7",
+      "context_id": "854eb4cf-3537-4bf2-841b-1a86b5d06126",
+      "action_id": "drought_trigger_extension_001_7",
+      "district": "Erer (HR)",
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Livestock Office / Agriculture Extension",
+      "action": "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_extension_001"
+      ],
+      "created_at": "2026-07-27T03:57:45.116486+00:00",
+      "updated_at": "2026-07-27T03:57:45.116486+00:00",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_1": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_1",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_disaster_manager_001_1",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 1,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Disaster Risk Management / Coordination",
+      "action": "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+      "priority": "Urgent",
+      "deadline": "Within 24 hours",
+      "status": "Not started",
+      "approval_status": "Pending",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_by": "",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_2": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_2",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_disaster_manager_001_2",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 2,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+      "priority": "Urgent",
+      "deadline": "Within 48 hours",
+      "status": "In progress",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:18:20.579816+00:00",
+      "updated_by": "tester_verify",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_3": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_3",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_disaster_manager_001_3",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 3,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Humanitarian Partners / Social Protection",
+      "action": "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_by": "",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_4": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_4",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_disaster_manager_001_4",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 4,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Risk Communication / Local Administration",
+      "action": "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+      "priority": "Urgent",
+      "deadline": "Within 24 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_by": "",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_5": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_5",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_disaster_manager_001_5",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 5,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Pending",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_disaster_manager_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_by": "",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_6": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_6",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_extension_001_6",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 6,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Water Office / Disaster Risk Management",
+      "action": "Advise communities to conserve water and protect remaining water sources.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_extension_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_by": "",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    },
+    "erer_hr_ctx_cb9743e6_task_7": {
+      "task_id": "erer_hr_ctx_cb9743e6_task_7",
+      "context_id": "cb9743e6-52d8-400e-987b-c9c99eeb3f22",
+      "action_id": "drought_trigger_extension_001_7",
+      "district": "Erer (HR)",
+      "country": "ethiopia",
+      "audience": "disaster_manager",
+      "rank": 7,
+      "hazard": "drought",
+      "risk_level": "trigger",
+      "trigger_status": "trigger",
+      "responsible_sector": "Livestock Office / Agriculture Extension",
+      "action": "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+      "priority": "High",
+      "deadline": "Within 72 hours",
+      "status": "Not started",
+      "approval_status": "Not required",
+      "evidence_basis": [
+        "priority_score=1.000",
+        "trigger_status=trigger"
+      ],
+      "knowledge_source_ids": [
+        "drought_trigger_extension_001"
+      ],
+      "created_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_at": "2026-07-27T04:17:52.605115+00:00",
+      "updated_by": "",
+      "completed_at": null,
+      "outcome_status": null,
+      "outcome_note": "",
+      "basis": "Generated from knowledge-guided advisory action for drought at trigger level."
+    }
+  },
+  "updated_at": "2026-07-27T04:18:20.579816+00:00"
+}

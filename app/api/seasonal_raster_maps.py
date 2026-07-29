@@ -21,6 +21,7 @@ from app.api.seasonal_catalog_shared import (
     SCALES,
     compare_products_for_indicator,
     infer_indicator,
+    infer_init_date,
     infer_period,
     infer_product,
     make_id,
@@ -159,7 +160,7 @@ def enrich_record(record: Dict[str, Any], source_path: Optional[Path] = None) ->
             else "%" if (indicator == "rainfall_percentile" and product == "anomaly")
             else indicator_meta.get("units")
         ) or "",
-        "init_date": record.get("init_date", ""),
+        "init_date": record.get("init_date") or (infer_init_date(stem) if source_path else ""),
         "valid_start": record.get("valid_start", ""),
         "valid_end": record.get("valid_end", ""),
         "forecast_source": record.get("forecast_source", ""),
@@ -1190,6 +1191,83 @@ async def get_raster_compare(
         maps["forecast"] = relabeled
 
     return {"indicator": indicator, "period": period, "products": products, "maps": maps}
+
+
+def _area_climate_indicator_stats(period: str, admin_level: str) -> Dict[str, List[Dict[str, Any]]]:
+    """Real, area-weighted per-region climate indicator statistics (mean/
+    min/max) at any admin level, for the Selected Area Advisory card (which
+    previously had no real per-arbitrary-area source and showed "N/A" for
+    every climate indicator). Reuses region_statistics -- the exact same
+    real zonal-stats machinery already used for admin1 in app.context.
+    statistical_evidence.build_national_region_evidence -- generalized here
+    to whichever admin_level the caller's selected area actually is.
+
+    SPI/CDD/CWD/rainfall_percentile are raw forecast-raster values. rainfall
+    _anomaly_pct is the real percent departure from climatology (same
+    formula as statistical_evidence.departure_from_climatology's national-
+    only pct_anomaly_arr, just computed per-region here since no per-region
+    version of it existed before).
+    """
+    from app.context.statistical_evidence import region_statistics
+
+    results: Dict[str, List[Dict[str, Any]]] = {}
+
+    for indicator in ("rainfall_total", "spi", "cdd", "cwd", "rx1day", "rx5day", "rainfall_percentile"):
+        record = find_map_record(indicator, period, "forecast")
+        if not record:
+            continue
+        arr, transform, _bounds = load_display_array(record)
+        results[indicator] = region_statistics(arr, transform, admin_level)
+
+    forecast_record = find_map_record("rainfall_total", period, "forecast")
+    climatology_record = find_map_record("rainfall_total", period, "climatology")
+    if forecast_record and climatology_record:
+        import numpy as np
+
+        forecast_arr, forecast_transform, _b1 = load_display_array(forecast_record)
+        climatology_arr, _t2, _b2 = load_display_array(climatology_record)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            pct_anomaly_arr = np.where(
+                np.abs(climatology_arr) > 1e-6,
+                (forecast_arr - climatology_arr) / climatology_arr * 100,
+                np.nan,
+            )
+        results["rainfall_anomaly_pct"] = region_statistics(pct_anomaly_arr, forecast_transform, admin_level)
+
+    return results
+
+
+@router.get("/area-indicator-stats")
+async def get_area_indicator_stats(
+    admin_level: str = Query(...),
+    area_name: str = Query(...),
+    period: str = Query("JJAS"),
+) -> Dict[str, Any]:
+    """Real climate indicator stats (mean/min/max) for ONE specific
+    administrative area, matched by area_name (the same human-readable
+    name app.context.statistical_evidence.region_statistics's _area_label
+    already produces, and the same name the ranking table/RiskMap already
+    carry as area_name/woreda/zone/region) -- for
+    frontend/src/components/SelectedAreaAdvisory.jsx's "Climate indicator
+    evidence" cards.
+    """
+    if admin_level not in {"admin1", "admin2", "admin3"}:
+        raise HTTPException(status_code=400, detail="admin_level must be admin1, admin2, or admin3.")
+
+    stats_by_indicator = _area_climate_indicator_stats(period, admin_level)
+    indicators: Dict[str, Any] = {}
+    for indicator, regions in stats_by_indicator.items():
+        match = next((region for region in regions if region["area_name"] == area_name), None)
+        if match:
+            indicators[indicator] = {"mean": match["mean"], "min": match["min"], "max": match["max"]}
+
+    return {
+        "admin_level": admin_level,
+        "area_name": area_name,
+        "period": period,
+        "indicators": indicators,
+        "matched": bool(indicators),
+    }
 
 
 @router.get("/statistics/{map_id}")

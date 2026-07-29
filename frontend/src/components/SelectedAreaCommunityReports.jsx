@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { apiUrl } from "../config.js";
 
 const LEAD_LABELS = {
   week_1: "Week 1",
@@ -22,15 +23,22 @@ const LANGUAGE_LABELS = {
   sw: "Swahili",
 };
 
+// Kept in sync with the backend's canonical CANONICAL_REPORT_TYPES
+// (app/api/community_reports_store.py) -- river_overflow/unusual_heat
+// added here to match; the backend aliases a few older stored values
+// (pasture_poor/flooded_road/disease_concern/market_disruption) onto these
+// canonical ones at read time, so this list only needs the canonical set.
 const REPORT_TYPES = [
   { value: "water_shortage", label: "Water shortage / water point stress" },
+  { value: "crop_wilting", label: "Crop wilting / crop stress" },
   { value: "pasture_stress", label: "Pasture stress" },
   { value: "livestock_stress", label: "Livestock stress" },
-  { value: "crop_wilting", label: "Crop wilting / crop stress" },
-  { value: "food_price_increase", label: "Food or livestock price pressure" },
   { value: "flooding", label: "Flooding / water logging" },
+  { value: "river_overflow", label: "River overflow" },
   { value: "road_disruption", label: "Road or access disruption" },
+  { value: "unusual_heat", label: "Unusual heat" },
   { value: "health_or_disease", label: "Health or disease concern" },
+  { value: "food_price_increase", label: "Food or livestock price pressure" },
   { value: "no_impact_observed", label: "No impact observed yet" },
   { value: "other", label: "Other local observation" },
 ];
@@ -231,30 +239,59 @@ function SelectedAreaCommunityReports({
 
   const [reports, setReports] = useState([]);
   const [form, setForm] = useState(getInitialForm(selectedPriorityArea));
+  const [usingLocalFallback, setUsingLocalFallback] = useState(false);
 
+  // Real backend is now the primary read/write path (POST/GET
+  // /api/community-reports) so submitted reports actually feed the
+  // server-side feedback_signal used elsewhere in the app, instead of being
+  // invisible to everything but this one browser. localStorage is kept only
+  // as an offline fallback (same defensive try/catch pattern already used
+  // in Dashboard.jsx's fetchJson), not the primary store.
   useEffect(() => {
     setForm(getInitialForm(selectedPriorityArea));
 
-    if (!hasSelectedArea || !storageKey) {
+    if (!hasSelectedArea) {
       setReports([]);
       return;
     }
 
-    try {
-      const savedReports = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      setReports(Array.isArray(savedReports) ? savedReports : []);
-    } catch {
-      setReports([]);
+    let cancelled = false;
+
+    async function loadReports() {
+      try {
+        const response = await fetch(
+          apiUrl(`/api/community-reports?district=${encodeURIComponent(selectedPriorityArea.area_name)}`),
+        );
+        if (!response.ok) {
+          throw new Error(`Request failed ${response.status}`);
+        }
+        const data = await response.json();
+        const items = Array.isArray(data) ? data : data.reports || [];
+        if (!cancelled) {
+          setReports(items.map((item) => ({ ...item, submitted_at: item.submitted_at || item.created_at })));
+          setUsingLocalFallback(false);
+        }
+      } catch (error) {
+        console.error(error);
+        if (cancelled) {
+          return;
+        }
+        setUsingLocalFallback(true);
+        try {
+          const savedReports = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          setReports(Array.isArray(savedReports) ? savedReports : []);
+        } catch {
+          setReports([]);
+        }
+      }
     }
+
+    loadReports();
+
+    return () => {
+      cancelled = true;
+    };
   }, [hasSelectedArea, selectedPriorityArea, storageKey]);
-
-  useEffect(() => {
-    if (!hasSelectedArea || !storageKey) {
-      return;
-    }
-
-    localStorage.setItem(storageKey, JSON.stringify(reports));
-  }, [hasSelectedArea, storageKey, reports]);
 
   const signalSummary = getSignalSummary(reports);
 
@@ -265,32 +302,83 @@ function SelectedAreaCommunityReports({
     }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    const newReport = {
-      id: `report-${Date.now()}`,
-      ...form,
-      submitted_at: new Date().toISOString(),
-      area_name: selectedPriorityArea.area_name,
+    const payload = {
+      country: "Ethiopia",
+      district: selectedPriorityArea.area_name,
+      report_type: form.report_type,
+      severity: form.severity,
+      description: form.description,
+      reported_by: form.reporter_role || "anonymous",
+      contact: form.contact,
+      reporter_role: form.reporter_role,
+      location_detail: form.location_detail,
+      confidence: form.confidence,
       admin_level: selectedPriorityArea.admin_level,
       region: selectedPriorityArea.region || "",
       zone: selectedPriorityArea.zone || "",
+      woreda: selectedPriorityArea.woreda || "",
+      region_id: selectedPriorityArea.region_id || "",
+      zone_id: selectedPriorityArea.zone_id || "",
+      woreda_id: selectedPriorityArea.woreda_id || "",
       hazard: selectedPriorityArea.hazard || "",
       risk_level: selectedPriorityArea.risk_level || "",
-      lead: forecastSelection.lead || "",
-      forecast_scale: forecastSelection.forecastScale || "",
-      language: selectedLanguage,
+      priority_score: selectedPriorityArea.priority_score ?? null,
     };
 
-    setReports((currentReports) => [newReport, ...currentReports]);
+    try {
+      const response = await fetch(apiUrl("/api/community-reports"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(`Request failed ${response.status}`);
+      }
+      const data = await response.json();
+      const savedReport = { ...data.report, submitted_at: data.report.created_at };
+      setReports((currentReports) => [savedReport, ...currentReports]);
+      setUsingLocalFallback(false);
+    } catch (error) {
+      console.error(error);
+      setUsingLocalFallback(true);
+      const localReport = {
+        id: `report-${Date.now()}`,
+        ...form,
+        ...payload,
+        area_name: selectedPriorityArea.area_name,
+        submitted_at: new Date().toISOString(),
+        lead: forecastSelection.lead || "",
+        forecast_scale: forecastSelection.forecastScale || "",
+        language: selectedLanguage,
+      };
+      setReports((currentReports) => {
+        const next = [localReport, ...currentReports];
+        if (storageKey) {
+          localStorage.setItem(storageKey, JSON.stringify(next));
+        }
+        return next;
+      });
+    }
+
     setForm(getInitialForm(selectedPriorityArea));
   }
 
+  // Delete/Clear only affect this local view (and the local fallback cache,
+  // if active) -- there is no backend delete endpoint for submitted
+  // community reports, intentionally: real field reports are meant to be an
+  // append-only record, matching standard humanitarian ground-truth
+  // reporting practice, not silently erasable.
   function handleDeleteReport(reportId) {
-    setReports((currentReports) =>
-      currentReports.filter((report) => report.id !== reportId)
-    );
+    setReports((currentReports) => {
+      const next = currentReports.filter((report) => report.id !== reportId);
+      if (usingLocalFallback && storageKey) {
+        localStorage.setItem(storageKey, JSON.stringify(next));
+      }
+      return next;
+    });
   }
 
   function handleClearReports() {
@@ -478,8 +566,9 @@ function SelectedAreaCommunityReports({
             <div>
               <h3>Recent reports</h3>
               <p>
-                Reports are stored locally in the browser for this selected area
-                and forecast lead.
+                {usingLocalFallback
+                  ? "Backend unreachable -- reports are stored locally in this browser until the connection is restored."
+                  : "Reports are stored on the server for this district and feed the app's community-evidence signal."}
               </p>
             </div>
 

@@ -222,6 +222,23 @@ def infer_product(stem: str) -> str:
     return "forecast"
 
 
+INIT_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def infer_init_date(stem: str) -> str:
+    """Extracts the forecast initialization date embedded in a seasonal
+    raster filename, e.g. "ethiopia_June_2026-05-01_cdd_anomaly" -> "2026-05-01".
+
+    Unlike infer_indicator/infer_period/infer_product, this has no
+    fallback default -- returns "" (not fabricated) when no date token is
+    present, matching the honest-degradation convention already used for
+    init_date on the hazard/risk side (see hazard_risk_catalog_shared.py's
+    parse_hazard_risk_filename).
+    """
+    match = INIT_DATE_PATTERN.search(stem)
+    return match.group(1) if match else ""
+
+
 def safe_read_json(path: Path) -> Any:
     if not path.exists():
         return None

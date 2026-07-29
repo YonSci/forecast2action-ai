@@ -1,0 +1,30 @@
+# Context Engineering configuration for Forecast2Action AI.
+#
+# Loaded via app/context/config_loader.py::load_yaml_config, which falls back
+# to hardcoded defaults on any parse error (see that module's docstring) --
+# this file is a convenience override, not a hard dependency.
+
+prompt_version: "v1"
+
+retrieval:
+  mode: "keyword_metadata"   # future: "hybrid" once a real semantic_retriever is wired in
+  top_k: 5
+
+quality_weights:
+  hazard_evidence: 0.35
+  impact: 0.25
+  community: 0.15
+  knowledge: 0.15
+  geography: 0.10
+
+context_repository:
+  backend: "json_file"       # future: "postgres"
+  path: "data/context_runs"
+
+context_budgets:
+  advisory_generation:
+    knowledge_items: 5
+    community_reports: 5
+  sms_summary:
+    knowledge_items: 2
+    community_reports: 2

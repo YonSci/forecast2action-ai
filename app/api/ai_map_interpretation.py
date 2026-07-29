@@ -1,9 +1,10 @@
 import base64
 import json
+import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 try:
     from dotenv import load_dotenv
@@ -14,8 +15,12 @@ except Exception:
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+if TYPE_CHECKING:
+    from app.context.schemas import DecisionContextEnvelope
+
 
 router = APIRouter(prefix="/api/ai", tags=["AI Map Interpretation"])
+logger = logging.getLogger(__name__)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -36,80 +41,54 @@ NVIDIA_DEFAULT_MODEL = os.getenv(
     "NVIDIA_AI_MODEL",
     "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
 )
-GEMINI_DEFAULT_MODEL = os.getenv("GEMINI_AI_MODEL", "gemini-2.5-flash")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
+GEMINI_DEFAULT_MODEL = os.getenv("GEMINI_AI_MODEL", "gemini-flash-lite-latest")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-flash-latest")
 GROQ_DEFAULT_MODEL = os.getenv("GROQ_AI_MODEL", "openai/gpt-oss-120b")
 GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
-OPENROUTER_DEFAULT_MODEL = os.getenv("OPENROUTER_AI_MODEL", "openrouter/free")
+OPENROUTER_DEFAULT_MODEL = os.getenv("OPENROUTER_AI_MODEL", "google/gemini-2.5-flash-lite")
 
 NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
+# Kept in sync with frontend/src/components/AIMapInterpretation.jsx's
+# FALLBACK_AI_PROVIDER_OPTIONS -- that's the fallback shown before this
+# endpoint's response arrives; this is what actually renders afterward
+# (GET /api/ai/model-options, fetched into providerOptions state). Only
+# providers/models confirmed via live testing to handle the full
+# comprehensive map payload (32 images) are listed -- NVIDIA (only ever
+# manages 1 image, its whole context is 16,384 tokens) and Groq (hard
+# free-tier token-per-minute limit for this much text) were removed from
+# both places, though their call_*_model functions/explicit-provider
+# selection still work for direct/advanced use. "free_auto" (the automatic
+# chain), "openai" (paid), and every "custom model ID" entry were also
+# removed by explicit request -- the automatic chain's own logic in
+# call_configured_ai_provider still exists (still reachable via
+# requested_provider="free_auto" from a direct API call, or as the
+# AI_PROVIDER env default) but is no longer offered as a UI choice.
 AI_PROVIDER_OPTIONS = [
-    {
-        "value": "free_auto",
-        "label": "Automatic free-provider chain",
-        "description": "NVIDIA NIM → Gemini → Groq if screenshot is off → OpenRouter → OpenAI → rule-based fallback.",
-        "supports_screenshot": True,
-        "models": [
-            {"value": "auto", "label": "Automatic model per provider chain"},
-        ],
-    },
-    {
-        "value": "nvidia",
-        "label": "NVIDIA NIM",
-        "description": "Best option for map screenshot + structured JSON summaries.",
-        "supports_screenshot": True,
-        "models": [
-            {"value": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1", "label": "NVIDIA Llama 3.1 Nemotron Nano VL 8B"},
-            {"value": "meta/llama-3.2-11b-vision-instruct", "label": "Meta Llama 3.2 11B Vision Instruct"},
-            {"value": "meta/llama-3.2-90b-vision-instruct", "label": "Meta Llama 3.2 90B Vision Instruct"},
-            {"value": "custom", "label": "Custom NVIDIA NIM model ID"},
-        ],
-    },
     {
         "value": "gemini",
         "label": "Google Gemini",
-        "description": "Good multimodal option for screenshot + text summaries.",
+        "description": "Fastest and most reliable with the full comprehensive map set (all 32 images).",
         "supports_screenshot": True,
         "models": [
-            {"value": "gemini-2.5-flash", "label": "Gemini 2.5 Flash"},
-            {"value": "gemini-2.5-flash-lite", "label": "Gemini 2.5 Flash-Lite"},
-            {"value": "custom", "label": "Custom Gemini model ID"},
-        ],
-    },
-    {
-        "value": "groq",
-        "label": "Groq",
-        "description": "Fast text-only option. Use when the screenshot toggle is off.",
-        "supports_screenshot": False,
-        "models": [
-            {"value": "openai/gpt-oss-120b", "label": "GPT-OSS 120B on Groq"},
-            {"value": "llama-3.3-70b-versatile", "label": "Llama 3.3 70B Versatile on Groq"},
-            {"value": "custom", "label": "Custom Groq model ID"},
+            {"value": "gemini-flash-lite-latest", "label": "Gemini Flash-Lite (latest, fastest)"},
+            {"value": "gemini-3.5-flash-lite", "label": "Gemini 3.5 Flash-Lite (1M context)"},
+            {"value": "gemini-flash-latest", "label": "Gemini Flash (latest)"},
         ],
     },
     {
         "value": "openrouter",
         "label": "OpenRouter",
-        "description": "Free-model router / fallback route.",
+        "description": "All models below confirmed to handle the full comprehensive map set (all 32 images).",
         "supports_screenshot": True,
         "models": [
-            {"value": "openrouter/free", "label": "OpenRouter free model router"},
-            {"value": "custom", "label": "Custom OpenRouter model ID"},
-        ],
-    },
-    {
-        "value": "openai",
-        "label": "OpenAI",
-        "description": "Paid fallback if API billing is available.",
-        "supports_screenshot": True,
-        "models": [
-            {"value": "gpt-5", "label": "GPT-5"},
-            {"value": "gpt-4.1", "label": "GPT-4.1"},
-            {"value": "gpt-4o", "label": "GPT-4o"},
-            {"value": "custom", "label": "Custom OpenAI model ID"},
+            {"value": "google/gemini-2.5-flash-lite", "label": "Gemini 2.5 Flash-Lite (1M context)"},
+            {"value": "openai/gpt-5.6-luna", "label": "GPT-5.6 Luna (vision, 1M context)"},
+            {"value": "meta-llama/llama-4-scout", "label": "Llama 4 Scout (vision, 1.3M context)"},
+            {"value": "openai/gpt-5.6-terra", "label": "GPT-5.6 Terra (vision, 1M context)"},
+            {"value": "z-ai/glm-4.6v", "label": "GLM-4.6V (vision, 131K context)"},
         ],
     },
 ]
@@ -135,12 +114,26 @@ CLIMATE_INDICATOR_LABELS = {
     "spi": "Standardized Precipitation Index",
     "cdd": "Consecutive dry days",
     "cwd": "Consecutive wet days",
+    "rx1day": "Rx1day (Daily Rainfall)",
+    "rx5day": "Rx5day (5-Day Rainfall)",
     "dryspell_prob_5d": "Dry spell probability ≥5 days",
     "dryspell_prob_7d": "Dry spell probability ≥7 days",
     "dryspell_prob_9d": "Dry spell probability ≥9 days",
     "rainfall_percentile": "Rainfall percentile",
     "rainfall_anomaly_pct": "Rainfall anomaly",
 }
+
+# The 7 climate indicators actually visible in the UI / summarized with real
+# data -- matches app.context.spatial_summary.CLIMATE_INDICATORS and
+# frontend/src/constants/climateIndicators.js's VISIBLE_CLIMATE_INDICATORS
+# (dryspell_prob_5d/7d/9d were hidden once Rx1day/Rx5day replaced them --
+# this vocabulary is duplicated in 4+ places by necessity of module
+# boundaries; changing it requires updating all of them, not just this one).
+# CLIMATE_INDICATOR_LABELS above stays a superset lookup table (label
+# fallback for an active_indicator outside this visible set), but any code
+# that ITERATES "all climate indicators" must use this list, not
+# CLIMATE_INDICATOR_LABELS.keys().
+VISIBLE_CLIMATE_INDICATORS = ["rainfall_total", "spi", "cdd", "cwd", "rx1day", "rx5day", "rainfall_percentile"]
 
 
 class ForecastSelection(BaseModel):
@@ -205,6 +198,14 @@ class AIMapInterpretationRequest(BaseModel):
 
     map_image_base64: Optional[str] = None
     use_screenshot: bool = False
+    # Populated unconditionally by populate_comprehensive_map_data() for
+    # EVERY report (not just context-driven ones) -- one base64 PNG per
+    # Hazard/Risk layer + climate-indicator/product combo for the resolved
+    # period, regardless of what's currently displayed on screen. Kept
+    # separate from map_image_base64 (the single current-dashboard-view
+    # screenshot, which still captures on-screen context like selected
+    # boundaries/priority markers that these raw raster renders don't).
+    map_images: List[Dict[str, str]] = Field(default_factory=list)
 
     target_language: Optional[str] = "en"
     target_language_label: Optional[str] = "English"
@@ -215,6 +216,41 @@ class AIMapInterpretationRequest(BaseModel):
     requested_provider: Optional[str] = None
     requested_model: Optional[str] = None
     requested_model_label: Optional[str] = None
+
+    # Additive: when context_id is supplied, the endpoint fetches the stored
+    # Decision Context Envelope and fills top_admin_areas/all_map_layer_
+    # summaries/all_climate_indicator_summaries from it ONLY where this
+    # request didn't already provide them, then runs response_validator on
+    # the result. Old callers (no context_id) get zero behavior change.
+    context_id: Optional[str] = None
+    prompt_version: Optional[str] = None
+
+
+# Step 7 items 6/7 -- farmer/agro-pastoral advisory and humanitarian
+# priorities are structured by timescale/category instead of a flat bullet
+# list, matching this project's established preference for real keys over
+# labels embedded in prose (same reasoning as priority_area_justification's
+# object shape, step 7 item 5). validate_stage_shape only coerces
+# declared "array"/"string" properties -- an "object" property is passed
+# through untouched, so no coercion-logic changes are needed for this.
+_TIMESCALED_ADVISORY_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "immediate": {"type": "array", "items": {"type": "string"}},
+        "near_term": {"type": "array", "items": {"type": "string"}},
+        "preparedness": {"type": "array", "items": {"type": "string"}},
+    },
+}
+
+_HUMANITARIAN_PRIORITIES_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "monitoring": {"type": "array", "items": {"type": "string"}},
+        "preparedness": {"type": "array", "items": {"type": "string"}},
+        "pre_positioning": {"type": "array", "items": {"type": "string"}},
+        "immediate_action": {"type": "array", "items": {"type": "string"}},
+    },
+}
 
 
 AI_MAP_REPORT_SCHEMA: Dict[str, Any] = {
@@ -227,7 +263,11 @@ AI_MAP_REPORT_SCHEMA: Dict[str, Any] = {
         "national_spatial_overview": {"type": "array", "items": {"type": "string"}},
         "layer_by_layer_summary": {"type": "array", "items": {"type": "string"}},
         "indicator_by_indicator_summary": {"type": "array", "items": {"type": "string"}},
-        "priority_area_justification": {"type": "array", "items": {"type": "string"}},
+        # Object, not string -- rank/scores/supporting-indicators are
+        # deterministic (see app.context.statistical_evidence.build_
+        # priority_area_justifications), only differentiator/recommended_
+        # intervention_type are LLM-authored narrative merged on top.
+        "priority_area_justification": {"type": "array", "items": {"type": "object"}},
         "farmer_advisory": {"type": "array", "items": {"type": "string"}},
         "humanitarian_priorities": {"type": "array", "items": {"type": "string"}},
         "sms_summary": {"type": "string"},
@@ -244,6 +284,95 @@ AI_MAP_REPORT_SCHEMA: Dict[str, Any] = {
         "humanitarian_priorities",
         "sms_summary",
     ],
+}
+
+# v2 schema, used ONLY when request.prompt_version == "v2" (context-aware
+# requests). Adds 5 new properties, all added to `required` too -- OpenAI's
+# strict json_schema mode (see call_openai_model below) rejects a schema
+# where additionalProperties=false but `required` doesn't list every
+# property, so these can't be left "optional" the normal JSON-Schema way.
+# AI_MAP_REPORT_SCHEMA itself (v1, the default) is left completely
+# unchanged so old requests have zero regression risk.
+AI_MAP_REPORT_SCHEMA_V2: Dict[str, Any] = {
+    **AI_MAP_REPORT_SCHEMA,
+    "properties": {
+        **AI_MAP_REPORT_SCHEMA["properties"],
+        "structured_actions": {"type": "array", "items": {"type": "object"}},
+        "uncertainty_note": {"type": "string"},
+        "restricted_or_deferred_actions": {"type": "array", "items": {"type": "string"}},
+        "approval_requirements": {"type": "array", "items": {"type": "string"}},
+        "evidence_citations": {"type": "array", "items": {"type": "object"}},
+        # Step 7 items 6/7 -- overrides AI_MAP_REPORT_SCHEMA's v1 array<string>
+        # declarations for these 2 fields, and declares agro_pastoral_advisory
+        # (absent from v1 entirely). Required so validate_report_shape (called
+        # on the FINAL merged staged report) doesn't stringify the new
+        # structured objects these fields now hold -- validate_stage_shape only
+        # coerces properties declared "array"/"string"; declaring these as
+        # "object" here means the final validation pass leaves them untouched.
+        "farmer_advisory": _TIMESCALED_ADVISORY_SCHEMA,
+        "agro_pastoral_advisory": _TIMESCALED_ADVISORY_SCHEMA,
+        "humanitarian_priorities": _HUMANITARIAN_PRIORITIES_SCHEMA,
+    },
+    "required": [
+        *AI_MAP_REPORT_SCHEMA["required"],
+        "structured_actions",
+        "uncertainty_note",
+        "restricted_or_deferred_actions",
+        "approval_requirements",
+        "evidence_citations",
+        "agro_pastoral_advisory",
+    ],
+}
+
+
+# Step 6 -- staged workflow schemas. Each stage returns only its own
+# narrow slice; app.api.report_stages merges all 3 into one dict shaped
+# like AI_MAP_REPORT_SCHEMA_V2 before returning to the caller, so nothing
+# downstream (frontend, response_validator, citation builder) needs to
+# know the report was produced in 3 calls instead of 1.
+STAGE1_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "layer_by_layer_summary": {"type": "array", "items": {"type": "string"}},
+        "indicator_by_indicator_summary": {"type": "array", "items": {"type": "string"}},
+        "data_quality_notes": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["layer_by_layer_summary", "indicator_by_indicator_summary", "data_quality_notes"],
+}
+
+STAGE2_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "executive_summary": {"type": "string"},
+        "national_spatial_overview": {"type": "array", "items": {"type": "string"}},
+        "compound_hazard_interpretation": {"type": "array", "items": {"type": "string"}},
+        # Narrative-only, keyed by justification_id -- the LLM echoes back
+        # the id of each real priority-area object it was given and adds
+        # ONLY differentiator/recommended_intervention_type. It never
+        # restates the real numbers; app.api.report_stages merges this
+        # narrative onto the deterministic object afterward.
+        "priority_area_justification": {"type": "array", "items": {"type": "object"}},
+    },
+    "required": [
+        "executive_summary",
+        "national_spatial_overview",
+        "compound_hazard_interpretation",
+        "priority_area_justification",
+    ],
+}
+
+STAGE3_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "farmer_advisory": _TIMESCALED_ADVISORY_SCHEMA,
+        "agro_pastoral_advisory": _TIMESCALED_ADVISORY_SCHEMA,
+        "humanitarian_priorities": _HUMANITARIAN_PRIORITIES_SCHEMA,
+        "sms_summary": {"type": "string"},
+    },
+    "required": ["farmer_advisory", "agro_pastoral_advisory", "humanitarian_priorities", "sms_summary"],
 }
 
 
@@ -402,6 +531,42 @@ def get_map_image_data_url(request: AIMapInterpretationRequest) -> Optional[str]
     return f"data:image/png;base64,{value}"
 
 
+def get_all_image_urls(request: AIMapInterpretationRequest) -> List[Dict[str, str]]:
+    """Every image to attach to the LLM call: the single current-dashboard-
+    view screenshot (if enabled -- captures on-screen context like selected
+    boundaries/priority markers a raw raster render doesn't), plus every
+    comprehensive map render in request.map_images (populated by
+    populate_comprehensive_map_data() for every report, see that function).
+    """
+    images: List[Dict[str, str]] = []
+    current_view_url = get_map_image_data_url(request)
+    if current_view_url:
+        images.append({"map_id": "current_dashboard_view", "label": "Current dashboard view", "data_url": current_view_url})
+    for image in request.map_images:
+        if image.get("data_url"):
+            images.append(image)
+    return images
+
+
+def build_verification_metadata(request: AIMapInterpretationRequest, actual_image_count: int) -> Dict[str, Any]:
+    """Durable, per-response proof of what comprehensive map data was
+    actually attached to THIS specific call -- directly answers "was this
+    data really sent to the LLM", not just "did the code intend to send
+    it". actual_image_count is the number ACTUALLY placed in the provider
+    call's content (post per-provider max_images cap -- see NVIDIA_MAX_
+    IMAGES/build_chat_messages), so images_included is sliced to match --
+    otherwise this would misreport all ~32 candidate images as "included"
+    even when a provider's cap dropped some of them.
+    """
+    included_map_ids = [image["map_id"] for image in get_all_image_urls(request)[:actual_image_count]]
+    return {
+        "image_count": actual_image_count,
+        "images_included": included_map_ids,
+        "layer_summaries_included": len(request.all_map_layer_summaries),
+        "indicator_summaries_included": len(request.all_climate_indicator_summaries),
+    }
+
+
 def data_url_to_bytes(data_url: str) -> Tuple[bytes, str]:
     if not data_url.startswith("data:"):
         return base64.b64decode(data_url), "image/png"
@@ -519,23 +684,14 @@ def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> Li
     return selected
 
 
-def build_system_prompt() -> str:
-    return """
-You are an expert climate risk, agriculture, livestock, agro-pastoralism, and humanitarian early-warning analyst.
+def build_system_prompt(version: Optional[str] = None) -> str:
+    """Thin wrapper over app.advisory.prompts.registry -- defaults to "v1"
+    (the original, unchanged prompt text) so old callers with no
+    prompt_version keep getting identical behavior.
+    """
+    from app.advisory.prompts.registry import get_system_prompt
 
-Your job is to interpret Ethiopia-wide forecast map layers and climate indicator maps for Forecast2Action AI.
-
-Important rules:
-- Use structured JSON map summaries as the source of truth.
-- Use the optional map screenshot only as supporting visual context.
-- First explain the Ethiopia-wide spatial distribution, hotspots, low-value areas, high-value areas, and national patterns.
-- Interpret all hazard/risk layers: hazard, risk score, hazard probability, exposure, and vulnerability.
-- Interpret all seasonal climate indicators available in the payload: Rainfall Total, SPI, CDD, CWD, dry spell probability ≥5/7/9 days, and Rainfall Percentile.
-- Then explain why the listed priority intervention areas were selected.
-- Do not invent regions, zones, or woredas that are not present in the structured data.
-- Provide farmer/agro-pastoral advisory and humanitarian priorities.
-- Return only valid JSON matching the requested keys.
-""".strip()
+    return get_system_prompt(version or "v1")
 
 
 def build_user_prompt(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> str:
@@ -594,7 +750,7 @@ This report must be country-level first. Focus on spatial distribution across Et
 - where high values and low values are found
 - overall Ethiopia-wide pattern
 - layer-by-layer interpretation of Hazard / Risk Score / Hazard Probability / Exposure / Vulnerability
-- indicator-by-indicator interpretation of Rainfall Total / SPI / CDD / CWD / dryspell_prob_5d / dryspell_prob_7d / dryspell_prob_9d / Rainfall Percentile
+- indicator-by-indicator interpretation of Rainfall Total / SPI / CDD / CWD / Rx1day / Rx5day / Rainfall Percentile
 
 Only after the country-level interpretation, explain why the Priority Intervention Areas and Action Queue areas were selected.
 
@@ -623,22 +779,146 @@ priority_area_justification, farmer_advisory, humanitarian_priorities, sms_summa
 """.strip()
 
 
+def _coerce_to_display_text(item: Any) -> str:
+    """Coerces one array item to a plain string for React to render as a
+    list item's text content. Real LLM providers (confirmed via manual
+    end-to-end testing with NVIDIA NIM, not the deterministic fallback)
+    sometimes return a structured object (e.g. {"layer": ..., "summary":
+    ...}) inside an array the schema declares as list[str], especially once
+    the underlying map-layer/indicator summaries fed into the prompt became
+    real, richly-structured data (see app.context.spatial_summary) rather
+    than the old simpler summaries. React crashes outright trying to render
+    a raw object as a child -- "Objects are not valid as a React child" --
+    so every item must be reduced to a string here, not just the list
+    itself validated as a list.
+    """
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        for key in ("summary", "description", "text", "value", "label"):
+            if isinstance(item.get(key), str):
+                return item[key]
+        return "; ".join(f"{k}: {v}" for k, v in item.items())
+    return str(item)
+
+
+def validate_stage_shape(data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[str, Any]:
+    """Schema-driven coercion: for each property `schema` declares, forces
+    array-of-string properties to a list of display-text strings (via
+    _coerce_to_display_text, since real providers sometimes return a
+    structured object inside a list[str] field), leaves array-of-object
+    properties (e.g. evidence_citations) as-is when already a list
+    (defaulting to [] otherwise, never flattened to strings), and defaults
+    missing/None string properties to "". Generalizes the old validate_
+    report_shape (which hardcoded these exact field lists) so both the
+    legacy single-call schema and the new per-stage schemas share one
+    coercion path -- provably identical behavior to the old function when
+    called with AI_MAP_REPORT_SCHEMA_V2, see validate_report_shape below.
+    """
+    result = dict(data)
+    for key, prop_schema in schema.get("properties", {}).items():
+        prop_type = prop_schema.get("type")
+        if prop_type == "string":
+            if key not in result or result[key] is None:
+                result[key] = ""
+            continue
+        if prop_type != "array":
+            continue
+        items_type = (prop_schema.get("items") or {}).get("type")
+        value = result.get(key)
+        if not isinstance(value, list):
+            if items_type == "string":
+                # Real providers sometimes return a dict keyed by e.g. layer/
+                # indicator name instead of a flat array (confirmed live with
+                # Gemini on the Stage 1 schema) -- take its values as the
+                # per-item bullets rather than stringifying the whole dict
+                # into one unreadable blob.
+                if isinstance(value, dict):
+                    result[key] = [_coerce_to_display_text(item) for item in value.values()]
+                else:
+                    result[key] = [] if key not in result else [str(value)]
+            else:
+                result[key] = []
+        elif items_type == "string":
+            result[key] = [_coerce_to_display_text(item) for item in value]
+        # else: array-of-object already a list -- left untouched.
+    return result
+
+
 def validate_report_shape(report: Dict[str, Any]) -> Dict[str, Any]:
-    required_array_keys = [
-        "national_spatial_overview",
-        "layer_by_layer_summary",
-        "indicator_by_indicator_summary",
-        "priority_area_justification",
-        "farmer_advisory",
-        "humanitarian_priorities",
-    ]
-    for key in required_array_keys:
-        if key not in report or not isinstance(report[key], list):
-            report[key] = [] if key not in report else [str(report[key])]
-    for key in ["title", "target_language", "executive_summary", "sms_summary"]:
-        if key not in report or report[key] is None:
-            report[key] = ""
-    return report
+    return validate_stage_shape(report, AI_MAP_REPORT_SCHEMA_V2)
+
+
+def _describe_top_bottom_areas(summary: Dict[str, Any]) -> str:
+    """Grounds the rule-based fallback's layer/indicator bullets in real
+    area names when summarize_hazard_risk_layer/summarize_climate_indicator
+    (app/context/spatial_summary.py) provided them, instead of the generic
+    "review hotspot areas" placeholder text -- so the no-LLM-available path
+    is meaningfully specific too, not just the real-provider path.
+    """
+    top_areas = summary.get("top_areas") or []
+    bottom_areas = summary.get("bottom_areas") or []
+    if not top_areas and not bottom_areas:
+        return "national summary was provided. Review hotspot areas, low-value areas, and regional statistics to interpret the country-level pattern."
+
+    parts = []
+    if top_areas:
+        parts.append(f"highest in {', '.join(area['area_name'] for area in top_areas[:2])}")
+    if bottom_areas:
+        parts.append(f"lowest in {', '.join(area['area_name'] for area in bottom_areas[:2])}")
+    return "; ".join(parts) + "."
+
+
+def _fallback_compound_hazard_interpretation(evidence: Optional[Dict[str, Any]]) -> List[str]:
+    """Grounds the rule-based fallback's compound-hazard bullet in the real,
+    already-computed cross_indicator_findings (see app.context.statistical_
+    evidence.build_cross_indicator_findings) when available, instead of a
+    generic placeholder -- same "no LLM available doesn't mean no real data"
+    principle as _describe_top_bottom_areas above.
+    """
+    findings = (evidence or {}).get("cross_indicator_findings") or []
+    strong_drought = [f["area"] for f in findings if f.get("signal") == "strong_drought" and f.get("area") != "National"]
+    strong_wet = [f["area"] for f in findings if f.get("signal") == "strong_wet" and f.get("area") != "National"]
+    mixed = [f["area"] for f in findings if f.get("signal") == "mixed" and f.get("area") != "National"]
+    if not findings:
+        return ["No cross-indicator agreement data was available to summarize compound-hazard patterns."]
+
+    lines = []
+    if strong_drought:
+        lines.append(f"Areas where rainfall, SPI, CDD, and drought probability agree on a strong drought signal: {', '.join(strong_drought)}.")
+    if strong_wet:
+        lines.append(f"Areas where rainfall, SPI, CWD/Rx-day, and wet probability agree on a strong wetness signal: {', '.join(strong_wet)}.")
+    if mixed:
+        lines.append(f"Areas with genuinely mixed or contradicting indicators (review individually before acting): {', '.join(mixed)}.")
+    if not lines:
+        lines.append("No area currently shows strong or mixed cross-indicator agreement; conditions are within the near-normal range nationally.")
+    return lines
+
+
+def _fallback_priority_area_justification_narrative(evidence: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Deterministic narrative-only entries matching the real Stage 2 LLM's
+    own expected output shape (see STAGE2_SCHEMA) -- keyed by justification_
+    id so app.api.report_stages's merge step works identically whether the
+    narrative came from a real LLM call or this fallback. Grounded in the
+    real, already-computed app.context.statistical_evidence.build_priority_
+    area_justifications entries, never in request.top_admin_areas (which
+    may be at a finer admin level than this evidence engine covers).
+    """
+    justifications = (evidence or {}).get("priority_area_justifications") or []
+    narrative = []
+    for item in justifications:
+        hazard_label = "drought" if item.get("hazard_type") == "drought" else "wet/flood"
+        intervention = "Drought / water-security response" if item.get("hazard_type") == "drought" else "Flood / wet-hazard mitigation response"
+        narrative.append({
+            "justification_id": item.get("justification_id"),
+            "differentiator": (
+                f"Ranks #{item.get('rank')} nationally for {hazard_label} risk based on the real computed "
+                f"priority score ({format_number(item.get('priority_score'), 3)}), driven by a risk score of "
+                f"{format_number(item.get('risk_score'))} and hazard probability of {format_number(item.get('hazard_probability'), 3)}."
+            ),
+            "recommended_intervention_type": intervention,
+        })
+    return narrative
 
 
 def fallback_report(
@@ -646,6 +926,7 @@ def fallback_report(
     retrieved_guidance: List[Dict[str, str]],
     error_message: Optional[str] = None,
     provider_errors: Optional[List[str]] = None,
+    evidence: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     language_code = normalize_language_code(request.target_language)
     language_label = get_language_label(language_code)
@@ -663,38 +944,20 @@ def fallback_report(
     seasonal_period = request.forecast_selection.seasonalPeriodLabel or request.map_context.seasonal_period_label or request.forecast_selection.seasonalPeriod or request.map_context.seasonal_period or lead
     seasonal_product = request.forecast_selection.seasonalProductLabel or request.map_context.seasonal_product_label or request.forecast_selection.seasonalProduct or request.map_context.seasonal_product or "N/A"
 
-    top_areas = request.top_admin_areas[:5] if request.top_admin_areas else []
-    if top_areas:
-        priority_text = [
-            (
-                f"{get_area_location(item)} is selected because it ranks high in the priority queue. "
-                f"Risk score: {format_number(item.get('risk_score'))}; "
-                f"hazard probability: {format_number(item.get('hazard_probability'))}; "
-                f"exposure: {format_number(item.get('exposure'))}; "
-                f"vulnerability: {format_number(item.get('vulnerability'))}."
-            )
-            for item in top_areas
-        ]
-    else:
-        priority_text = ["No priority-area ranking was provided for justification."]
-
     layer_summary = []
     for key, label in MAP_LAYER_LABELS.items():
         summary = request.all_map_layer_summaries.get(key)
         if summary:
-            layer_summary.append(
-                f"{label}: national summary was provided. Review hotspot areas, low-value areas, and regional statistics to interpret the country-level pattern."
-            )
+            layer_summary.append(f"{label}: {_describe_top_bottom_areas(summary)}")
         else:
             layer_summary.append(f"{label}: no national summary was provided.")
 
     indicator_summary = []
-    for key, label in CLIMATE_INDICATOR_LABELS.items():
+    for key in VISIBLE_CLIMATE_INDICATORS:
+        label = CLIMATE_INDICATOR_LABELS.get(key, key)
         summary = request.all_climate_indicator_summaries.get(key)
         if summary:
-            indicator_summary.append(
-                f"{label}: national summary was provided. Review the highest/lowest areas and regional statistics to understand the spatial pattern."
-            )
+            indicator_summary.append(f"{label}: {_describe_top_bottom_areas(summary)}")
         else:
             indicator_summary.append(f"{label}: no national summary was provided.")
 
@@ -714,18 +977,49 @@ def fallback_report(
         ],
         "layer_by_layer_summary": layer_summary,
         "indicator_by_indicator_summary": indicator_summary,
-        "priority_area_justification": priority_text,
-        "farmer_advisory": [
-            "Conserve available water and strengthen household or farm-level water storage.",
-            "Adjust planting and field activities according to rainfall onset, dry-spell risk, or wet-spell risk.",
-            "Monitor pasture, crop stress, livestock body condition, and local water availability.",
-            "Report emerging impacts to local extension, DRM, or community focal points.",
+        "data_quality_notes": [
+            "This report is using the rule-based fallback because no configured AI provider completed successfully -- review raw statistics and cross-indicator agreement scores directly for data-quality context.",
         ],
-        "humanitarian_priorities": [
-            "Prioritize resource allocation where hazard probability, exposure, and vulnerability overlap.",
-            "Use community ground-truth reports to confirm whether forecast risk is becoming observed impact.",
-            "Coordinate DRM, agriculture, livestock, water, and humanitarian actors around the highest-risk hotspots.",
-        ],
+        "compound_hazard_interpretation": _fallback_compound_hazard_interpretation(evidence),
+        "priority_area_justification": _fallback_priority_area_justification_narrative(evidence),
+        # Step 7 items 6/7 -- structured by timescale/category (matches
+        # STAGE3_SCHEMA's real-LLM-path shape) so a fallback report is never
+        # shape-inconsistent with a real one, and the frontend never needs to
+        # branch on which path produced the report.
+        "farmer_advisory": {
+            "immediate": [
+                "Conserve available water and strengthen household or farm-level water storage.",
+                "Monitor pasture, crop stress, and local water availability daily.",
+            ],
+            "near_term": [
+                "Adjust planting and field activities according to rainfall onset, dry-spell risk, or wet-spell risk.",
+            ],
+            "preparedness": [
+                "Report emerging impacts to local extension, DRM, or community focal points.",
+            ],
+        },
+        "agro_pastoral_advisory": {
+            "immediate": [
+                "Prioritize water access and supplementary feed for breeding and lactating animals.",
+            ],
+            "near_term": [
+                "Monitor pasture and rangeland condition, and plan herd movement toward areas with better forage/water availability if local conditions deteriorate.",
+            ],
+            "preparedness": [
+                "Coordinate with local livestock extension and veterinary services on disease risk linked to drought stress or waterlogging.",
+                "Track livestock body condition and local market prices as an early indicator of herd stress.",
+            ],
+        },
+        "humanitarian_priorities": {
+            "monitoring": [
+                "Use community ground-truth reports to confirm whether forecast risk is becoming observed impact.",
+            ],
+            "preparedness": [
+                "Coordinate DRM, agriculture, livestock, water, and humanitarian actors around the highest-risk hotspots.",
+            ],
+            "pre_positioning": [],
+            "immediate_action": [],
+        },
         "sms_summary": (
             f"EARLY WARNING: {admin_scope}. {forecast_window} {lead} forecast. "
             f"Monitor local climate conditions and follow guidance from local authorities."
@@ -742,32 +1036,41 @@ def fallback_report(
             "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
             "error": error_message,
             "provider_errors": provider_errors or [],
+            # image_count is always 0 here (not len(request.map_images)) --
+            # the rule-based fallback never calls any vision API, so no
+            # image is ever actually sent, regardless of how many were
+            # fetched for a real provider attempt that failed before this.
+            **build_verification_metadata(request, 0),
         },
     }
 
 
 def build_chat_messages(
-    request: AIMapInterpretationRequest,
-    retrieved_guidance: List[Dict[str, str]],
-    include_image: bool,
-) -> Tuple[List[Dict[str, Any]], bool]:
-    system_prompt = build_system_prompt() + "\nReturn only valid JSON with exactly the requested keys. No Markdown fences."
-    user_prompt = build_user_prompt(request, retrieved_guidance)
-    image_url = get_map_image_data_url(request) if include_image else None
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    max_images: Optional[int] = None,
+) -> Tuple[List[Dict[str, Any]], int]:
+    # Callers are expected to already pass images in priority order (see
+    # get_all_image_urls/build_all_map_images -- Hazard/Risk first, then the
+    # 5 core climate indicators, then everything else) so capping here
+    # (confirmed needed: NVIDIA NIM hard-rejects >16 images per request)
+    # keeps the operationally-important ones, not an arbitrary subset.
+    if max_images is not None:
+        images = images[:max_images]
 
     content: Any
-    if image_url:
-        content = [
-            {"type": "text", "text": user_prompt},
-            {"type": "image_url", "image_url": {"url": image_url}},
-        ]
+    if images:
+        content = [{"type": "text", "text": user_prompt}]
+        for image in images:
+            content.append({"type": "image_url", "image_url": {"url": image["data_url"]}})
     else:
         content = user_prompt
 
     return [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": content},
-    ], bool(image_url)
+    ], len(images)
 
 
 def call_chat_completions_provider(
@@ -776,10 +1079,15 @@ def call_chat_completions_provider(
     api_key_env: str,
     base_url: str,
     model: str,
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    schema: Dict[str, Any],
     request: AIMapInterpretationRequest,
     retrieved_guidance: List[Dict[str, str]],
-    include_image: bool,
     extra_headers: Optional[Dict[str, str]] = None,
+    max_images: Optional[int] = None,
+    max_output_tokens: Optional[int] = None,
 ) -> Dict[str, Any]:
     api_key = os.getenv(api_key_env)
     if not api_key:
@@ -790,24 +1098,44 @@ def call_chat_completions_provider(
     except Exception as exc:
         raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
 
-    messages, used_image = build_chat_messages(request, retrieved_guidance, include_image=include_image)
+    messages, image_count = build_chat_messages(
+        system_prompt + "\nReturn only valid JSON with exactly the requested keys. No Markdown fences.",
+        user_prompt,
+        images,
+        max_images=max_images,
+    )
     client = OpenAI(base_url=base_url, api_key=api_key)
 
     kwargs: Dict[str, Any] = {}
     if extra_headers:
         kwargs["extra_headers"] = extra_headers
 
+    # max_output_tokens overrides the shared AI_MAX_TOKENS default for
+    # providers with a small total context window (confirmed: NVIDIA NIM's
+    # 16,384-token model rejects the request upfront -- before generating
+    # anything -- if input_tokens + max_tokens together exceed that, so a
+    # provider with little room for input can't just use the same large
+    # ceiling that's safe for a big-context model like GPT-5).
     completion = client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=float(os.getenv("AI_TEMPERATURE", "0.2")),
         top_p=float(os.getenv("AI_TOP_P", "0.7")),
-        max_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+        max_tokens=max_output_tokens if max_output_tokens is not None else int(os.getenv("AI_MAX_TOKENS", "8000")),
         **kwargs,
     )
 
+    # completion.choices can come back None/empty on a transient provider-side
+    # failure (confirmed live: some free-tier OpenRouter models occasionally
+    # return this under load) -- a clear ProviderError here lets the normal
+    # try/except-then-fallback flow in generate_ai_map_interpretation handle
+    # it the same as any other provider failure, instead of a raw, confusing
+    # "'NoneType' object is not subscriptable" TypeError.
+    if not completion.choices:
+        raise ProviderError(f"{provider_name} ({model}) returned no choices in its response.")
+
     text = completion.choices[0].message.content or ""
-    report = validate_report_shape(parse_json_from_text(text))
+    report = validate_stage_shape(parse_json_from_text(text), schema)
     report["_metadata"] = {
         "ai_engine": f"{provider_name}_chat_completions",
         "provider": provider_name,
@@ -815,39 +1143,91 @@ def call_chat_completions_provider(
         "requested_provider": normalize_provider(request.requested_provider),
         "requested_model": clean_model_id(request.requested_model) or "auto",
         "base_url": base_url,
-        "used_screenshot": used_image,
+        "used_screenshot": image_count > 0,
         "target_language": get_language_label(request.target_language),
         "target_language_code": normalize_language_code(request.target_language),
         "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+        "image_count": image_count,
     }
     return report
 
 
+NVIDIA_MAX_IMAGES = 1  # confirmed via live testing: even 2 images (~6,658 image tokens) plus the
+# comprehensive stats/metadata text (~10,300 tokens on its own) exceeds this model's 16,383-token
+# context window (16,937 total, still over). 1 image (~3,300 tokens) fits with room to spare. The
+# API's own "at most 16 images" cap is a red herring -- the real constraint is total context size.
+NVIDIA_MAX_OUTPUT_TOKENS = 4000  # this model's WHOLE context is 16,384 tokens; the API rejects the
+# request upfront if input_tokens + max_tokens together exceed that, so it can't share the larger
+# AI_MAX_TOKENS default (8000, sized for GPT-5/Gemini's much bigger context windows) -- confirmed
+# live: with ~9,400 input tokens (1 image + full comprehensive stats), 8000 was rejected outright
+# (400, "requested 17437 tokens"); 4000 leaves comfortable headroom even if input grows somewhat.
+
+
 def call_nvidia_nim_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
-    return call_chat_completions_provider(
+    images = get_all_image_urls(request)
+    report = call_chat_completions_provider(
         provider_name="nvidia_nim",
         api_key_env="NVIDIA_API_KEY",
         base_url=os.getenv("NVIDIA_BASE_URL", NVIDIA_BASE_URL),
         model=resolve_model_for_provider(request, "nvidia", NVIDIA_DEFAULT_MODEL, "NVIDIA_AI_MODEL"),
+        system_prompt=build_system_prompt(request.prompt_version),
+        user_prompt=build_user_prompt(request, retrieved_guidance),
+        images=images,
+        schema=AI_MAP_REPORT_SCHEMA_V2 if request.prompt_version == "v2" else AI_MAP_REPORT_SCHEMA,
         request=request,
         retrieved_guidance=retrieved_guidance,
-        include_image=True,
+        max_images=NVIDIA_MAX_IMAGES,
+        max_output_tokens=NVIDIA_MAX_OUTPUT_TOKENS,
     )
+    report["_metadata"].update(build_verification_metadata(request, report["_metadata"]["image_count"]))
+    return report
 
 
 def call_groq_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]], model: Optional[str] = None) -> Dict[str, Any]:
-    return call_chat_completions_provider(
+    report = call_chat_completions_provider(
         provider_name="groq",
         api_key_env="GROQ_API_KEY",
         base_url=os.getenv("GROQ_BASE_URL", GROQ_BASE_URL),
         model=model or resolve_model_for_provider(request, "groq", GROQ_DEFAULT_MODEL, "GROQ_AI_MODEL"),
+        system_prompt=build_system_prompt(request.prompt_version),
+        user_prompt=build_user_prompt(request, retrieved_guidance),
+        images=[],
+        schema=AI_MAP_REPORT_SCHEMA_V2 if request.prompt_version == "v2" else AI_MAP_REPORT_SCHEMA,
         request=request,
         retrieved_guidance=retrieved_guidance,
-        include_image=False,
     )
+    report["_metadata"].update(build_verification_metadata(request, 0))
+    return report
 
 
 def call_openrouter_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
+    site_url = os.getenv("OPENROUTER_SITE_URL", "https://forecast2action-ai.vercel.app")
+    app_title = os.getenv("OPENROUTER_APP_TITLE", "Forecast2Action AI")
+    images = get_all_image_urls(request)
+    report = call_chat_completions_provider(
+        provider_name="openrouter",
+        api_key_env="OPENROUTER_API_KEY",
+        base_url=os.getenv("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL),
+        model=resolve_model_for_provider(request, "openrouter", OPENROUTER_DEFAULT_MODEL, "OPENROUTER_AI_MODEL"),
+        system_prompt=build_system_prompt(request.prompt_version),
+        user_prompt=build_user_prompt(request, retrieved_guidance),
+        images=images,
+        schema=AI_MAP_REPORT_SCHEMA_V2 if request.prompt_version == "v2" else AI_MAP_REPORT_SCHEMA,
+        request=request,
+        retrieved_guidance=retrieved_guidance,
+        extra_headers={"HTTP-Referer": site_url, "X-OpenRouter-Title": app_title},
+    )
+    report["_metadata"].update(build_verification_metadata(request, report["_metadata"]["image_count"]))
+    return report
+
+
+def call_openrouter_for_stage(
+    request: AIMapInterpretationRequest,
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    schema: Dict[str, Any],
+) -> Dict[str, Any]:
     site_url = os.getenv("OPENROUTER_SITE_URL", "https://forecast2action-ai.vercel.app")
     app_title = os.getenv("OPENROUTER_APP_TITLE", "Forecast2Action AI")
     return call_chat_completions_provider(
@@ -855,18 +1235,22 @@ def call_openrouter_model(request: AIMapInterpretationRequest, retrieved_guidanc
         api_key_env="OPENROUTER_API_KEY",
         base_url=os.getenv("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL),
         model=resolve_model_for_provider(request, "openrouter", OPENROUTER_DEFAULT_MODEL, "OPENROUTER_AI_MODEL"),
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        images=images,
+        schema=schema,
         request=request,
-        retrieved_guidance=retrieved_guidance,
-        include_image=bool(get_map_image_data_url(request)),
+        retrieved_guidance=[],
         extra_headers={"HTTP-Referer": site_url, "X-OpenRouter-Title": app_title},
     )
 
 
-def call_gemini_model(
-    request: AIMapInterpretationRequest,
-    retrieved_guidance: List[Dict[str, str]],
-    model: Optional[str] = None,
-) -> Dict[str, Any]:
+def _call_gemini_raw(gemini_model: str, system_prompt: str, user_prompt: str, images: List[Dict[str, str]]) -> str:
+    """Low-level Gemini call: builds contents (text + image parts), calls
+    generate_content, returns the raw response text. Shared by the legacy
+    single-call path (call_gemini_model) and the staged-workflow path
+    (call_gemini_for_stage) so the actual SDK-calling logic exists once.
+    """
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise ProviderError("GEMINI_API_KEY or GOOGLE_API_KEY is not set.")
@@ -877,19 +1261,13 @@ def call_gemini_model(
     except Exception as exc:
         raise ProviderError("Google Gen AI package is required. Run: pip install google-genai") from exc
 
-    gemini_model = model or resolve_model_for_provider(request, "gemini", GEMINI_DEFAULT_MODEL, "GEMINI_AI_MODEL")
     client = genai.Client(api_key=api_key)
-    system_prompt = build_system_prompt()
-    user_prompt = build_user_prompt(request, retrieved_guidance)
     text_prompt = f"{system_prompt}\n\n{user_prompt}\n\nReturn only valid JSON. No Markdown fences."
 
-    contents: List[Any] = [types.Part.from_text(text_prompt)]
-    image_url = get_map_image_data_url(request)
-    used_image = False
-    if image_url:
-        image_bytes, mime_type = data_url_to_bytes(image_url)
+    contents: List[Any] = [types.Part.from_text(text=text_prompt)]
+    for image in images:
+        image_bytes, mime_type = data_url_to_bytes(image["data_url"])
         contents.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
-        used_image = True
 
     try:
         response = client.models.generate_content(
@@ -899,7 +1277,7 @@ def call_gemini_model(
                 response_mime_type="application/json",
                 temperature=float(os.getenv("AI_TEMPERATURE", "0.2")),
                 top_p=float(os.getenv("AI_TOP_P", "0.7")),
-                max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+                max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "8000")),
             ),
         )
     except TypeError:
@@ -911,44 +1289,90 @@ def call_gemini_model(
                 "response_mime_type": "application/json",
                 "temperature": float(os.getenv("AI_TEMPERATURE", "0.2")),
                 "top_p": float(os.getenv("AI_TOP_P", "0.7")),
-                "max_output_tokens": int(os.getenv("AI_MAX_TOKENS", "2800")),
+                "max_output_tokens": int(os.getenv("AI_MAX_TOKENS", "8000")),
             },
         )
+    return response.text or ""
 
-    report = validate_report_shape(parse_json_from_text(response.text or ""))
-    report["_metadata"] = {
+
+def _gemini_metadata(
+    request: AIMapInterpretationRequest,
+    gemini_model: str,
+    image_count: int,
+    retrieved_guidance: List[Dict[str, str]],
+) -> Dict[str, Any]:
+    return {
         "ai_engine": "gemini_generate_content",
         "provider": "gemini",
         "model": gemini_model,
         "requested_provider": normalize_provider(request.requested_provider),
         "requested_model": clean_model_id(request.requested_model) or "auto",
-        "used_screenshot": used_image,
+        "used_screenshot": image_count > 0,
         "target_language": get_language_label(request.target_language),
         "target_language_code": normalize_language_code(request.target_language),
         "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+        "image_count": image_count,
+    }
+
+
+def call_gemini_model(
+    request: AIMapInterpretationRequest,
+    retrieved_guidance: List[Dict[str, str]],
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    gemini_model = model or resolve_model_for_provider(request, "gemini", GEMINI_DEFAULT_MODEL, "GEMINI_AI_MODEL")
+    system_prompt = build_system_prompt(request.prompt_version)
+    user_prompt = build_user_prompt(request, retrieved_guidance)
+    images = get_all_image_urls(request)
+
+    text = _call_gemini_raw(gemini_model, system_prompt, user_prompt, images)
+    report = validate_report_shape(parse_json_from_text(text))
+    report["_metadata"] = {
+        **_gemini_metadata(request, gemini_model, len(images), retrieved_guidance),
+        **build_verification_metadata(request, len(images)),
     }
     return report
 
 
-def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ProviderError("OPENAI_API_KEY is not set.")
+def call_gemini_for_stage(
+    request: AIMapInterpretationRequest,
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    schema: Dict[str, Any],
+    model: Optional[str] = None,
+    default_model: str = GEMINI_DEFAULT_MODEL,
+) -> Dict[str, Any]:
+    # No env_name here (unlike the legacy call_gemini_model) -- per-stage
+    # tiering (see GEMINI_MODEL_TIERS) is a request-time concept, not a
+    # global env override; default_model already carries the right tier's
+    # choice, and the user's own explicit request.requested_model (if set)
+    # still wins via resolve_model_for_provider's own precedence.
+    gemini_model = model or resolve_model_for_provider(request, "gemini", default_model)
+    text = _call_gemini_raw(gemini_model, system_prompt, user_prompt, images)
+    report = validate_stage_shape(parse_json_from_text(text), schema)
+    report["_metadata"] = _gemini_metadata(request, gemini_model, len(images), [])
+    return report
 
-    try:
-        from openai import OpenAI
-    except Exception as exc:
-        raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
 
-    client = OpenAI(api_key=api_key)
-    model = resolve_model_for_provider(request, "openai", OPENAI_DEFAULT_MODEL, "OPENAI_MAP_AI_MODEL")
-    system_prompt = build_system_prompt()
-    user_prompt = build_user_prompt(request, retrieved_guidance)
-    image_url = get_map_image_data_url(request)
-
+def _call_openai_raw(
+    client: Any,
+    model: str,
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    schema: Dict[str, Any],
+    schema_name: str,
+) -> Tuple[str, str, Optional[str]]:
+    """Low-level OpenAI Responses-API call: tries strict json_schema
+    structured output first, falls back to unstructured JSON parsing on any
+    schema error. Returns (output_text, engine_name, structured_error_str).
+    Shared by the legacy single-call path (call_openai_model) and the
+    staged-workflow path (call_openai_for_stage).
+    """
     content: List[Dict[str, Any]] = [{"type": "input_text", "text": user_prompt}]
-    if image_url:
-        content.append({"type": "input_image", "image_url": image_url, "detail": "low"})
+    for image in images:
+        content.append({"type": "input_image", "image_url": image["data_url"], "detail": "low"})
 
     try:
         response = client.responses.create(
@@ -960,15 +1384,14 @@ def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: L
             text={
                 "format": {
                     "type": "json_schema",
-                    "name": "ai_map_interpretation_report",
+                    "name": schema_name,
                     "strict": True,
-                    "schema": AI_MAP_REPORT_SCHEMA,
+                    "schema": schema,
                 }
             },
-            max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+            max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "8000")),
         )
-        report = validate_report_shape(parse_json_from_text(response.output_text))
-        engine = "openai_responses_api"
+        return response.output_text, "openai_responses_api", None
     except Exception as structured_error:
         fallback_content: List[Dict[str, Any]] = [
             {
@@ -976,16 +1399,41 @@ def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: L
                 "text": f"{system_prompt}\n\n{user_prompt}\n\nReturn only valid JSON. Do not include Markdown fences.",
             }
         ]
-        if image_url:
-            fallback_content.append({"type": "input_image", "image_url": image_url, "detail": "low"})
+        for image in images:
+            fallback_content.append({"type": "input_image", "image_url": image["data_url"], "detail": "low"})
         response = client.responses.create(
             model=model,
             input=[{"role": "user", "content": fallback_content}],
-            max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "2800")),
+            max_output_tokens=int(os.getenv("AI_MAX_TOKENS", "8000")),
         )
-        report = validate_report_shape(parse_json_from_text(response.output_text))
-        engine = "openai_responses_api_json_fallback"
-        report.setdefault("_metadata", {})["structured_output_error"] = str(structured_error)
+        return response.output_text, "openai_responses_api_json_fallback", str(structured_error)
+
+
+def _openai_client() -> Any:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ProviderError("OPENAI_API_KEY is not set.")
+    try:
+        from openai import OpenAI
+    except Exception as exc:
+        raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
+    return OpenAI(api_key=api_key)
+
+
+def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> Dict[str, Any]:
+    client = _openai_client()
+    model = resolve_model_for_provider(request, "openai", OPENAI_DEFAULT_MODEL, "OPENAI_MAP_AI_MODEL")
+    system_prompt = build_system_prompt(request.prompt_version)
+    user_prompt = build_user_prompt(request, retrieved_guidance)
+    images = get_all_image_urls(request)
+    schema = AI_MAP_REPORT_SCHEMA_V2 if request.prompt_version == "v2" else AI_MAP_REPORT_SCHEMA
+
+    output_text, engine, structured_error = _call_openai_raw(
+        client, model, system_prompt, user_prompt, images, schema, "ai_map_interpretation_report"
+    )
+    report = validate_report_shape(parse_json_from_text(output_text))
+    if structured_error:
+        report.setdefault("_metadata", {})["structured_output_error"] = structured_error
 
     report["_metadata"] = {
         **report.get("_metadata", {}),
@@ -994,11 +1442,42 @@ def call_openai_model(request: AIMapInterpretationRequest, retrieved_guidance: L
         "model": model,
         "requested_provider": normalize_provider(request.requested_provider),
         "requested_model": clean_model_id(request.requested_model) or "auto",
-        "used_screenshot": bool(image_url),
+        "used_screenshot": bool(images),
         "target_language": get_language_label(request.target_language),
         "target_language_code": normalize_language_code(request.target_language),
         "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
+        **build_verification_metadata(request, len(images)),
     }
+    return report
+
+
+def call_openai_for_stage(
+    request: AIMapInterpretationRequest,
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    schema: Dict[str, Any],
+) -> Dict[str, Any]:
+    client = _openai_client()
+    model = resolve_model_for_provider(request, "openai", OPENAI_DEFAULT_MODEL, "OPENAI_MAP_AI_MODEL")
+
+    output_text, engine, structured_error = _call_openai_raw(
+        client, model, system_prompt, user_prompt, images, schema, "ai_map_interpretation_stage_report"
+    )
+    report = validate_stage_shape(parse_json_from_text(output_text), schema)
+    report["_metadata"] = {
+        "ai_engine": engine,
+        "provider": "openai",
+        "model": model,
+        "requested_provider": normalize_provider(request.requested_provider),
+        "requested_model": clean_model_id(request.requested_model) or "auto",
+        "used_screenshot": bool(images),
+        "target_language": get_language_label(request.target_language),
+        "target_language_code": normalize_language_code(request.target_language),
+        "image_count": len(images),
+    }
+    if structured_error:
+        report["_metadata"]["structured_output_error"] = structured_error
     return report
 
 
@@ -1016,18 +1495,11 @@ def call_configured_ai_provider(request: AIMapInterpretationRequest, retrieved_g
     if provider in {"auto", "free_auto", "multi", "multi_provider"}:
         errors: List[str] = []
 
-        # 1. NVIDIA NIM vision model first.
-        if os.getenv("NVIDIA_API_KEY"):
-            result = try_provider("NVIDIA NIM", lambda: call_nvidia_nim_model(request, retrieved_guidance), errors)
-            if result:
-                result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
-                result["_metadata"]["provider_attempts"] = ["nvidia"]
-                result["_metadata"]["provider_errors"] = errors
-                return result
-        else:
-            errors.append("NVIDIA skipped: NVIDIA_API_KEY is not set.")
-
-        # 2. Gemini Flash / Flash-Lite second.
+        # 1. Gemini Flash-Lite / Flash first -- confirmed via live testing
+        # (see NVIDIA_MAX_IMAGES/NVIDIA_MAX_OUTPUT_TOKENS comments above)
+        # that Gemini reliably handles the FULL comprehensive payload (all
+        # 32 map images) in 10-40s, free, while NVIDIA's nano model needs
+        # aggressive capping to just 1 image and is still slower overall.
         if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
             for gemini_model in [os.getenv("GEMINI_AI_MODEL", GEMINI_DEFAULT_MODEL), os.getenv("GEMINI_FALLBACK_MODEL", GEMINI_FALLBACK_MODEL)]:
                 if not gemini_model:
@@ -1039,52 +1511,37 @@ def call_configured_ai_provider(request: AIMapInterpretationRequest, retrieved_g
                 )
                 if result:
                     result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
-                    result["_metadata"]["provider_attempts"] = ["nvidia", "gemini"]
+                    result["_metadata"]["provider_attempts"] = ["gemini"]
                     result["_metadata"]["provider_errors"] = errors
                     return result
         else:
             errors.append("Gemini skipped: GEMINI_API_KEY/GOOGLE_API_KEY is not set.")
 
-        # 3. Groq only when screenshot is disabled or absent.
-        screenshot_is_active = bool(get_map_image_data_url(request))
-        if not screenshot_is_active:
-            if os.getenv("GROQ_API_KEY"):
-                groq_models = [os.getenv("GROQ_AI_MODEL", GROQ_DEFAULT_MODEL), os.getenv("GROQ_FALLBACK_MODEL", GROQ_FALLBACK_MODEL)]
-                for groq_model in groq_models:
-                    if not groq_model:
-                        continue
-                    result = try_provider(
-                        f"Groq {groq_model}",
-                        lambda m=groq_model: call_groq_model(request, retrieved_guidance, model=m),
-                        errors,
-                    )
-                    if result:
-                        result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
-                        result["_metadata"]["provider_attempts"] = ["nvidia", "gemini", "groq"]
-                        result["_metadata"]["provider_errors"] = errors
-                        return result
-            else:
-                errors.append("Groq skipped: GROQ_API_KEY is not set.")
-        else:
-            errors.append("Groq skipped: screenshot is enabled, and Groq is configured here as text-only.")
-
-        # 4. OpenRouter free.
+        # 2. OpenRouter next -- every model in its dropdown list is
+        # confirmed (live-tested) to handle the full comprehensive payload.
+        # NVIDIA and Groq were removed from this automatic chain: NVIDIA
+        # only ever manages 1 image (its whole context is 16,384 tokens,
+        # see NVIDIA_MAX_IMAGES/NVIDIA_MAX_OUTPUT_TOKENS below), and Groq
+        # hard-fails on its free-tier token-per-minute limit for this much
+        # text regardless of images. Both functions/explicit-provider
+        # selection paths still exist below for direct/advanced use --
+        # they're just no longer tried automatically.
         if os.getenv("OPENROUTER_API_KEY"):
             result = try_provider("OpenRouter free", lambda: call_openrouter_model(request, retrieved_guidance), errors)
             if result:
                 result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
-                result["_metadata"]["provider_attempts"] = ["nvidia", "gemini", "groq", "openrouter"]
+                result["_metadata"]["provider_attempts"] = ["gemini", "openrouter"]
                 result["_metadata"]["provider_errors"] = errors
                 return result
         else:
             errors.append("OpenRouter skipped: OPENROUTER_API_KEY is not set.")
 
-        # 5. OpenAI if billing is available/configured.
+        # 3. OpenAI if billing is available/configured.
         if os.getenv("OPENAI_API_KEY"):
             result = try_provider("OpenAI", lambda: call_openai_model(request, retrieved_guidance), errors)
             if result:
                 result.setdefault("_metadata", {})["provider_chain"] = "free_auto"
-                result["_metadata"]["provider_attempts"] = ["nvidia", "gemini", "groq", "openrouter", "openai"]
+                result["_metadata"]["provider_attempts"] = ["gemini", "openrouter", "openai"]
                 result["_metadata"]["provider_errors"] = errors
                 return result
         else:
@@ -1097,8 +1554,13 @@ def call_configured_ai_provider(request: AIMapInterpretationRequest, retrieved_g
     if provider == "gemini":
         return call_gemini_model(request, retrieved_guidance)
     if provider == "groq":
-        if get_map_image_data_url(request):
-            raise ProviderError("Groq provider is configured as text-only. Disable screenshot or use NVIDIA/Gemini/OpenRouter/OpenAI.")
+        # Groq is configured as text-only (call_groq_model always passes
+        # include_image=False) -- proceeds without any image rather than
+        # blocking the request, now that images (the comprehensive map set,
+        # see populate_comprehensive_map_data) are attached to every report
+        # by default rather than only when a user explicitly enables a
+        # screenshot. The response's own _metadata.image_count truthfully
+        # reports 0 for this provider either way.
         return call_groq_model(request, retrieved_guidance)
     if provider == "openrouter":
         return call_openrouter_model(request, retrieved_guidance)
@@ -1106,6 +1568,115 @@ def call_configured_ai_provider(request: AIMapInterpretationRequest, retrieved_g
         return call_openai_model(request, retrieved_guidance)
 
     raise ProviderError(f"Unsupported AI_PROVIDER='{provider}'. Use free_auto, openai, nvidia, gemini, groq, or openrouter.")
+
+
+# Step 9 -- per-stage model tier. "lite" is the existing default (fast,
+# free, fine for JSON transformation / field extraction / short summaries
+# / translation). "strong" is used ONLY for Stage 2 (integrated synthesis
+# -- reconciling conflicting dry/wet signals, hazard-exposure-vulnerability
+# relationships, real priority rankings): tries gemini-flash-latest
+# (Google's non-lite Flash tier, still free) before flash-lite, the
+# reverse of "lite"'s order. Deliberately stays within the free tier --
+# OpenRouter/OpenAI fallback models are UNCHANGED for both tiers, per
+# explicit confirmation, so this never silently increases cost on the
+# automatic path (same "never add paid models to the automatic chain
+# without confirmation" principle as the free_auto NVIDIA/Groq removal).
+GEMINI_MODEL_TIERS: Dict[str, List[str]] = {
+    "lite": [os.getenv("GEMINI_AI_MODEL", GEMINI_DEFAULT_MODEL), os.getenv("GEMINI_FALLBACK_MODEL", GEMINI_FALLBACK_MODEL)],
+    "strong": [os.getenv("GEMINI_FALLBACK_MODEL", GEMINI_FALLBACK_MODEL), os.getenv("GEMINI_AI_MODEL", GEMINI_DEFAULT_MODEL)],
+}
+
+
+def call_configured_ai_provider_for_stage(
+    request: AIMapInterpretationRequest,
+    system_prompt: str,
+    user_prompt: str,
+    images: List[Dict[str, str]],
+    schema: Dict[str, Any],
+    model_tier: str = "lite",
+) -> Dict[str, Any]:
+    """Staged-workflow counterpart of call_configured_ai_provider: same
+    Gemini -> OpenRouter -> OpenAI fallback chain (NVIDIA/Groq intentionally
+    excluded here too, matching this session's earlier Tier-1-only UI
+    decision -- NVIDIA's 1-image cap and Groq's rate limit make them a poor
+    fit for a workflow where Stage 1 still needs up to 16 images), but each
+    stage call carries its OWN prompt/images/schema instead of deriving a
+    single whole-request payload internally. model_tier selects which
+    GEMINI_MODEL_TIERS list to try (see above) -- OpenRouter/OpenAI stay
+    identical regardless of tier.
+    """
+    provider = normalize_provider(request.requested_provider or os.getenv("AI_PROVIDER", AI_PROVIDER))
+    gemini_models = GEMINI_MODEL_TIERS.get(model_tier, GEMINI_MODEL_TIERS["lite"])
+
+    if provider in {"auto", "free_auto", "multi", "multi_provider"}:
+        errors: List[str] = []
+
+        if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
+            for gemini_model in gemini_models:
+                if not gemini_model:
+                    continue
+                result = try_provider(
+                    f"Gemini {gemini_model}",
+                    lambda m=gemini_model: call_gemini_for_stage(request, system_prompt, user_prompt, images, schema, model=m),
+                    errors,
+                )
+                if result:
+                    result["_metadata"]["provider_chain"] = "free_auto"
+                    result["_metadata"]["provider_attempts"] = ["gemini"]
+                    result["_metadata"]["provider_errors"] = errors
+                    result["_metadata"]["model_tier"] = model_tier
+                    return result
+        else:
+            errors.append("Gemini skipped: GEMINI_API_KEY/GOOGLE_API_KEY is not set.")
+
+        if os.getenv("OPENROUTER_API_KEY"):
+            result = try_provider(
+                "OpenRouter free",
+                lambda: call_openrouter_for_stage(request, system_prompt, user_prompt, images, schema),
+                errors,
+            )
+            if result:
+                result["_metadata"]["provider_chain"] = "free_auto"
+                result["_metadata"]["provider_attempts"] = ["gemini", "openrouter"]
+                result["_metadata"]["provider_errors"] = errors
+                result["_metadata"]["model_tier"] = model_tier
+                return result
+        else:
+            errors.append("OpenRouter skipped: OPENROUTER_API_KEY is not set.")
+
+        if os.getenv("OPENAI_API_KEY"):
+            result = try_provider(
+                "OpenAI",
+                lambda: call_openai_for_stage(request, system_prompt, user_prompt, images, schema),
+                errors,
+            )
+            if result:
+                result["_metadata"]["provider_chain"] = "free_auto"
+                result["_metadata"]["provider_attempts"] = ["gemini", "openrouter", "openai"]
+                result["_metadata"]["provider_errors"] = errors
+                result["_metadata"]["model_tier"] = model_tier
+                return result
+        else:
+            errors.append("OpenAI skipped: OPENAI_API_KEY is not set.")
+
+        raise ProviderError(" | ".join(errors) if errors else "No provider completed successfully.")
+
+    if provider == "gemini":
+        result = call_gemini_for_stage(request, system_prompt, user_prompt, images, schema, default_model=gemini_models[0])
+        result["_metadata"]["model_tier"] = model_tier
+        return result
+    if provider == "openrouter":
+        result = call_openrouter_for_stage(request, system_prompt, user_prompt, images, schema)
+        result["_metadata"]["model_tier"] = model_tier
+        return result
+    if provider == "openai":
+        result = call_openai_for_stage(request, system_prompt, user_prompt, images, schema)
+        result["_metadata"]["model_tier"] = model_tier
+        return result
+
+    raise ProviderError(
+        f"Unsupported AI_PROVIDER='{provider}' for the staged workflow. Use free_auto, gemini, openrouter, or openai."
+    )
 
 
 @router.get("/model-options")
@@ -1138,9 +1709,7 @@ async def get_ai_provider_status() -> Dict[str, Any]:
     return {
         "ai_provider": provider,
         "routing_order_when_free_auto": [
-            "nvidia_nim_vision",
-            "gemini_flash_or_flash_lite",
-            "groq_text_only_when_screenshot_disabled",
+            "gemini_flash_lite_or_flash",
             "openrouter_free",
             "openai_if_billing_available",
             "rule_based_fallback",
@@ -1163,19 +1732,158 @@ async def get_ai_provider_status() -> Dict[str, Any]:
     }
 
 
+def resolve_report_period(request: AIMapInterpretationRequest) -> str:
+    """Same period-resolution order used by populate_comprehensive_map_data
+    and build_user_prompt for period display -- extracted so
+    app.api.report_stages can resolve the identical period for its own
+    build_national_region_evidence() call without duplicating this chain.
+    """
+    return (
+        request.forecast_selection.seasonalPeriod
+        or request.map_context.seasonal_period
+        or request.forecast_selection.lead
+        or "JJAS"
+    )
+
+
+async def populate_comprehensive_map_data(request: AIMapInterpretationRequest) -> AIMapInterpretationRequest:
+    """Fills all_map_layer_summaries / all_climate_indicator_summaries /
+    map_images from EVERY Hazard/Risk layer and climate-indicator/product
+    combo for the resolved period -- ONLY where the request didn't already
+    provide them (same additive convention as merge_envelope_into_request),
+    so old callers that explicitly pass their own narrower data are never
+    overwritten. Called unconditionally for every report (not gated on
+    context_id) so "send everything" doesn't depend on a context ever
+    having been built -- the period is resolved directly from
+    forecast_selection/map_context, the same fields build_user_prompt
+    already reads for its own period display logic.
+    """
+    from app.context.spatial_summary import (
+        build_all_climate_indicator_summaries,
+        build_all_layer_summaries,
+        build_all_map_images,
+    )
+
+    period = resolve_report_period(request)
+
+    updates: Dict[str, Any] = {}
+
+    if not request.all_map_layer_summaries:
+        layer_summaries = build_all_layer_summaries(period)
+        updates["all_map_layer_summaries"] = {item["layer_value"]: item for item in layer_summaries}
+
+    if not request.all_climate_indicator_summaries:
+        indicator_summaries = build_all_climate_indicator_summaries(period)
+        updates["all_climate_indicator_summaries"] = {
+            f"{item['indicator']}_{item['product']}": item for item in indicator_summaries
+        }
+
+    if not request.map_images:
+        try:
+            updates["map_images"] = await build_all_map_images(period)
+        except Exception:
+            logger.exception("Failed to build comprehensive map images for period=%s", period)
+            updates["map_images"] = []
+
+    return request.model_copy(update=updates) if updates else request
+
+
 @router.post("/map-interpretation")
 async def generate_ai_map_interpretation(request: AIMapInterpretationRequest) -> Dict[str, Any]:
+    request = await populate_comprehensive_map_data(request)
+
+    envelope = None
+    if request.context_id:
+        from app.context.repository import get_repository
+
+        envelope = get_repository().get(request.context_id)
+        if envelope:
+            request = merge_envelope_into_request(envelope, request)
+
     retrieved_guidance = retrieve_guidance(request)
     try:
-        return call_configured_ai_provider(request, retrieved_guidance)
+        from app.api.report_stages import run_staged_report_generation
+
+        report = run_staged_report_generation(request, retrieved_guidance)
     except Exception as error:
         provider_errors = []
         text = str(error)
         if " | " in text:
             provider_errors = text.split(" | ")
-        return fallback_report(
-            request=request,
-            retrieved_guidance=retrieved_guidance,
-            error_message=str(error),
-            provider_errors=provider_errors,
+        report = validate_report_shape(
+            fallback_report(
+                request=request,
+                retrieved_guidance=retrieved_guidance,
+                error_message=str(error),
+                provider_errors=provider_errors,
+            )
         )
+
+    if envelope:
+        from app.advisory.response_validator import validate_against_context
+        from app.retrieval.citation_builder import build_citations
+
+        # Citations must be deterministic, not LLM-generated: none of the
+        # non-OpenAI-strict-schema providers are ever told to emit
+        # evidence_citations (their prompt only lists the v1 report keys --
+        # see build_user_prompt), and letting the LLM invent knowledge_ids
+        # would violate the "LLM must never invent institutions/actions"
+        # rule. Overwrite whatever the provider returned with the real,
+        # already-retrieved knowledge items from the envelope instead.
+        report["evidence_citations"] = build_citations(envelope.knowledge.retrieved_items)
+
+        report, _violations = validate_against_context(report, envelope, request.top_admin_areas)
+
+    return report
+
+
+def merge_envelope_into_request(
+    envelope: "DecisionContextEnvelope", request: AIMapInterpretationRequest,
+) -> AIMapInterpretationRequest:
+    """Fills top_admin_areas/all_map_layer_summaries/all_climate_indicator_summaries
+    from a real Decision Context Envelope ONLY where the request didn't
+    already provide them -- old callers that explicitly pass their own data
+    are never overwritten. Also switches the default prompt_version to "v2"
+    (the context-aware prompt with the "must not" rules) unless the caller
+    explicitly requested a different version.
+
+    This is the concrete fix for the gap where this endpoint's evidence was
+    sourced from the OLD synthetic-grid /api/intervention-ranking instead of
+    the REAL /api/hazard-risk/ranking data the Priority Intervention Areas
+    table actually renders -- see app.context.ai_report_adapter.
+    """
+    from app.context.ai_report_adapter import (
+        build_legacy_climate_indicator_summaries,
+        build_legacy_layer_summaries,
+        build_top_admin_areas,
+    )
+
+    updates: Dict[str, Any] = {}
+
+    if not request.top_admin_areas:
+        updates["top_admin_areas"] = build_top_admin_areas(
+            rank_by=envelope.hazard_evidence.layer_value,
+            period=envelope.forecast.hazard_risk_period,
+            admin_level=envelope.geography.admin_level,
+            top_n=envelope.forecast.top_n,
+            threshold=envelope.forecast.threshold,
+            region_id=envelope.geography.region_id,
+            zone_id=envelope.geography.zone_id,
+        )
+
+    if not request.all_map_layer_summaries:
+        updates["all_map_layer_summaries"] = build_legacy_layer_summaries(
+            envelope.forecast.hazard_risk_period, envelope.hazard_evidence.hazard_type or "drought",
+        )
+
+    if not request.all_climate_indicator_summaries:
+        updates["all_climate_indicator_summaries"] = build_legacy_climate_indicator_summaries(
+            envelope.forecast.hazard_risk_period,
+        )
+
+    if request.prompt_version is None:
+        updates["prompt_version"] = "v2"
+
+    updates["context_id"] = envelope.context_id
+
+    return request.model_copy(update=updates)

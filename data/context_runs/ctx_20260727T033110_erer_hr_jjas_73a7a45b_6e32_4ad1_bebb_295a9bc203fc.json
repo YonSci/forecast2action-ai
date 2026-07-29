@@ -1,0 +1,1169 @@
+{
+  "context_id": "73a7a45b-6e32-4ad1-bebb-295a9bc203fc",
+  "forecast": {
+    "forecast_scale": "subseasonal",
+    "lead": "",
+    "hazard_risk_period": "JJAS",
+    "rank_by": "population_r_drought",
+    "admin_selection_mode": "top",
+    "top_n": 5,
+    "threshold": 32.246,
+    "evidence_status": "forecast_signal"
+  },
+  "geography": {
+    "country": "ethiopia",
+    "admin_level": "admin3",
+    "area_name": "Erer (HR)",
+    "region": "Harari",
+    "zone": "Harari",
+    "woreda": "Erer (HR)",
+    "region_id": "harari",
+    "zone_id": "harari_harari",
+    "woreda_id": "harari_harari_erer_hr",
+    "boundary_version": "eth_admin_boundary_pipeline_v1",
+    "boundary_feature": {
+      "type": "Feature",
+      "id": "admin3_harari_harari_erer_hr_1064",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              42.238079427000116,
+              9.38494224600015
+            ],
+            [
+              42.25299947600013,
+              9.383802192000132
+            ],
+            [
+              42.25786596800009,
+              9.37774702500019
+            ],
+            [
+              42.26126947700004,
+              9.373512185000095
+            ],
+            [
+              42.266139468000006,
+              9.365982177000035
+            ],
+            [
+              42.27031265900007,
+              9.361664396000094
+            ],
+            [
+              42.266218817000095,
+              9.352611265000178
+            ],
+            [
+              42.26460940600009,
+              9.349052209000035
+            ],
+            [
+              42.25851933300004,
+              9.334412256000121
+            ],
+            [
+              42.264969312000005,
+              9.32132225700019
+            ],
+            [
+              42.265057898000066,
+              9.32037485100011
+            ],
+            [
+              42.26604928300014,
+              9.309772269000064
+            ],
+            [
+              42.25990922200003,
+              9.298832306000179
+            ],
+            [
+              42.250309142000106,
+              9.28553235700008
+            ],
+            [
+              42.249349087000155,
+              9.270032382000068
+            ],
+            [
+              42.25364907300013,
+              9.261532387000102
+            ],
+            [
+              42.2553072340001,
+              9.255976266000062
+            ],
+            [
+              42.244616629999996,
+              9.255148619000067
+            ],
+            [
+              42.244026573000156,
+              9.255066867000039
+            ],
+            [
+              42.243086519000144,
+              9.255274782000072
+            ],
+            [
+              42.24260623300006,
+              9.255151561000105
+            ],
+            [
+              42.24142594300008,
+              9.255309812000121
+            ],
+            [
+              42.240365213000075,
+              9.255564599000024
+            ],
+            [
+              42.239715383000146,
+              9.255583499000124
+            ],
+            [
+              42.23894730100017,
+              9.2553385330001
+            ],
+            [
+              42.23827247700012,
+              9.255476762000114
+            ],
+            [
+              42.23759989400014,
+              9.255328148000046
+            ],
+            [
+              42.23587889200002,
+              9.255398544000002
+            ],
+            [
+              42.23448224600014,
+              9.255531197000096
+            ],
+            [
+              42.23340007300004,
+              9.25545112900005
+            ],
+            [
+              42.23168914200011,
+              9.25577258300018
+            ],
+            [
+              42.230773150000175,
+              9.255980647000115
+            ],
+            [
+              42.22980866100005,
+              9.256236145000116
+            ],
+            [
+              42.22862893800004,
+              9.256322640999997
+            ],
+            [
+              42.22819892200016,
+              9.25641203400005
+            ],
+            [
+              42.228074605000074,
+              9.25643787700011
+            ],
+            [
+              42.22802846299999,
+              9.256460765999975
+            ],
+            [
+              42.22674601800003,
+              9.257096928000067
+            ],
+            [
+              42.22597976000003,
+              9.258154755000078
+            ],
+            [
+              42.22585195400012,
+              9.259109954000166
+            ],
+            [
+              42.225571713000136,
+              9.261091873000112
+            ],
+            [
+              42.225172287000134,
+              9.262929438000185
+            ],
+            [
+              42.22486016500005,
+              9.264373252000098
+            ],
+            [
+              42.22463334600019,
+              9.264916842000105
+            ],
+            [
+              42.224596541000096,
+              9.265005050000127
+            ],
+            [
+              42.22449229900019,
+              9.265254873000117
+            ],
+            [
+              42.22405487800012,
+              9.265801288000091
+            ],
+            [
+              42.223467825000114,
+              9.267015872000059
+            ],
+            [
+              42.223100328000044,
+              9.267849683000065
+            ],
+            [
+              42.22256515000015,
+              9.268586573000107
+            ],
+            [
+              42.22226926800016,
+              9.2694926530001
+            ],
+            [
+              42.221612086000164,
+              9.270443734000025
+            ],
+            [
+              42.22117559200012,
+              9.270870627000079
+            ],
+            [
+              42.220448665000106,
+              9.27151040400014
+            ],
+            [
+              42.219983024000044,
+              9.27258249100015
+            ],
+            [
+              42.219348196000055,
+              9.273748880000085
+            ],
+            [
+              42.21918743000009,
+              9.27413334400012
+            ],
+            [
+              42.219093570000155,
+              9.273997897000186
+            ],
+            [
+              42.21811791300013,
+              9.275663627000142
+            ],
+            [
+              42.21725944400009,
+              9.27666720500008
+            ],
+            [
+              42.21729730100009,
+              9.276696738000112
+            ],
+            [
+              42.217269657000145,
+              9.277150709000068
+            ],
+            [
+              42.21659007800014,
+              9.277886458000125
+            ],
+            [
+              42.21573847799999,
+              9.279075051000177
+            ],
+            [
+              42.215178636000076,
+              9.279883443000074
+            ],
+            [
+              42.214358493000134,
+              9.28165793300019
+            ],
+            [
+              42.213824971000065,
+              9.282179671000165
+            ],
+            [
+              42.21311961100014,
+              9.283130348000043
+            ],
+            [
+              42.21265184700013,
+              9.284465347000094
+            ],
+            [
+              42.21182314200007,
+              9.285797527
+            ],
+            [
+              42.21107134600004,
+              9.286532693000083
+            ],
+            [
+              42.20929547400016,
+              9.287439139000128
+            ],
+            [
+              42.20881271100012,
+              9.287626602000103
+            ],
+            [
+              42.20794589600007,
+              9.287691539000036
+            ],
+            [
+              42.206740312000136,
+              9.287992868000003
+            ],
+            [
+              42.20565598800016,
+              9.288175619000128
+            ],
+            [
+              42.20457090500014,
+              9.288453978000177
+            ],
+            [
+              42.20329199500003,
+              9.288898144000143
+            ],
+            [
+              42.202637945000106,
+              9.289442818000111
+            ],
+            [
+              42.20171031800015,
+              9.289894503000085
+            ],
+            [
+              42.201575022000156,
+              9.289960382000118
+            ],
+            [
+              42.20106287400006,
+              9.290816918000075
+            ],
+            [
+              42.20026991999998,
+              9.292185190000168
+            ],
+            [
+              42.19977498600008,
+              9.293902408000122
+            ],
+            [
+              42.199309621000054,
+              9.294926634000149
+            ],
+            [
+              42.19857404600003,
+              9.296641958000123
+            ],
+            [
+              42.19826889500007,
+              9.297148861000096
+            ],
+            [
+              42.19812289100008,
+              9.29739139500009
+            ],
+            [
+              42.19802055200006,
+              9.298155523000048
+            ],
+            [
+              42.197267368999974,
+              9.29905796300011
+            ],
+            [
+              42.1969390000001,
+              9.29987981700009
+            ],
+            [
+              42.19680084400005,
+              9.300225598000168
+            ],
+            [
+              42.19659881900009,
+              9.30141921400002
+            ],
+            [
+              42.196424853999986,
+              9.302111065000133
+            ],
+            [
+              42.19649037700003,
+              9.3029482230001
+            ],
+            [
+              42.196369806000064,
+              9.304489087999968
+            ],
+            [
+              42.19604574100015,
+              9.305896880000091
+            ],
+            [
+              42.195891639000195,
+              9.30711477500006
+            ],
+            [
+              42.196092773000146,
+              9.3090525880001
+            ],
+            [
+              42.196241465000185,
+              9.310021872000164
+            ],
+            [
+              42.196544381000194,
+              9.311267267999995
+            ],
+            [
+              42.19653751800007,
+              9.31212776000018
+            ],
+            [
+              42.196360299000105,
+              9.313225952999971
+            ],
+            [
+              42.19582383599999,
+              9.314106180000067
+            ],
+            [
+              42.195528773000035,
+              9.314892690000136
+            ],
+            [
+              42.19587283700008,
+              9.315504953000072
+            ],
+            [
+              42.195964132000086,
+              9.316127178000158
+            ],
+            [
+              42.195716813000104,
+              9.316961872000093
+            ],
+            [
+              42.19529722600015,
+              9.318273290000093
+            ],
+            [
+              42.19529149900012,
+              9.318990366000094
+            ],
+            [
+              42.19576647500014,
+              9.320300977000045
+            ],
+            [
+              42.19556416,
+              9.32019409500009
+            ],
+            [
+              42.19472400800015,
+              9.31992452899999
+            ],
+            [
+              42.194337832000144,
+              9.320064910000156
+            ],
+            [
+              42.19292338700012,
+              9.319384446000186
+            ],
+            [
+              42.19189187300003,
+              9.31896994300007
+            ],
+            [
+              42.19124233000019,
+              9.318940914000052
+            ],
+            [
+              42.190136524000025,
+              9.318788762999986
+            ],
+            [
+              42.187836771000036,
+              9.318973786000129
+            ],
+            [
+              42.18672963,
+              9.318988942000146
+            ],
+            [
+              42.18576668200012,
+              9.319029138000076
+            ],
+            [
+              42.185307549000015,
+              9.319264546
+            ],
+            [
+              42.18439119600015,
+              9.31949633700009
+            ],
+            [
+              42.18393110400012,
+              9.319851255000174
+            ],
+            [
+              42.183254624000085,
+              9.320180555000036
+            ],
+            [
+              42.18214403100012,
+              9.320625936000056
+            ],
+            [
+              42.18007413300012,
+              9.320657350000147
+            ],
+            [
+              42.17884590600016,
+              9.320767135000096
+            ],
+            [
+              42.17775937200014,
+              9.321212691000028
+            ],
+            [
+              42.177031684000156,
+              9.321924030000162
+            ],
+            [
+              42.17681400000009,
+              9.322155316000078
+            ],
+            [
+              42.17612439800007,
+              9.322888002000127
+            ],
+            [
+              42.17591512200016,
+              9.32311035400005
+            ],
+            [
+              42.17506383600005,
+              9.324227068000084
+            ],
+            [
+              42.17462375200006,
+              9.325084104000155
+            ],
+            [
+              42.17418251200013,
+              9.326084551000065
+            ],
+            [
+              42.174172503000136,
+              9.327327460000106
+            ],
+            [
+              42.17394312900012,
+              9.32806538200009
+            ],
+            [
+              42.17422448300016,
+              9.328343775999997
+            ],
+            [
+              42.17532394400007,
+              9.32928475400007
+            ],
+            [
+              42.17660149200009,
+              9.330525938999983
+            ],
+            [
+              42.17808042700017,
+              9.33216313100013
+            ],
+            [
+              42.17886687500004,
+              9.333125522000046
+            ],
+            [
+              42.179894362000084,
+              9.334042017000115
+            ],
+            [
+              42.180609969000045,
+              9.334836518000031
+            ],
+            [
+              42.18062596100009,
+              9.335840601000086
+            ],
+            [
+              42.18067680000013,
+              9.337000336000017
+            ],
+            [
+              42.18030774500005,
+              9.338001364000093
+            ],
+            [
+              42.17962737800019,
+              9.338808690000064
+            ],
+            [
+              42.17902016500011,
+              9.33949707700009
+            ],
+            [
+              42.178948000000105,
+              9.339531504000036
+            ],
+            [
+              42.177788019000104,
+              9.340084881000053
+            ],
+            [
+              42.177209281000046,
+              9.340374708000184
+            ],
+            [
+              42.17694226500015,
+              9.340508426000042
+            ],
+            [
+              42.17549314000007,
+              9.34114230299997
+            ],
+            [
+              42.17445524400017,
+              9.341516505000072
+            ],
+            [
+              42.173661471000116,
+              9.341462382000088
+            ],
+            [
+              42.172141494000186,
+              9.341928354000117
+            ],
+            [
+              42.170586865000075,
+              9.342214764000175
+            ],
+            [
+              42.169598253000174,
+              9.342445921000035
+            ],
+            [
+              42.16880023300007,
+              9.34291762900017
+            ],
+            [
+              42.16812195800014,
+              9.343462001000091
+            ],
+            [
+              42.1675630420001,
+              9.344126840000115
+            ],
+            [
+              42.16724787100003,
+              9.344411168000022
+            ],
+            [
+              42.16656978400016,
+              9.344931632000112
+            ],
+            [
+              42.16633756900006,
+              9.345224643999984
+            ],
+            [
+              42.16598621600019,
+              9.34566798100019
+            ],
+            [
+              42.16549929500013,
+              9.346357292999983
+            ],
+            [
+              42.16477113500014,
+              9.347116387000085
+            ],
+            [
+              42.164478477000046,
+              9.347592117000033
+            ],
+            [
+              42.16444589300005,
+              9.348643606999985
+            ],
+            [
+              42.16430743300009,
+              9.349395458000117
+            ],
+            [
+              42.16386902000016,
+              9.350037346000136
+            ],
+            [
+              42.16345370300019,
+              9.350798934000068
+            ],
+            [
+              42.16287438000012,
+              9.351009433000172
+            ],
+            [
+              42.16207691400001,
+              9.351409412000123
+            ],
+            [
+              42.161592495000036,
+              9.351787989999991
+            ],
+            [
+              42.160506817000055,
+              9.35211394800018
+            ],
+            [
+              42.16009498200003,
+              9.352445299000124
+            ],
+            [
+              42.159293824000144,
+              9.353299403000108
+            ],
+            [
+              42.15883307800004,
+              9.353725971000074
+            ],
+            [
+              42.15771614300007,
+              9.35493609000008
+            ],
+            [
+              42.15674845300015,
+              9.355549817000167
+            ],
+            [
+              42.15594000700003,
+              9.355818222000039
+            ],
+            [
+              42.1555799890001,
+              9.355695818000072
+            ],
+            [
+              42.154757468000184,
+              9.356215090000035
+            ],
+            [
+              42.153936308000084,
+              9.356567048000045
+            ],
+            [
+              42.15388070900019,
+              9.356603675000144
+            ],
+            [
+              42.15403715100018,
+              9.356746786000144
+            ],
+            [
+              42.15460792900012,
+              9.35758797800014
+            ],
+            [
+              42.15527672500002,
+              9.35821482900019
+            ],
+            [
+              42.15700249299999,
+              9.359089190000134
+            ],
+            [
+              42.15869188099998,
+              9.359999108000125
+            ],
+            [
+              42.159795244000065,
+              9.360462113000153
+            ],
+            [
+              42.160682207000036,
+              9.360899479000125
+            ],
+            [
+              42.16073631000012,
+              9.360935273000052
+            ],
+            [
+              42.1610794500001,
+              9.36039597600012
+            ],
+            [
+              42.16290617200008,
+              9.360697442000173
+            ],
+            [
+              42.16646724200001,
+              9.360821543000043
+            ],
+            [
+              42.16873956699999,
+              9.359596721000116
+            ],
+            [
+              42.17024304900008,
+              9.359566070000028
+            ],
+            [
+              42.16969970800017,
+              9.359752680000156
+            ],
+            [
+              42.16829687900014,
+              9.360602002000121
+            ],
+            [
+              42.16713819700004,
+              9.361023004000117
+            ],
+            [
+              42.16671450500013,
+              9.361056996000059
+            ],
+            [
+              42.16857908200012,
+              9.362832511000022
+            ],
+            [
+              42.186329519000026,
+              9.361750109000127
+            ],
+            [
+              42.187439149,
+              9.361682445000042
+            ],
+            [
+              42.19818748000017,
+              9.366982157000166
+            ],
+            [
+              42.20477924300013,
+              9.370232378000026
+            ],
+            [
+              42.20792825900014,
+              9.371933928000146
+            ],
+            [
+              42.22187934700014,
+              9.379472308000004
+            ],
+            [
+              42.23051321600019,
+              9.382387523999967
+            ],
+            [
+              42.238079427000116,
+              9.38494224600015
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "admin3_harari_harari_erer_hr_1064",
+        "admin_level": "admin3",
+        "name": "Erer (HR)",
+        "region": "Harari",
+        "region_id": "harari",
+        "zone": "Harari",
+        "zone_id": "harari_harari",
+        "woreda": "Erer (HR)",
+        "woreda_id": "harari_harari_erer_hr"
+      }
+    }
+  },
+  "hazard_evidence": {
+    "layer_value": "population_r_drought",
+    "layer_label": "Drought Risk",
+    "hazard_type": "drought",
+    "category": "risk",
+    "units": "score",
+    "rank_value": 53.74305725097656,
+    "priority_score": 1.0,
+    "rank": 1,
+    "metrics": {
+      "population_r_drought": 53.74305725097656,
+      "cropland_total_normalized": 0.5285285115242004
+    },
+    "observed_ceiling": 53.74305725097656
+  },
+  "impact": {
+    "population_total": 47508,
+    "population_exposed": 47508,
+    "population_exposed_pct": 100.0,
+    "area_total_km2": 754.0,
+    "area_extent_km2": 754.0,
+    "area_extent_pct": 100.0,
+    "cropland_extent_pct": 0.0
+  },
+  "community": {
+    "feedback_signal": "no_ground_signal",
+    "total_reports": 0,
+    "by_severity": {},
+    "by_type": {},
+    "recent_reports": []
+  },
+  "operational": {
+    "audience": "disaster_manager",
+    "language": "en",
+    "requested_provider": "free_auto",
+    "requested_model": "auto"
+  },
+  "policy": {
+    "policy_id": "drought_ethiopia_v1",
+    "thresholds": {
+      "trigger": 0.8,
+      "warning": 0.6,
+      "watch": 0.35
+    },
+    "trigger_status": "trigger",
+    "approval_rules_version": "v1"
+  },
+  "knowledge": {
+    "retrieved_items": [
+      {
+        "id": "drought_trigger_disaster_manager_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "disaster_manager",
+        "sector": "Disaster Risk Management",
+        "title": "Activate drought anticipatory action coordination",
+        "rationale": "Severe rainfall deficit and high exposure require immediate coordination before impacts worsen.",
+        "actions": [
+          "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+          "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+          "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+          "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+          "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support."
+        ],
+        "source_title": "Forecast2Action drought anticipatory action guidance",
+        "source_note": "Prototype local knowledge item for drought trigger-level early action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 15.0,
+        "final_score": 15.4
+      },
+      {
+        "id": "drought_trigger_extension_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "extension_officer",
+        "sector": "Agriculture and Livestock Extension",
+        "title": "Provide drought advisory to farmers and pastoralists",
+        "rationale": "Farmers and pastoralists need practical guidance on water, pasture, crops and livestock management.",
+        "actions": [
+          "Advise communities to conserve water and protect remaining water sources.",
+          "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+          "Monitor crop wilting, pasture degradation and livestock body condition during field visits.",
+          "Share drought-tolerant crop, forage and animal health messages through extension channels.",
+          "Report worsening field conditions to district coordination structures."
+        ],
+        "source_title": "Forecast2Action extension drought advisory guide",
+        "source_note": "Prototype local knowledge item for agriculture and livestock extension response.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 12.0,
+        "final_score": 12.4
+      },
+      {
+        "id": "drought_trigger_ngo_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "ngo_planner",
+        "sector": "Anticipatory Action and Humanitarian Planning",
+        "title": "Prepare anticipatory drought support package",
+        "rationale": "Trigger-level drought risk requires rapid planning for targeted support before losses escalate.",
+        "actions": [
+          "Review beneficiary targeting using exposure, vulnerability and community ground-truth reports.",
+          "Coordinate with local government to avoid duplication of early action support.",
+          "Pre-position or plan support for water access, livestock feed, animal health and household preparedness.",
+          "Use community reports to verify where field stress is already emerging.",
+          "Prepare monitoring indicators to track whether early actions are reducing impacts."
+        ],
+        "source_title": "Forecast2Action NGO drought early action guide",
+        "source_note": "Prototype local knowledge item for NGO anticipatory action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 12.0,
+        "final_score": 12.4
+      },
+      {
+        "id": "drought_warning_any_001",
+        "hazard": "drought",
+        "risk_level": "warning",
+        "audience": "any",
+        "sector": "Preparedness",
+        "title": "Increase drought preparedness and monitoring",
+        "rationale": "Warning-level drought risk requires intensified monitoring and early preparedness before conditions become critical.",
+        "actions": [
+          "Increase monitoring of rainfall performance, water points, pasture condition and crop stress.",
+          "Brief local officers and community focal persons about the current warning level.",
+          "Prepare drought advisory messages for farmers, pastoralists and vulnerable households.",
+          "Collect community observations to confirm whether impacts are already emerging.",
+          "Review preparedness options for water, feed, veterinary and social protection support."
+        ],
+        "source_title": "Forecast2Action drought preparedness guide",
+        "source_note": "Prototype local knowledge item for drought warning-level preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "warning"
+        ],
+        "retrieval_score": 10.5,
+        "final_score": 10.9
+      },
+      {
+        "id": "heavy_rainfall_trigger_any_001",
+        "hazard": "heavy_rainfall",
+        "risk_level": "trigger",
+        "audience": "any",
+        "sector": "Emergency Preparedness",
+        "title": "Activate flood preparedness and public safety actions",
+        "rationale": "Trigger-level heavy rainfall risk requires immediate preparedness and public safety messaging.",
+        "actions": [
+          "Activate local flood preparedness coordination.",
+          "Issue clear public safety messages for flood-prone areas.",
+          "Prioritize monitoring of river crossings, low-lying settlements and roads.",
+          "Prepare evacuation support for highly exposed communities where needed.",
+          "Use community reports to identify flooded roads, river overflow and blocked drainage."
+        ],
+        "source_title": "Forecast2Action flood trigger early action guide",
+        "source_note": "Prototype local knowledge item for trigger-level heavy rainfall and flood preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 1.0,
+        "final_score": 1.4
+      }
+    ],
+    "retrieval_mode": "keyword_metadata"
+  },
+  "provenance": {
+    "context_id": "73a7a45b-6e32-4ad1-bebb-295a9bc203fc",
+    "context_version": "v1",
+    "created_at": "2026-07-27T03:31:10.296589+00:00",
+    "prompt_version": "v1",
+    "context_fingerprint": "adf4d09ddc164ab38e16552afb4dad6f08857b882da685170e3010666e0338f4",
+    "ai_provider": "free_auto",
+    "ai_model": "auto",
+    "source_endpoints": [
+      "app.api.hazard_risk_ranking.compute_district_ranking",
+      "app.api.community_reports_store.summarize_reports",
+      "app.decision.policy_engine.load_policy_for_hazard",
+      "app.retrieval.hybrid_retriever.retrieve"
+    ]
+  },
+  "quality_score": 0.85,
+  "quality_flags": [
+    "no_community_reports"
+  ]
+}

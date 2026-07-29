@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  CircleMarker,
   GeoJSON,
   LayersControl,
   MapContainer,
   TileLayer,
+  Tooltip,
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
 import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
-import { PRIORITY_LEVELS } from "../constants/priorityLevels.js";
+import { PRIORITY_LEVELS, getPriorityLevel } from "../constants/priorityLevels.js";
 import {
   AREA_EXTENT_DEFINITION,
   CROPLAND_EXTENT_DEFINITION,
@@ -75,6 +77,40 @@ function getGeojsonLatLngs(geojson) {
   });
 
   return latLngs;
+}
+
+// Bounding-box center of a ranked area's own boundary geometry (already
+// embedded per-item as item.boundary_feature by the ranking API) -- used to
+// place a point marker for that area. A bounding-box center is a simpler,
+// more visually stable choice than a raw vertex average for the irregular
+// (sometimes concave) admin boundaries this app renders.
+function getBoundaryFeatureCenter(boundaryFeature) {
+  if (!boundaryFeature) {
+    return null;
+  }
+
+  const latLngs = collectLatLngsFromCoordinates(boundaryFeature.geometry?.coordinates);
+  if (!latLngs.length) {
+    return null;
+  }
+
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+
+  latLngs.forEach(([lat, lng]) => {
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+  });
+
+  return [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+}
+
+function getRankedAreaName(item) {
+  return item.area_name || item.woreda || item.zone || item.region || "Selected area";
 }
 
 function FitMapToEthiopiaDomain({ activeBoundaryKey }) {
@@ -293,6 +329,23 @@ function RiskMap({
     ].filter(Boolean);
   }, [rankingContext]);
 
+  // One point per ranked area from the Priority Intervention Areas table
+  // (already sized by that table's own Top 3/5/10 selector) -- clicking a
+  // point calls the SAME selection handler the table's "View on map" button
+  // uses, so it activates SelectedAreaAdvisory identically.
+  const rankedAreaMarkers = useMemo(() => {
+    const items = Array.isArray(rankingContext?.rankingItems)
+      ? rankingContext.rankingItems
+      : [];
+
+    return items
+      .map((item) => ({
+        item,
+        center: getBoundaryFeatureCenter(item.boundary_feature),
+      }))
+      .filter((entry) => Boolean(entry.center));
+  }, [rankingContext]);
+
   return (
     <section className="panel map-panel" id="interactive-risk-map">
       <div className="map-header">
@@ -364,10 +417,48 @@ function RiskMap({
                 onEachFeature={onEachBoundaryFeature}
               />
             )}
+
+            {rankedAreaMarkers.map(({ item, center }) => {
+              const priorityInfo = getPriorityLevel(item.priority_score);
+              const isActive =
+                hasPrioritySelection &&
+                getRankedAreaName(item) === selectedPriorityArea.area_name;
+              const color = PRIORITY_COLOR_BY_LEVEL[priorityInfo.level] || "#1849A9";
+
+              return (
+                <CircleMarker
+                  key={`${item.admin_level}-${item.region_id}-${item.zone_id}-${item.woreda_id}-${item.area_name}-${item.rank}`}
+                  center={center}
+                  radius={isActive ? 13 : 9}
+                  pathOptions={{
+                    color: "#111827",
+                    weight: isActive ? 3 : 1.5,
+                    fillColor: color,
+                    fillOpacity: isActive ? 0.95 : 0.85,
+                  }}
+                  eventHandlers={{
+                    click: () => rankingContext?.selectArea?.(item),
+                  }}
+                >
+                  <Tooltip direction="top" offset={[0, -6]} opacity={1}>
+                    <strong>#{item.rank}</strong> {getRankedAreaName(item)}
+                    <br />
+                    {priorityInfo.label} ({Number(item.priority_score).toFixed(2)})
+                  </Tooltip>
+                </CircleMarker>
+              );
+            })}
           </MapContainer>
         </div>
 
         <aside className="forecast-legend-card">
+          {rankedAreaMarkers.length > 0 && (
+            <p className="risk-map-marker-hint">
+              Points show the {rankedAreaMarkers.length} ranked areas from the
+              Priority Intervention Areas table. Click a point to open its
+              Forecast-to-Action Advisory.
+            </p>
+          )}
           {glossaryEntries.length > 0 ? (
             <div className="risk-map-glossary">
               {glossaryEntries.map((entry) => (

@@ -1,0 +1,797 @@
+{
+  "period": "july",
+  "admin_level": "admin1",
+  "forecast_metadata": {
+    "country": "Ethiopia",
+    "forecast_initialization": "2026-05-01",
+    "valid_period": "July 2026",
+    "forecast_lead_months": 2,
+    "forecast_system": "ECMWF-SEAS5",
+    "ensemble_members": 25,
+    "spatial_resolution_degrees": 0.25,
+    "spatial_resolution_km": "~27.6 km",
+    "climatology_period": "1993-2025",
+    "administrative_level": "national + region (admin1)",
+    "population_reference_year": 2020,
+    "population_source": "WorldPop Ethiopia 2020 population count, 1km",
+    "livestock_reference_year": 2015,
+    "livestock_source": "FAO/Harvard Dataverse Gridded Livestock of the World v4 (2015)"
+  },
+  "indicator_definitions": {
+    "rainfall_total": {
+      "label": "Rainfall Total",
+      "units": "mm",
+      "interpretation": "Total accumulated rainfall for the period. Positive anomaly does not automatically imply flooding -- check Rx1day/Rx5day and CWD for intensity/duration risk."
+    },
+    "spi": {
+      "label": "SPI (Standardized Precipitation Index)",
+      "units": "standard deviations",
+      "dry_thresholds": {
+        "moderately_dry": -1.0,
+        "severely_dry": -1.5,
+        "extremely_dry": -2.0
+      },
+      "wet_thresholds": {
+        "moderately_wet": 1.0,
+        "very_wet": 1.5,
+        "extremely_wet": 2.0
+      },
+      "interpretation": "More negative values indicate greater dryness relative to the region's own climatological rainfall distribution. Negative SPI does not necessarily imply severe agricultural impact unless exposure and vulnerability are also high."
+    },
+    "cdd": {
+      "label": "CDD (Consecutive Dry Days)",
+      "units": "days",
+      "interpretation": "Higher positive anomaly means longer-than-normal dry spells. High CDD usually increases drought concern."
+    },
+    "cwd": {
+      "label": "CWD (Consecutive Wet Days)",
+      "units": "days",
+      "interpretation": "Higher positive anomaly means longer continuous wet spells. High CWD can benefit crops but also increase waterlogging and disease risk -- do not treat it as uniformly positive or uniformly negative."
+    },
+    "rx1day": {
+      "label": "Rx1day (Maximum 1-day rainfall)",
+      "units": "mm",
+      "interpretation": "Maximum one-day rainfall amount. High positive anomaly may indicate flash-flood risk. Should not be interpreted identically to Rx5day -- Rx1day reflects short, intense bursts, not sustained accumulation."
+    },
+    "rx5day": {
+      "label": "Rx5day (Maximum 5-day rainfall)",
+      "units": "mm",
+      "interpretation": "Maximum consecutive five-day rainfall total. High positive anomaly may indicate saturation and river-flood risk -- a distinct hazard mechanism from Rx1day's flash-flood signal."
+    },
+    "rainfall_percentile": {
+      "label": "Rainfall Percentile",
+      "units": "percentile rank (0-100)",
+      "interpretation": "Where this period's rainfall ranks against the climatological distribution at each location. 50 is the climatological median; departure from 50 is the meaningful signal, not the raw percentile alone."
+    }
+  },
+  "climate_indicators": {
+    "rainfall_total": {
+      "indicator": "rainfall_total",
+      "national": {
+        "min": 0.0,
+        "max": 402.39666748046875,
+        "mean": 101.42923085621518,
+        "median": 38.713642695803756,
+        "std": 114.92770378611904,
+        "p10": 0.0,
+        "p25": 0.6804677225689209,
+        "p75": 203.24817664836633,
+        "p90": 279.46152727402426,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        2.8340929508209234,
+        44.63529815673828,
+        170.27466735839843,
+        263.755029296875
+      ],
+      "class_scheme": "quintiles_of_real_climatology",
+      "class_area_pct": {
+        "very_low": 32.07,
+        "low": 19.27,
+        "moderate": 17.98,
+        "high": 17.55,
+        "very_high": 13.13
+      },
+      "departure": {
+        "indicator": "rainfall_total",
+        "period": "july",
+        "national_anomaly": {
+          "min": -134.47193908691406,
+          "max": 35.43482971191406,
+          "mean": -28.268004708533045,
+          "median": -20.55964239222386,
+          "std": 30.149652828996008,
+          "p10": -69.89031549766815,
+          "p25": -44.38149351382792,
+          "p75": -2.366462628938045,
+          "p90": -0.10107158327898952,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "national_pct_anomaly": {
+          "mean": -53.74033938065473,
+          "median": -56.94365634514617
+        },
+        "regional_anomaly": [],
+        "top_positive_anomalies": [],
+        "top_negative_anomalies": [],
+        "departure_available": true
+      }
+    },
+    "spi": {
+      "indicator": "spi",
+      "national": {
+        "min": -4.753424167633057,
+        "max": 1.3517022132873535,
+        "mean": -1.122521054075942,
+        "median": -0.9145419657330855,
+        "std": 1.4452716766488307,
+        "p10": -3.126220334864169,
+        "p25": -2.051979977980078,
+        "p75": -0.07925470784374156,
+        "p90": 0.7990827560424805,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "category": "moderately_dry"
+    },
+    "cdd": {
+      "indicator": "cdd",
+      "national": {
+        "min": 2.119999885559082,
+        "max": 31.0,
+        "mean": 15.87400636025494,
+        "median": 15.239999771118164,
+        "std": 10.816693299352387,
+        "p10": 2.9600000381469727,
+        "p25": 4.28242090981789,
+        "p75": 26.399999618530273,
+        "p90": 31.0,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        3.0303030014038086,
+        6.030303001403809,
+        12.5151512145996,
+        25.59393920898438
+      ],
+      "class_scheme": "quintiles_of_real_climatology",
+      "class_area_pct": {
+        "very_low": 11.12,
+        "low": 20.51,
+        "moderate": 13.99,
+        "high": 26.12,
+        "very_high": 28.25
+      },
+      "departure": {
+        "indicator": "cdd",
+        "period": "july",
+        "national_anomaly": {
+          "min": -1.1333333253860474,
+          "max": 13.095757484436035,
+          "mean": 3.251979127757641,
+          "median": 1.5866667032241821,
+          "std": 3.406013710515524,
+          "p10": 0.0,
+          "p25": 0.40221086171424386,
+          "p75": 6.468992436938206,
+          "p90": 8.457549612253997,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "national_pct_anomaly": {
+          "mean": 33.908283063020775,
+          "median": 30.51545545249678
+        },
+        "regional_anomaly": [],
+        "top_positive_anomalies": [],
+        "top_negative_anomalies": [],
+        "departure_available": true
+      }
+    },
+    "cwd": {
+      "indicator": "cwd",
+      "national": {
+        "min": 0.0,
+        "max": 15.479999542236328,
+        "mean": 3.717885449691426,
+        "median": 2.559999942779541,
+        "std": 3.5797352178236768,
+        "p10": 0.0,
+        "p25": 0.5199999809265137,
+        "p75": 6.519999980926514,
+        "p90": 8.960000038146973,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.5151515007019043,
+        2.3333332538604736,
+        4.7939395904541,
+        8.545454978942871
+      ],
+      "class_scheme": "quintiles_of_real_climatology",
+      "class_area_pct": {
+        "very_low": 24.57,
+        "low": 23.34,
+        "moderate": 17.43,
+        "high": 22.45,
+        "very_high": 12.21
+      },
+      "departure": {
+        "indicator": "cwd",
+        "period": "july",
+        "national_anomaly": {
+          "min": -3.71515154838562,
+          "max": 0.7224242687225342,
+          "mean": -0.7829385398841154,
+          "median": -0.7189507284863395,
+          "std": 0.6985685860404994,
+          "p10": -1.6974113180469592,
+          "p25": -1.1648484468460083,
+          "p75": -0.18424242734909058,
+          "p90": -0.016345600123848506,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "national_pct_anomaly": {
+          "mean": -31.805922103732108,
+          "median": -23.25126962703034
+        },
+        "regional_anomaly": [],
+        "top_positive_anomalies": [],
+        "top_negative_anomalies": [],
+        "departure_available": true
+      }
+    },
+    "rx1day": {
+      "indicator": "rx1day",
+      "national": {
+        "min": 0.0,
+        "max": 54.57379913330078,
+        "mean": 16.592628554668302,
+        "median": 15.731461360854233,
+        "std": 14.317260807474494,
+        "p10": 0.038312434070161744,
+        "p25": 1.7961034685202237,
+        "p75": 28.945808382300267,
+        "p90": 35.7668226854086,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        1.6412475109100364,
+        15.204254531860354,
+        28.065626525878905,
+        35.20847015380859
+      ],
+      "class_scheme": "quintiles_of_real_climatology",
+      "class_area_pct": {
+        "very_low": 24.23,
+        "low": 25.2,
+        "moderate": 23.33,
+        "high": 16.45,
+        "very_high": 10.79
+      },
+      "departure": {
+        "indicator": "rx1day",
+        "period": "july",
+        "national_anomaly": {
+          "min": -25.448673248291016,
+          "max": 5.820537567138672,
+          "mean": -3.9452938549254877,
+          "median": -2.826791207022516,
+          "std": 4.846956900560171,
+          "p10": -10.664186866031637,
+          "p25": -5.782063067489362,
+          "p75": -0.29316733995820526,
+          "p90": -0.0078087443882978716,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "national_pct_anomaly": {
+          "mean": -35.737689566134165,
+          "median": -31.65804725761792
+        },
+        "regional_anomaly": [],
+        "top_positive_anomalies": [],
+        "top_negative_anomalies": [],
+        "departure_available": true
+      }
+    },
+    "rx5day": {
+      "indicator": "rx5day",
+      "national": {
+        "min": 0.0,
+        "max": 134.95883178710938,
+        "mean": 38.60765063639829,
+        "median": 28.591814727924746,
+        "std": 37.186034734260126,
+        "p10": 0.04313901162039597,
+        "p25": 2.152577474044833,
+        "p75": 70.05289412413228,
+        "p90": 93.95469178196392,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        2.037147426605225,
+        24.969178390502933,
+        61.56040954589843,
+        80.79266967773438
+      ],
+      "class_scheme": "quintiles_of_real_climatology",
+      "class_area_pct": {
+        "very_low": 24.44,
+        "low": 24.06,
+        "moderate": 19.94,
+        "high": 12.91,
+        "very_high": 18.66
+      },
+      "departure": {
+        "indicator": "rx5day",
+        "period": "july",
+        "national_anomaly": {
+          "min": -47.3216438293457,
+          "max": 18.987998962402344,
+          "mean": -5.494239040331527,
+          "median": -3.57930489728177,
+          "std": 9.897309018706768,
+          "p10": -18.760835684539384,
+          "p25": -10.520670642605475,
+          "p75": -0.0987106822303277,
+          "p90": 5.457177667305726,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "national_pct_anomaly": {
+          "mean": -33.81065379493767,
+          "median": -29.3139852421092
+        },
+        "regional_anomaly": [],
+        "top_positive_anomalies": [],
+        "top_negative_anomalies": [],
+        "departure_available": true
+      }
+    },
+    "rainfall_percentile": {
+      "indicator": "rainfall_percentile",
+      "national": {
+        "min": 0.0,
+        "max": 93.93939208984375,
+        "mean": 20.931672789579196,
+        "median": 15.151515007019043,
+        "std": 19.80415280341774,
+        "p10": 0.0,
+        "p25": 3.0303030014038086,
+        "p75": 38.82604660223003,
+        "p90": 45.45454406738281,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        2.8340929508209234,
+        44.63529815673828,
+        170.27466735839843,
+        263.755029296875
+      ],
+      "class_scheme": "quintiles_of_real_climatology",
+      "class_area_pct": {
+        "very_low": 22.91,
+        "low": 64.3,
+        "moderate": 12.79,
+        "high": 0.0,
+        "very_high": 0.0
+      },
+      "departure": {
+        "indicator": "rainfall_percentile",
+        "period": "july",
+        "national_anomaly": {
+          "min": -90.18148803710938,
+          "max": 6.791680812835693,
+          "mean": -36.51579214565802,
+          "median": -36.26706696938506,
+          "std": 27.125206743373653,
+          "p10": -72.64143596385034,
+          "p25": -61.67461453732842,
+          "p75": -11.975754876938892,
+          "p90": -1.5895814919047668,
+          "valid_count": 1240,
+          "weighting": "area_km2"
+        },
+        "national_pct_anomaly": {
+          "mean": 11623.734230203549,
+          "median": -90.82090553531518
+        },
+        "regional_anomaly": [],
+        "top_positive_anomalies": [],
+        "top_negative_anomalies": [],
+        "departure_available": true
+      }
+    }
+  },
+  "hazard_risk_layers": {
+    "h_dry_mean": {
+      "layer_value": "h_dry_mean",
+      "layer_label": "Drought Hazard (mean)",
+      "national": {
+        "min": 0.007272727321833372,
+        "max": 0.9196244478225708,
+        "mean": 0.4819501582308652,
+        "median": 0.49469657339474965,
+        "std": 0.2499985430947567,
+        "p10": 0.06540432192819817,
+        "p25": 0.3126946866784932,
+        "p75": 0.7035524748929284,
+        "p90": 0.7905552299344937,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.272235244512558,
+        0.4318305134773255,
+        0.5805122137069703,
+        0.732221269607544
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 20.13,
+        "low": 19.92,
+        "moderate": 19.88,
+        "high": 19.94,
+        "very_high": 20.13
+      }
+    },
+    "h_wet_mean": {
+      "layer_value": "h_wet_mean",
+      "layer_label": "Wetness Hazard (mean)",
+      "national": {
+        "min": 0.01227272767573595,
+        "max": 0.4875912368297577,
+        "mean": 0.17138251250680067,
+        "median": 0.1673426330089569,
+        "std": 0.09612858166588083,
+        "p10": 0.04897779730186946,
+        "p25": 0.08982756825829166,
+        "p75": 0.23018989447949612,
+        "p90": 0.3188729902334648,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.07203445583581924,
+        0.1419255465269089,
+        0.1887856662273407,
+        0.2506386756896975
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 20.13,
+        "low": 20.01,
+        "moderate": 19.97,
+        "high": 19.87,
+        "very_high": 20.03
+      }
+    },
+    "p_drought": {
+      "layer_value": "p_drought",
+      "layer_label": "Drought Probability",
+      "national": {
+        "min": 0.0,
+        "max": 0.9200000166893005,
+        "mean": 0.42444216153104153,
+        "median": 0.4399999976158142,
+        "std": 0.29529742016755606,
+        "p10": 0.0,
+        "p25": 0.1599999964237213,
+        "p75": 0.6800000071525574,
+        "p90": 0.800000011920929,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.0,
+        0.3199999928474426,
+        0.5600000023841858,
+        0.7200000286102295
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 0.0,
+        "low": 36.33,
+        "moderate": 22.38,
+        "high": 18.38,
+        "very_high": 22.91
+      },
+      "departure": {
+        "layer_value": "p_drought",
+        "period": "july",
+        "national": {
+          "min": 0.0,
+          "max": 0.9200000166893005,
+          "mean": 0.42444216153104153,
+          "median": 0.4399999976158142,
+          "std": 0.29529742016755606,
+          "p10": 0.0,
+          "p25": 0.1599999964237213,
+          "p75": 0.6800000071525574,
+          "p90": 0.800000011920929,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "regional": [],
+        "departure_available": false,
+        "reason": "No climatological baseline probability raster exists in this pipeline."
+      }
+    },
+    "p_wet": {
+      "layer_value": "p_wet",
+      "layer_label": "Wet Probability",
+      "national": {
+        "min": 0.0,
+        "max": 0.7200000286102295,
+        "mean": 0.09854234350484177,
+        "median": 0.07999999821186066,
+        "std": 0.09026873702214351,
+        "p10": 0.0,
+        "p25": 0.03999999910593033,
+        "p75": 0.1599999964237213,
+        "p90": 0.23999999463558197,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.03999999910593033,
+        0.03999999910593033,
+        0.07999999821186066,
+        0.1599999964237213
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 16.65,
+        "low": 0.0,
+        "moderate": 25.01,
+        "high": 32.25,
+        "very_high": 26.09
+      },
+      "departure": {
+        "layer_value": "p_wet",
+        "period": "july",
+        "national": {
+          "min": 0.0,
+          "max": 0.7200000286102295,
+          "mean": 0.09854234350484177,
+          "median": 0.07999999821186066,
+          "std": 0.09026873702214351,
+          "p10": 0.0,
+          "p25": 0.03999999910593033,
+          "p75": 0.1599999964237213,
+          "p90": 0.23999999463558197,
+          "valid_count": 1478,
+          "weighting": "area_km2"
+        },
+        "regional": [],
+        "departure_available": false,
+        "reason": "No climatological baseline probability raster exists in this pipeline."
+      }
+    },
+    "population_normalized": {
+      "layer_value": "population_normalized",
+      "layer_label": "Population",
+      "national": {
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.19339871139489448,
+        "median": 0.06270762215316798,
+        "std": 0.2696899869239854,
+        "p10": 0.003029006444611672,
+        "p25": 0.014917093115505169,
+        "p75": 0.2647922749273721,
+        "p90": 0.5869906689298314,
+        "valid_count": 1484,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.010438593290746213,
+        0.03634621351957321,
+        0.11864283829927444,
+        0.3366264045238495
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 20.05,
+        "low": 20.06,
+        "moderate": 19.93,
+        "high": 19.97,
+        "very_high": 19.99
+      }
+    },
+    "v_drought": {
+      "layer_value": "v_drought",
+      "layer_label": "Drought Vulnerability",
+      "national": {
+        "min": 0.0918489322066307,
+        "max": 0.9665036797523499,
+        "mean": 0.5819645132292834,
+        "median": 0.587548584901774,
+        "std": 0.1703826074119041,
+        "p10": 0.3570406801345447,
+        "p25": 0.45556453015587156,
+        "p75": 0.716681973789286,
+        "p90": 0.7986256783832864,
+        "valid_count": 1484,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.43148171305656435,
+        0.5285937070846558,
+        0.6361380338668823,
+        0.7455510616302491
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 20.0,
+        "low": 19.99,
+        "moderate": 19.9,
+        "high": 20.02,
+        "very_high": 20.09
+      }
+    },
+    "v_wet": {
+      "layer_value": "v_wet",
+      "layer_label": "Wet Vulnerability",
+      "national": {
+        "min": 0.276756227016449,
+        "max": 0.8113415837287903,
+        "mean": 0.5628455372550734,
+        "median": 0.5655949248344513,
+        "std": 0.09713912233219,
+        "p10": 0.43179844292353836,
+        "p25": 0.4962065352227058,
+        "p75": 0.6322044400926741,
+        "p90": 0.6886565838941755,
+        "valid_count": 1480,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_breakpoints": [
+        0.4779325306415558,
+        0.5381400108337402,
+        0.5908440947532654,
+        0.6484413146972656
+      ],
+      "class_scheme": "quintiles_of_current_period (no separate climatology exists for this layer)",
+      "class_area_pct": {
+        "very_low": 19.95,
+        "low": 19.97,
+        "moderate": 20.03,
+        "high": 20.01,
+        "very_high": 20.04
+      }
+    },
+    "population_r_drought": {
+      "layer_value": "population_r_drought",
+      "layer_label": "Drought Risk",
+      "national": {
+        "min": 0.0,
+        "max": 44.44158172607422,
+        "mean": 3.408523688434562,
+        "median": 1.2423921142188217,
+        "std": 5.709860981417434,
+        "p10": 0.0,
+        "p25": 0.05006402403486043,
+        "p75": 3.700540230190012,
+        "p90": 9.353286690774294,
+        "valid_count": 1478,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_scheme": "risk_class_bands (real, upstream-defined -- same scheme as population_risk_class)",
+      "class_area_pct": {
+        "very_low": 96.81,
+        "low": 3.12,
+        "moderate": 0.07,
+        "high": 0.0,
+        "very_high": 0.0
+      }
+    },
+    "population_r_wet": {
+      "layer_value": "population_r_wet",
+      "layer_label": "Wet Risk",
+      "national": {
+        "min": 0.0,
+        "max": 14.266118049621582,
+        "mean": 0.8316964314537209,
+        "median": 0.11166331422579394,
+        "std": 1.7167433460036772,
+        "p10": 0.0,
+        "p25": 0.009530326041385309,
+        "p75": 0.7438390603389612,
+        "p90": 2.6947438570675715,
+        "valid_count": 1474,
+        "weighting": "area_km2"
+      },
+      "regional": [],
+      "class_scheme": "risk_class_bands (real, upstream-defined -- same scheme as population_risk_class)",
+      "class_area_pct": {
+        "very_low": 100.0,
+        "low": 0.0,
+        "moderate": 0.0,
+        "high": 0.0,
+        "very_high": 0.0
+      }
+    }
+  },
+  "categorical_layers": {
+    "population_risk_class": {
+      "layer_value": "population_risk_class",
+      "layer_label": "Risk Class",
+      "class_area_pct": {
+        "Very low": 96.8,
+        "Low": 3.13,
+        "Moderate": 0.07,
+        "High": 0.0,
+        "Very high": 0.0
+      }
+    },
+    "population_dominant_code": {
+      "layer_value": "population_dominant_code",
+      "layer_label": "Dominant Hazard Code",
+      "class_area_pct": {
+        "Insignificant": 96.8,
+        "Drought-dominated": 3.2,
+        "Wet-dominated": 0.0,
+        "Mixed / compound": 0.0
+      }
+    }
+  },
+  "priority_scores": {
+    "population_r_drought": [],
+    "population_r_wet": []
+  },
+  "exposure": {
+    "population_r_drought": {
+      "layer_value": "population_r_drought",
+      "threshold": 26.665,
+      "population_exposed_by_region": [],
+      "cropland_exposed_by_region": []
+    },
+    "population_r_wet": {
+      "layer_value": "population_r_wet",
+      "threshold": 8.56,
+      "population_exposed_by_region": [],
+      "cropland_exposed_by_region": []
+    }
+  },
+  "cross_indicator_findings": [
+    {
+      "area": "National",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.6,
+      "supporting_indicators": [
+        "rainfall_anomaly",
+        "spi",
+        "cdd_anomaly"
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    }
+  ],
+  "priority_area_justifications": []
+}

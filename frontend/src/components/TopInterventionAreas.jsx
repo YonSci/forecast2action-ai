@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "../config.js";
+import { getCurrentSeasonalPeriod } from "../constants/climateIndicators.js";
 import { getPriorityLevel } from "../constants/priorityLevels.js";
 
 const ADMIN_LEVELS = [
@@ -238,7 +239,7 @@ function TopInterventionAreas({
   // indicator map (SPI/rainfall/CDD/CWD rasters). This table ranks the same
   // Hazard/Risk catalog the Hazard/Risk Layers viewer shows, so it needs to
   // follow that viewer's own period control, not the climate map's.
-  const period = forecastSelection.hazardRiskPeriod || "JJAS";
+  const period = forecastSelection.hazardRiskPeriod || getCurrentSeasonalPeriod();
 
   const [rankingLayers, setRankingLayers] = useState([]);
   const [category, setCategory] = useState("hazard");
@@ -489,6 +490,17 @@ function TopInterventionAreas({
         item.zone ||
         item.region ||
         "Selected area",
+      // Real values for SelectedAreaAdvisory.jsx's "Impact-based risk
+      // evidence" cards -- these were previously never set under the field
+      // names that component reads (risk_score/hazard_probability/exposure
+      // /vulnerability/hazard/risk_level), so every card showed "N/A" even
+      // though item.metrics/priorityInfo already carried the real values.
+      hazard: hazardLayerMeta?.hazard_type || "",
+      hazard_probability: item.metrics[selectedByCategory.probability],
+      exposure: item.metrics[selectedByCategory.exposure],
+      vulnerability: item.metrics[selectedByCategory.vulnerability],
+      risk_score: item.metrics[selectedByCategory.risk],
+      risk_level: priorityInfo.level,
     };
 
     const boundaryGeojson = buildBoundaryGeojsonFromItem(item, selectedArea);
@@ -552,8 +564,21 @@ function TopInterventionAreas({
         rankingCount: rankingItems.length,
         triggerCount,
         topRankedArea: rankingItems[0] || null,
+        // Real ranked items (already sized by this table's own Top
+        // 3/5/10 selector) plus the SAME selection handler the "View on
+        // map" button uses -- so RiskMap.jsx can plot these areas as
+        // points and, on click, activate SelectedAreaAdvisory exactly as
+        // if the table's own button had been clicked, with zero
+        // duplicated selection-building logic.
+        rankingItems,
+        selectArea: handlePriorityAreaSelect,
       });
     }
+    // handlePriorityAreaSelect is a fresh closure every render, but every
+    // real value it reads (hazardLayerMeta/etc, rankBy, period, adminLevel)
+    // is already listed below, so the effect still re-fires exactly when
+    // its behavior would actually change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     onRankingContextChange,
     hazardLayerMeta,
@@ -562,6 +587,9 @@ function TopInterventionAreas({
     vulnerabilityLayerMeta,
     riskLayerMeta,
     rankingItems,
+    rankBy,
+    period,
+    adminLevel,
   ]);
 
   const sortColumnGetters = {

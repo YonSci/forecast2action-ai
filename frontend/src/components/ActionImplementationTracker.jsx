@@ -1,12 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
+import { apiUrl } from "../config.js";
+import ApprovalGateBanner from "./context/ApprovalGateBanner.jsx";
 
-const STATUS_OPTIONS = [
-  "Not started",
-  "In progress",
-  "Completed",
-  "Verified",
-  "Delayed",
-];
+// Canonical statuses (spec) -- "Verified"/"Delayed" from the ORIGINAL
+// client-only design are kept as DERIVED display-only states rather than
+// stored values, so the UI's existing vocabulary survives even though the
+// real backend-persisted status set is the canonical 6-value one. See
+// displayStatus()/storageStatusFor().
+const STATUS_OPTIONS = ["Not started", "In progress", "Completed", "Verified", "Delayed", "Blocked", "Cancelled"];
+
+function displayStatus(task) {
+  if (task.status === "Completed" && task.outcome_status === "confirmed") return "Verified";
+  if (task.status === "Deferred") return "Delayed";
+  return task.status;
+}
+
+function storageStatusFor(displayValue) {
+  if (displayValue === "Verified") return "Completed";
+  if (displayValue === "Delayed") return "Deferred";
+  return displayValue;
+}
 
 const LEAD_LABELS = {
   week_1: "Week 1",
@@ -219,7 +232,34 @@ function downloadCsv(filename, rows) {
   URL.revokeObjectURL(link.href);
 }
 
-function ActionImplementationTracker({ selectedPriorityArea = null, forecastSelection = {} }) {
+// Maps a canonical-schema context task (app.decision.action_selector
+// .build_tasks_from_context) onto this table's existing rendering shape,
+// so the JSX below doesn't need two different render paths. progress_note
+// is repurposed from the backend's outcome_note field (editable, but only
+// actually persisted for legacy client-only tasks -- see updateTask);
+// verification_source/evidence_required become read-only summaries of the
+// task's real evidence_basis/knowledge_source_ids, since those aren't
+// free-text fields on the backend schema.
+function mapContextTaskToRow(task) {
+  return {
+    id: task.task_id,
+    task_id: task.task_id,
+    context_id: task.context_id,
+    action: task.action,
+    responsible_sector: task.responsible_sector,
+    deadline: task.deadline,
+    status: task.status,
+    outcome_status: task.outcome_status,
+    approval_status: task.approval_status,
+    progress_note: task.outcome_note || "",
+    verification_source: (task.evidence_basis || []).join("; "),
+    evidence_required: (task.knowledge_source_ids || []).join(", ") || "No linked knowledge source.",
+    last_updated: task.updated_at,
+    isContextTask: true,
+  };
+}
+
+function ActionImplementationTracker({ selectedPriorityArea = null, forecastSelection = {}, contextId = null }) {
   const hasSelectedArea = Boolean(selectedPriorityArea?.area_name);
 
   const generatedTasks = useMemo(() => {
@@ -233,14 +273,58 @@ function ActionImplementationTracker({ selectedPriorityArea = null, forecastSele
   }, [hasSelectedArea, selectedPriorityArea, forecastSelection]);
 
   const [tasks, setTasks] = useState([]);
+  const [usingContextTasks, setUsingContextTasks] = useState(false);
 
+  // Context-driven path: real, evidence-linked, policy-gated tasks tied to
+  // a Decision Context Envelope. Falls through to the existing client-only
+  // generated-task path (unchanged) whenever no contextId is available yet,
+  // or the context has no tasks (e.g. it never triggered), so this
+  // component works exactly as before until context engineering is
+  // actually invoked upstream.
   useEffect(() => {
-    if (!hasSelectedArea) {
-      setTasks([]);
+    if (!hasSelectedArea || !contextId) {
+      setUsingContextTasks(false);
       return;
     }
 
-    let savedTasks = [];
+    let cancelled = false;
+
+    async function loadContextTasks() {
+      try {
+        const response = await fetch(
+          apiUrl(
+            `/api/action-tracker/${encodeURIComponent(selectedPriorityArea.area_name)}?context_id=${encodeURIComponent(contextId)}`,
+          ),
+        );
+        if (!response.ok) throw new Error(`Request failed ${response.status}`);
+        const data = await response.json();
+        if (cancelled) return;
+
+        if (data.found && Array.isArray(data.tasks) && data.tasks.length > 0) {
+          setTasks(data.tasks.map(mapContextTaskToRow));
+          setUsingContextTasks(true);
+        } else {
+          setUsingContextTasks(false);
+        }
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) setUsingContextTasks(false);
+      }
+    }
+
+    loadContextTasks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasSelectedArea, contextId, selectedPriorityArea]);
+
+  useEffect(() => {
+    if (!hasSelectedArea || usingContextTasks) {
+      return;
+    }
+
+    let savedTasks;
     try {
       savedTasks = JSON.parse(localStorage.getItem(storageKey) || "[]");
     } catch {
@@ -248,23 +332,67 @@ function ActionImplementationTracker({ selectedPriorityArea = null, forecastSele
     }
 
     setTasks(mergeSavedTasks(generatedTasks, savedTasks));
-  }, [hasSelectedArea, generatedTasks, storageKey]);
+  }, [hasSelectedArea, generatedTasks, storageKey, usingContextTasks]);
 
   useEffect(() => {
-    if (!hasSelectedArea || !storageKey) return;
+    if (!hasSelectedArea || !storageKey || usingContextTasks) return;
     localStorage.setItem(storageKey, JSON.stringify(tasks));
-  }, [hasSelectedArea, storageKey, tasks]);
+  }, [hasSelectedArea, storageKey, tasks, usingContextTasks]);
 
-  const summary = getCompletionSummary(tasks);
+  const summary = getCompletionSummary(tasks.map((task) => ({ ...task, status: displayStatus(task) })));
 
-  function updateTask(taskId, field, value) {
-    setTasks((currentTasks) => currentTasks.map((task) => {
-      if (task.id !== taskId) return task;
-      return { ...task, [field]: value, last_updated: new Date().toISOString() };
+  async function updateTask(taskId, field, value) {
+    const task = tasks.find((item) => item.id === taskId);
+
+    if (task?.isContextTask && field === "status") {
+      const canonicalStatus = storageStatusFor(value);
+      try {
+        const response = await fetch(apiUrl("/api/action-tracker/context-status"), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task_id: taskId, status: canonicalStatus }),
+        });
+        if (!response.ok) throw new Error(`Request failed ${response.status}`);
+        const data = await response.json();
+        setTasks((currentTasks) =>
+          currentTasks.map((item) => (item.id === taskId ? mapContextTaskToRow(data.task) : item)),
+        );
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    }
+
+    // Context-task progress_note/verification_source have no free-text
+    // backend field to persist to (see mapContextTaskToRow) -- edits here
+    // update the local view only, for the current session.
+    setTasks((currentTasks) => currentTasks.map((item) => {
+      if (item.id !== taskId) return item;
+      return { ...item, [field]: value, last_updated: new Date().toISOString() };
     }));
   }
 
+  async function handleApprovalDecision(taskId, decision) {
+    try {
+      const response = await fetch(apiUrl("/api/action-tracker/approval"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: taskId, decision, approver: "dashboard_user" }),
+      });
+      if (!response.ok) throw new Error(`Request failed ${response.status}`);
+      const data = await response.json();
+      setTasks((currentTasks) =>
+        currentTasks.map((item) =>
+          item.id === taskId ? { ...item, approval_status: data.approval.approval_status } : item,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   function handleResetTasks() {
+    if (usingContextTasks) return;
     setTasks(generatedTasks);
     if (storageKey) localStorage.removeItem(storageKey);
   }
@@ -312,7 +440,15 @@ function ActionImplementationTracker({ selectedPriorityArea = null, forecastSele
           </p>
         </div>
         <div className="tracker-actions">
-          <button type="button" className="secondary-button" onClick={handleResetTasks}>Reset tasks</button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleResetTasks}
+            disabled={usingContextTasks}
+            title={usingContextTasks ? "Context-driven tasks come from a Decision Context Envelope and can't be reset here." : undefined}
+          >
+            Reset tasks
+          </button>
           <button type="button" className="primary-button" onClick={handleExportCsv}>Export CSV</button>
         </div>
       </div>
@@ -335,6 +471,7 @@ function ActionImplementationTracker({ selectedPriorityArea = null, forecastSele
               <th>Responsible sector</th>
               <th>Deadline</th>
               <th>Status</th>
+              <th>Approval</th>
               <th>Progress note</th>
               <th>Verification source</th>
             </tr>
@@ -347,12 +484,19 @@ function ActionImplementationTracker({ selectedPriorityArea = null, forecastSele
                 <td>{task.deadline}</td>
                 <td>
                   <select
-                    className={`tracker-status-select ${getStatusClass(task.status)}`}
-                    value={task.status}
+                    className={`tracker-status-select ${getStatusClass(displayStatus(task))}`}
+                    value={displayStatus(task)}
                     onChange={(event) => updateTask(task.id, "status", event.target.value)}
                   >
                     {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
                   </select>
+                </td>
+                <td>
+                  <ApprovalGateBanner
+                    approvalStatus={task.approval_status}
+                    onApprove={() => handleApprovalDecision(task.id, "approve")}
+                    onReject={() => handleApprovalDecision(task.id, "reject")}
+                  />
                 </td>
                 <td>
                   <textarea
@@ -366,6 +510,7 @@ function ActionImplementationTracker({ selectedPriorityArea = null, forecastSele
                     value={task.verification_source}
                     placeholder="Field report, photo, meeting note, message log..."
                     onChange={(event) => updateTask(task.id, "verification_source", event.target.value)}
+                    readOnly={task.isContextTask}
                   />
                   {task.last_updated && <small>Updated: {new Date(task.last_updated).toLocaleString()}</small>}
                 </td>

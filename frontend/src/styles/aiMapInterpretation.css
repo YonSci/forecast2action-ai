@@ -329,6 +329,146 @@
 }
 
 
+/* Step 7.5 -- structured, auditable priority-area justification (real
+   rank/scores/supporting-indicators from app.context.statistical_evidence,
+   with LLM-authored differentiator/recommended_intervention_type merged
+   on top -- see PriorityAreaJustificationList.jsx). */
+.ai-priority-justification-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ai-priority-justification-item {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+}
+
+.ai-priority-justification-item p {
+  margin: 6px 0 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.ai-priority-justification-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--navy);
+}
+
+.ai-priority-rank {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.ai-priority-hazard-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.ai-priority-hazard-drought {
+  background: #fff7ed;
+  color: #b45309;
+  border: 1px solid #fed7aa;
+}
+
+.ai-priority-hazard-wet {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.ai-priority-confidence {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ai-priority-justification-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ai-priority-supporting {
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.ai-priority-intervention {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+
+/* Step 11 -- automated output validation flags (see
+   app/advisory/response_validator.py::validate_against_evidence). Detect-
+   and-flag, not block-and-fail -- styled as a clear warning, not an error,
+   since the report is still usable, just worth a second look. */
+.ai-validation-flags {
+  margin-bottom: 18px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.ai-validation-flags h4 {
+  margin: 0 0 6px;
+  color: #9a6700;
+}
+
+.ai-validation-flags-note {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: #9a6700;
+}
+
+.ai-validation-flags ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #7a5200;
+  line-height: 1.6;
+}
+
+
+/* Step 7 items 6/7 -- timescale/category-structured advisory sections
+   (farmer/agro-pastoral advisory, humanitarian priorities). */
+.ai-timescaled-advisory .ai-timescale-block {
+  margin-top: 10px;
+}
+
+.ai-timescaled-advisory .ai-timescale-block:first-of-type {
+  margin-top: 4px;
+}
+
+.ai-timescale-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.ai-timescaled-advisory ul {
+  margin-top: 0;
+}
+
+
 /* v11 AI provider/model selector */
 .ai-provider-selectors {
   display: grid;
@@ -389,6 +529,135 @@
   }
 }
 
+.context-audit-drawer {
+  flex-basis: 100%;
+}
+
+.context-audit-toggle {
+  background: none;
+  border: 1px solid #d9e8fb;
+  border-radius: 12px;
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
+
+.context-audit-toggle:hover {
+  background: #f8fbff;
+}
+
+.context-audit-panel {
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #f8fbff;
+  border: 1px solid #d9e8fb;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.context-audit-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.context-audit-fields dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.context-audit-fields dd {
+  margin: 0;
+  color: var(--navy);
+}
+
+.context-audit-fingerprint {
+  font-family: monospace;
+}
+
+.context-audit-endpoints {
+  margin-top: 10px;
+}
+
+.context-audit-endpoints ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.context-audit-error {
+  margin-top: 10px;
+  color: #b3392c;
+}
+
+.context-audit-warning {
+  margin-top: 10px;
+  color: #9a6700;
+}
+
+.retrieval-debug-panel-wrapper {
+  flex-basis: 100%;
+}
+
+.retrieval-debug-toggle {
+  background: none;
+  border: 1px solid #d9e8fb;
+  border-radius: 12px;
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
+
+.retrieval-debug-toggle:hover {
+  background: #f8fbff;
+}
+
+.retrieval-debug-panel {
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #f8fbff;
+  border: 1px solid #d9e8fb;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.retrieval-debug-mode {
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.retrieval-debug-item {
+  padding: 10px 0;
+  border-top: 1px solid #d9e8fb;
+}
+
+.retrieval-debug-item:first-of-type {
+  border-top: none;
+}
+
+.retrieval-debug-item strong {
+  color: var(--navy);
+}
+
+.retrieval-debug-match {
+  color: var(--muted);
+  margin: 4px 0;
+}
+
+.retrieval-debug-score-row {
+  color: var(--navy);
+}
+
+.retrieval-debug-source {
+  color: var(--muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
 @media (max-width: 720px) {
   .ai-provider-selectors {
     flex-basis: auto;
@@ -398,4 +667,336 @@
   .ai-provider-selectors input {
     width: 100%;
   }
+}
+
+
+/* ===== AI Advisory modernization pass =====
+   New semantic hazard-type color pairs, matching this app's existing
+   --trigger-bg/--trigger-text, --warning-bg/--warning-text, etc.
+   convention (main.css) rather than inventing an unrelated palette. */
+:root {
+  --drought-bg: #fbe8dc;
+  --drought-text: #a8451f;
+  --wet-bg: #dff0f4;
+  --wet-text: #106485;
+  --shadow-lg: 0 18px 44px rgba(13, 40, 80, 0.11), 0 2px 8px rgba(13, 40, 80, 0.06);
+}
+
+:root[data-theme="dark"] {
+  --drought-bg: #3a2016;
+  --drought-text: #f0996c;
+  --wet-bg: #123441;
+  --wet-text: #7fd4ee;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --drought-bg: #3a2016;
+    --drought-text: #f0996c;
+    --wet-bg: #123441;
+    --wet-text: #7fd4ee;
+  }
+}
+
+/* ---- Split view: indicator (left) | layer (right) ---- */
+.ai-split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .ai-split-view {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Collapsible sections (farmer / agro-pastoral / humanitarian) ---- */
+.ai-collapsible {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  margin: 0 0 0;
+}
+
+.ai-collapsible:hover {
+  color: var(--navy);
+}
+
+.ai-collapsible-chevron {
+  display: inline-flex;
+  transition: transform 0.18s ease;
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+.ai-collapsible-chevron.open {
+  transform: rotate(90deg);
+}
+
+.ai-collapsible-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+  margin-top: 0;
+}
+
+.ai-collapsible-body.open {
+  grid-template-rows: 1fr;
+  margin-top: 14px;
+}
+
+.ai-collapsible-body > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ai-cat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .ai-cat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Priority areas panel: confidence filter + drought/wet side-by-side ---- */
+.ai-priority-panel {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 24px);
+  box-shadow: var(--shadow-lg);
+  padding: 24px 26px;
+}
+
+.ai-priority-panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.ai-priority-panel-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.ai-priority-filter-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.ai-priority-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+@media (max-width: 900px) {
+  .ai-priority-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-priority-col-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid;
+}
+
+.ai-priority-col-head.drought { border-color: var(--drought-text); }
+.ai-priority-col-head.wet { border-color: var(--wet-text); }
+
+.ai-priority-col-head h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.ai-priority-col-head.drought h4 { color: var(--drought-text); }
+.ai-priority-col-head.wet h4 { color: var(--wet-text); }
+
+.ai-priority-col-count {
+  margin-left: auto;
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ai-priority-col-empty {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ---- Messaging cards: SMS + WhatsApp ---- */
+.ai-messaging-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 760px) {
+  .ai-messaging-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-msg-card {
+  border-radius: var(--radius-lg, 24px);
+  box-shadow: var(--shadow-lg);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-msg-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-msg-card-head h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ai-msg-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.ai-sms-card {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line);
+}
+
+.ai-sms-icon {
+  background: #f8fbff;
+  color: #1849a9;
+}
+
+.ai-sms-bubble {
+  background: #f8fbff;
+  border-radius: 18px 18px 18px 4px;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  max-width: 94%;
+}
+
+.ai-sms-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.ai-sms-meta .ai-sms-over {
+  color: var(--drought-text);
+  font-weight: 700;
+}
+
+.ai-wa-card {
+  background: #eef7ee;
+  border: 1px solid #cfe9cf;
+}
+
+:root[data-theme="dark"] .ai-wa-card {
+  background: #10281a;
+  border-color: #1d4a2c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ai-wa-card {
+    background: #10281a;
+    border-color: #1d4a2c;
+  }
+}
+
+.ai-wa-icon {
+  background: #25d366;
+  color: #fff;
+}
+
+.ai-wa-phone {
+  background: #e5ddd0;
+  border-radius: 14px;
+  padding: 16px 14px;
+}
+
+:root[data-theme="dark"] .ai-wa-phone {
+  background: #0b141a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ai-wa-phone {
+    background: #0b141a;
+  }
+}
+
+.ai-wa-bubble {
+  background: #dcf8c6;
+  border-radius: 10px 10px 3px 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #1c1c1c;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  margin-left: auto;
+  max-width: 96%;
+}
+
+.ai-wa-bubble strong {
+  color: #075e0b;
+}
+
+.ai-wa-bubble em {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.ai-wa-time {
+  text-align: right;
+  font-size: 0.66rem;
+  color: #5f7a5f;
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  align-items: center;
+}
+
+.ai-wa-check {
+  color: #53bdeb;
+}
+
+.ai-msg-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-msg-actions .ai-secondary-action {
+  flex: 1;
+  text-align: center;
 }

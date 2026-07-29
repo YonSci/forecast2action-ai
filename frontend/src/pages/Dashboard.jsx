@@ -42,14 +42,27 @@ function Dashboard() {
     boundaryGeojson: null,
     boundaryLoading: false,
   });
+  // Matches ForecastLayerMap.jsx's own INITIAL_SEASONAL_STATE default
+  // (indicator: "rainfall_total", the first entry in the canonical
+  // CLIMATE_INDICATORS list) so the very first paint -- before
+  // ForecastLayerMap's effect overwrites this via
+  // onForecastSelectionChange -- already agrees with what the map and
+  // SelectedAreaAdvisory's cards will show, instead of a momentarily
+  // inconsistent placeholder.
   const [forecastSelection, setForecastSelection] = useState({
     forecastScale: "subseasonal",
     lead: "week_1",
     layer: "risk_score",
-    indicator: "spi",
+    indicator: "rainfall_total",
   });
   const [selectedPriorityArea, setSelectedPriorityArea] = useState(null);
   const [rankingContext, setRankingContext] = useState(null);
+  // Populated by AIMapInterpretation.jsx whenever it builds a real Decision
+  // Context Envelope (POST /api/context/build) -- passed down to
+  // ActionImplementationTracker so its tasks can be tied to that same real,
+  // evidence-linked, policy-gated context instead of purely client-generated
+  // placeholders.
+  const [contextInfo, setContextInfo] = useState(null);
   async function loadCommunityReports() {
     try {
       const response = await fetchJson("/api/community-reports");
@@ -115,20 +128,27 @@ function Dashboard() {
         selectedPriorityArea={selectedPriorityArea}
         rankingContext={rankingContext}
       />
+      {/* Only activates once an area is selected via "View on map" in the
+          Priority Intervention Areas table above -- and sits above the AI
+          Map Interpretation & Advisory section, not inside/below it. */}
+      {selectedPriorityArea && (
+        <SelectedAreaAdvisory
+          selectedPriorityArea={selectedPriorityArea}
+          forecastSelection={forecastSelection}
+          selectedLanguage={selectedLanguage}
+        />
+      )}
       <AIMapInterpretation
         forecastSelection={forecastSelection}
         adminSelection={adminSelection}
         selectedPriorityArea={selectedPriorityArea}
         selectedLanguage={selectedLanguage}
-      />
-      <SelectedAreaAdvisory
-        selectedPriorityArea={selectedPriorityArea}
-        forecastSelection={forecastSelection}
-        selectedLanguage={selectedLanguage}
+        onContextBuilt={setContextInfo}
       />
       <ActionImplementationTracker
         selectedPriorityArea={selectedPriorityArea}
         forecastSelection={forecastSelection}
+        contextId={contextInfo?.contextId || null}
       />
       <SelectedAreaCommunityReports
         selectedPriorityArea={selectedPriorityArea}

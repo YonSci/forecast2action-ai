@@ -64,6 +64,20 @@ export const ALL_SEASONAL_PERIODS = [
   ...SEASONAL_PERIODS,
 ];
 
+// The seasonal vocabulary only covers June-September (+ the JJAS
+// aggregate) -- confirmed against what actually has real raster data on
+// disk (data/maps/geotiff etc. only ever have June/July/August/September
+// files, never October-May). Resolving "today" to the current calendar
+// month only works for 4 months of the year; the other 8 fall back to
+// JJAS (the whole-season aggregate) rather than picking an arbitrary
+// nearest month, since JJAS is already a valid, real, selectable period
+// and doesn't imply false precision about which specific month applies.
+export function getCurrentSeasonalPeriod() {
+  const monthName = new Date().toLocaleString("en-US", { month: "long" });
+  const inVocabulary = SEASONAL_PERIODS.some((item) => item.value === monthName);
+  return inVocabulary ? monthName : "JJAS";
+}
+
 export const CLIMATE_SCALES = [
   { value: "subseasonal", label: "Subseasonal" },
   { value: "seasonal", label: "Seasonal" },

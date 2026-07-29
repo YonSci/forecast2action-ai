@@ -1,0 +1,21 @@
+{
+  "policy_id": "heavy_rainfall_ethiopia_v1",
+  "hazard_type": "heavy_rainfall",
+  "country": "ethiopia",
+  "thresholds": {
+    "trigger": 0.80,
+    "warning": 0.60,
+    "watch": 0.35
+  },
+  "rank_by_default": "population_r_wet",
+  "action_categories": {
+    "verification": {"approval_required": false},
+    "public_message": {"approval_required": false},
+    "coordination": {"approval_required": false},
+    "resource_preposition": {"approval_required": true},
+    "cash_or_voucher": {"approval_required": true},
+    "activation": {"approval_required": true}
+  },
+  "version": "1.0.0",
+  "valid_from": "2025-01-01"
+}

@@ -1,0 +1,16 @@
+# Default risk-scoring weights/thresholds, mirroring app/ml/risk_scoring.py's
+# hardcoded RISK_WEIGHTS/RISK_THRESHOLDS. Loading this file is OPTIONAL --
+# calculate_risk_score()/classify_risk() default to the hardcoded values when
+# no weights/thresholds are passed in, so nothing changes unless a caller
+# explicitly opts in via app/context/config_loader.py.
+
+weights:
+  hazard_probability: 0.40
+  exposure: 0.25
+  vulnerability: 0.25
+  confidence: 0.10
+
+thresholds:
+  trigger: 0.80
+  warning: 0.60
+  watch: 0.35
