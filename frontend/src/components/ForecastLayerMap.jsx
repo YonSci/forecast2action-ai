@@ -20,6 +20,7 @@ import {
   SEASONAL_PRODUCTS,
   SEASONAL_PRODUCT_ORDER,
 } from "../constants/climateIndicators.js";
+import RasterMethodologyPanel from "./RasterMethodologyPanel.jsx";
 import "../styles/mapSwitcher.css";
 
 const OPTIONS = {
@@ -1942,6 +1943,10 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                 <strong>{selectedHazardRiskPeriodLabel}</strong>
               </p>
               <RasterLegend map={selectedHazardRiskMap} />
+              <RasterMethodologyPanel
+                category={hazardRiskCategory}
+                layerValue={hazardRiskLayer}
+              />
             </aside>
           </div>
         </div>

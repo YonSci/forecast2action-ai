@@ -416,6 +416,104 @@
   margin-top: 10px;
 }
 
+.hazard-methodology-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.hazard-methodology-panel h4 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 0.94rem;
+}
+
+.hazard-methodology-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hazard-methodology-steps li {
+  padding-left: 2px;
+}
+
+.hazard-methodology-step-title {
+  display: block;
+  color: #1e293b;
+  font-size: 0.84rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.hazard-methodology-formula {
+  display: block;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  color: #1849a9;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.hazard-methodology-note {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.hazard-methodology-indicator-list {
+  margin: 2px 0 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 2px;
+}
+
+.hazard-methodology-indicator-list li {
+  color: #334155;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.hazard-methodology-table {
+  margin: 4px 0 0;
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+
+.hazard-methodology-table td {
+  padding: 4px 8px 4px 0;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hazard-methodology-table td:first-child {
+  font-weight: 700;
+  color: #1849a9;
+  white-space: nowrap;
+}
+
+.hazard-methodology-source-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #1570ef;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hazard-methodology-source-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .seasonal-raster-stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
