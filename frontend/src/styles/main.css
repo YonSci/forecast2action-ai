@@ -1047,6 +1047,58 @@ tbody td {
   border: 1px solid rgba(15, 39, 77, 0.12);
 }
 
+.risk-map-marker-tooltip.leaflet-tooltip {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d9e3f2;
+  box-shadow: 0 8px 24px rgba(15, 39, 77, 0.14);
+  opacity: 1;
+  min-width: 230px;
+}
+
+.risk-map-marker-tooltip-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.risk-map-marker-tooltip-header strong {
+  color: var(--navy);
+  font-size: 0.94rem;
+}
+
+.risk-map-marker-tooltip-header span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.risk-map-marker-tooltip-rows {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+.risk-map-marker-tooltip-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.8rem;
+}
+
+.risk-map-marker-tooltip-rows span {
+  color: var(--muted);
+}
+
+.risk-map-marker-tooltip-rows strong {
+  color: var(--navy);
+  text-align: right;
+  white-space: nowrap;
+}
+
 .risk-map-intensity-labels {
   display: flex;
   justify-content: space-between;

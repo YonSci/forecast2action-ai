@@ -20,6 +20,15 @@ import {
   PRIORITY_SCORE_DEFINITION,
   getTermDefinition,
 } from "../constants/hazardRiskGlossary.js";
+import {
+  formatAreaExtent,
+  formatBuiltUpExtentPct,
+  formatCroplandExtentPct,
+  formatLivestockExtentPct,
+  formatMetricValue,
+  formatPopulationExposed,
+  formatRoadsExtentPct,
+} from "../constants/rankingMetricFormatters.js";
 import "../styles/mapSwitcher.css";
 
 const ETHIOPIA_CENTER = [9, 40.5];
@@ -111,6 +120,44 @@ function getBoundaryFeatureCenter(boundaryFeature) {
 
 function getRankedAreaName(item) {
   return item.area_name || item.woreda || item.zone || item.region || "Selected area";
+}
+
+// Same real fields/formatters as SelectedAreaAdvisory.jsx's "Impact-based
+// risk evidence" cards (via TopInterventionAreas.jsx's metricsDisplay) --
+// reused here (not recomputed) so the hover/click preview on the map always
+// agrees with what the full advisory shows after clicking through.
+function getMarkerTooltipRows(item, rankingContext) {
+  const {
+    hazardLayerMeta,
+    probabilityLayerMeta,
+    vulnerabilityLayerMeta,
+    riskLayerMeta,
+  } = rankingContext || {};
+
+  return [
+    {
+      label: hazardLayerMeta?.label || "Hazard",
+      value: formatMetricValue(item.metrics?.[hazardLayerMeta?.value], hazardLayerMeta),
+    },
+    {
+      label: probabilityLayerMeta?.label || "Probability",
+      value: formatMetricValue(item.metrics?.[probabilityLayerMeta?.value], probabilityLayerMeta),
+    },
+    {
+      label: vulnerabilityLayerMeta?.label || "Vulnerability",
+      value: formatMetricValue(item.metrics?.[vulnerabilityLayerMeta?.value], vulnerabilityLayerMeta),
+    },
+    {
+      label: riskLayerMeta?.label || "Risk",
+      value: formatMetricValue(item.metrics?.[riskLayerMeta?.value], riskLayerMeta),
+    },
+    { label: "Population exposed", value: formatPopulationExposed(item) },
+    { label: "Area extent", value: formatAreaExtent(item) },
+    { label: "Cropland extent", value: formatCroplandExtentPct(item) },
+    { label: "Livestock extent", value: formatLivestockExtentPct(item) },
+    { label: "Built-up extent", value: formatBuiltUpExtentPct(item) },
+    { label: "Roads extent", value: formatRoadsExtentPct(item) },
+  ];
 }
 
 // Standard ColorBrewer "YlOrRd" 5-class sequential ramp -- the SAME color
@@ -464,7 +511,18 @@ function RiskMap({
                 <CircleMarker
                   key={`${item.admin_level}-${item.region_id}-${item.zone_id}-${item.woreda_id}-${item.area_name}-${item.rank}`}
                   center={center}
-                  radius={isActive ? 13 : 9}
+                  radius={isActive ? 14 : 11}
+                  // Leaflet's built-in markerPane (z-index 600) sits above the
+                  // default overlayPane (z-index 400, where the boundary
+                  // GeoJSON polygons render) -- without this, a click that
+                  // narrowly misses the small circle falls through to the
+                  // (much larger) boundary polygon underneath, which opens
+                  // ITS OWN popup instead (e.g. the generic whole-country
+                  // outline's placeholder "Unknown Region/Zone/Woreda" text
+                  // when no priority area is selected yet). Putting markers
+                  // on a separate, higher pane makes them win every click at
+                  // their pixel, regardless of draw order within a pane.
+                  pane="markerPane"
                   pathOptions={{
                     color: "#111827",
                     weight: isActive ? 3 : 1.5,
@@ -475,10 +533,19 @@ function RiskMap({
                     click: () => rankingContext?.selectArea?.(item),
                   }}
                 >
-                  <Tooltip direction="top" offset={[0, -6]} opacity={1}>
-                    <strong>#{item.rank}</strong> {getRankedAreaName(item)}
-                    <br />
-                    {priorityInfo.label} ({Number(item.priority_score).toFixed(2)})
+                  <Tooltip direction="top" offset={[0, -6]} opacity={1} className="risk-map-marker-tooltip">
+                    <div className="risk-map-marker-tooltip-header">
+                      <strong>#{item.rank} {getRankedAreaName(item)}</strong>
+                      <span>{priorityInfo.label} ({Number(item.priority_score).toFixed(2)})</span>
+                    </div>
+                    <div className="risk-map-marker-tooltip-rows">
+                      {getMarkerTooltipRows(item, rankingContext).map((row) => (
+                        <div key={row.label}>
+                          <span>{row.label}</span>
+                          <strong>{row.value}</strong>
+                        </div>
+                      ))}
+                    </div>
                   </Tooltip>
                 </CircleMarker>
               );
