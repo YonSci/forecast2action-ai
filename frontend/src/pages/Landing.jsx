@@ -375,6 +375,83 @@ function Landing() {
           </div>
         </section>
 
+        <section className="lp-section" id="lp-mission">
+          <div className="lp-wrap">
+            <div className="lp-mission-head">
+              <p className="lp-section-kicker">Why Forecast2Action AI</p>
+              <h2>Transforming Complex Risks into Timely Community Action</h2>
+              <p>
+                Built in response to interconnected regional challenges — from
+                climate extremes and food insecurity to health and
+                humanitarian crises — Forecast2Action AI bridges the gap
+                between raw geospatial intelligence and frontline
+                decision-making.
+              </p>
+            </div>
+            <div className="lp-feature-grid">
+              <div className="lp-feature-card">
+                <div className="lp-feature-icon lp-fi-teal">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
+                </div>
+                <h3>Anticipate Complex Hazards</h3>
+                <p>
+                  Fuses ensemble forecasts, food-security vulnerability (FEWS
+                  NET), and livestock/population exposure layers into a
+                  single predictive risk model to catch compounding crises
+                  before they escalate.
+                </p>
+              </div>
+              <div className="lp-feature-card">
+                <div className="lp-feature-icon lp-fi-amber">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 4v11a2 2 0 002 2h4l3 3 3-3h2a2 2 0 002-2V4"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M8 9h8M8 12.5h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <h3>Reimagine Early Action</h3>
+                <p>
+                  Replaces static reports with automated, AI-interpreted
+                  advisories delivered through accessible communication
+                  channels (SMS, WhatsApp, web dashboards) for immediate
+                  operational readiness.
+                </p>
+              </div>
+              <div className="lp-feature-card">
+                <div className="lp-feature-icon lp-fi-red">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 21s-6.5-4.35-9-9.1C1.4 8.02 3.3 4.5 6.9 4.5c1.94 0 3.44 1.06 4.1 2.4a4.6 4.6 0 014.1-2.4c3.6 0 5.5 3.52 3.9 7.4-2.5 4.75-9 9.1-9 9.1z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <h3>Strengthen Community Resilience</h3>
+                <p>
+                  Empowers local responders, humanitarian agencies, and
+                  regional decision-makers across East Africa with cited,
+                  evidence-based alerts to deploy resources where they are
+                  needed most.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="lp-section" id="lp-features">
           <div className="lp-wrap">
             <div className="lp-section-head">
@@ -524,6 +601,14 @@ function Landing() {
           </div>
         </section>
       </main>
+
+      <div className="lp-ribbon">
+        <span className="lp-ribbon-tag">Built for IGAD Hackathon 2026</span>
+        <p>
+          "Reimagining the future of early warning and early action for
+          safer, more resilient communities across the region."
+        </p>
+      </div>
 
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-row">

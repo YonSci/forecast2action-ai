@@ -568,6 +568,60 @@
   font-size: 1rem;
 }
 
+/* ---------- Mission / impact pillars ---------- */
+.lp-mission-head {
+  max-width: 720px;
+  margin: 0 0 46px;
+}
+
+.lp-mission-head h2 {
+  margin: 0 0 16px;
+  font-size: clamp(1.9rem, 3.2vw, 2.5rem);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.lp-mission-head p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: 1.06rem;
+  line-height: 1.7;
+}
+
+/* ---------- Hackathon ribbon ---------- */
+.lp-ribbon {
+  text-align: center;
+  padding: 34px 24px;
+  border-top: 1px solid var(--lp-line);
+  background: rgba(53, 212, 199, 0.03);
+}
+
+.lp-ribbon-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--lp-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lp-teal);
+  background: rgba(53, 212, 199, 0.08);
+  border: 1px solid rgba(53, 212, 199, 0.25);
+  padding: 7px 14px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.lp-ribbon p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: 1.02rem;
+  font-style: italic;
+  max-width: 62ch;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
 /* ---------- Footer ---------- */
 .lp-footer {
   border-top: 1px solid var(--lp-line);
