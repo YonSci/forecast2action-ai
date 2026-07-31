@@ -96,6 +96,11 @@ class CommunityReport(BaseModel):
     report_confidence: Optional[float] = None
 
 
+class VerifyReportRequest(BaseModel):
+    verified_by: str
+    status: str = "verified"  # "verified" or "disputed"
+
+
 def ensure_reports_file() -> None:
     REPORTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not REPORTS_PATH.exists():
@@ -123,6 +128,30 @@ def canonical_report_type(raw_report_type: str) -> str:
     return LEGACY_REPORT_TYPE_ALIASES.get(raw_report_type, raw_report_type)
 
 
+# A verified report (see PATCH /api/community-reports/{id}/verify in main.py)
+# is corroborated field evidence, not just a submitted claim -- weighting it
+# double toward the strong-signal threshold means 2 verified high/severe
+# reports already read as a strong ground signal, same as 3 unverified ones,
+# without a verified report alone ever being enough on its own (weight is
+# capped by VERIFIED_SIGNAL_WEIGHT, not unlimited).
+VERIFIED_SIGNAL_WEIGHT = 2
+
+
+def weighted_high_or_severe_count(reports: List[dict]) -> float:
+    """Sum of high/severe reports, each counted once (unverified) or
+    VERIFIED_SIGNAL_WEIGHT times (verified) -- used instead of a plain count
+    so verification status actually changes the computed feedback_signal,
+    not just a cosmetic badge nobody reads.
+    """
+    total = 0.0
+    for report in reports:
+        if report.get("severity") not in ("high", "severe"):
+            continue
+        is_verified = report.get("verification_status") == "verified"
+        total += VERIFIED_SIGNAL_WEIGHT if is_verified else 1
+    return total
+
+
 def summarize_reports(district: Optional[str] = None) -> Dict[str, Any]:
     reports = load_reports()
 
@@ -146,10 +175,16 @@ def summarize_reports(district: Optional[str] = None) -> Dict[str, Any]:
     # "high" OR "severe" both count toward the strong-signal threshold --
     # matches SelectedAreaCommunityReports.jsx's own client-side
     # getSignalSummary() highOrSevere logic, so frontend- and
-    # backend-computed signals finally agree.
+    # backend-computed signals finally agree. Verified reports count double
+    # (see weighted_high_or_severe_count) so verification status actually
+    # moves the classification, not just a display badge.
     high_or_severe_count = by_severity.get("high", 0) + by_severity.get("severe", 0)
+    weighted_count = weighted_high_or_severe_count(reports)
+    verified_count = sum(
+        1 for report in reports if report.get("verification_status") == "verified"
+    )
 
-    if high_or_severe_count >= 3:
+    if weighted_count >= 3:
         feedback_signal = "strong_ground_signal"
     elif len(reports) >= 3:
         feedback_signal = "emerging_ground_signal"
@@ -164,4 +199,5 @@ def summarize_reports(district: Optional[str] = None) -> Dict[str, Any]:
         "by_severity": by_severity,
         "by_type": by_type,
         "feedback_signal": feedback_signal,
+        "verified_count": verified_count,
     }

@@ -37,6 +37,7 @@ from app.api.ai_map_interpretation import (
     validate_report_shape,
     validate_stage_shape,
 )
+from app.context.community_context import build_community_evidence_by_region
 from app.context.statistical_evidence import PRIORITY_AREA_TOP_N, build_national_region_evidence
 
 logger = logging.getLogger(__name__)
@@ -143,12 +144,22 @@ def build_stage2_prompt(
     request: AIMapInterpretationRequest,
     evidence: Dict[str, Any],
     stage1_result: Dict[str, Any],
+    community_evidence: Dict[str, Dict[str, Any]],
 ) -> Tuple[str, str]:
     """Stage 2: INTEGRATED RISK SYNTHESIS. No images. Sees Stage 1's
     validated interpretation plus the REAL, already-computed priority
     rankings and cross-indicator findings -- explicitly told to explain
     them, not invent or reorder them. This is the concrete fix for "the LLM
     should not independently decide which places are priorities."
+
+    community_evidence (real, freshly-read community ground-truth reports,
+    keyed by the same area name used in priority_area_justifications -- see
+    app.context.community_context.build_community_evidence_by_region) is
+    given here, not Stage 1, because Stage 1 stays area-agnostic (layer-by-
+    layer/indicator-by-indicator only); this is the first stage that
+    discusses specific named areas at all, so it's the only place a
+    community report can be honestly attributed to the area it was
+    submitted for.
     """
     system_prompt = build_system_prompt(request.prompt_version)
 
@@ -168,11 +179,14 @@ REAL, ALREADY-COMPUTED PRIORITY AREAS (top {PRIORITY_AREA_TOP_N} per hazard type
 REAL, ALREADY-COMPUTED CROSS-INDICATOR AGREEMENT PER AREA (signal/agreement_score/supporting-contradicting indicators -- use this for compound-hazard interpretation, do not re-derive it from raw indicators):
 {compact_json(evidence.get("cross_indicator_findings", []), max_chars=8000)}
 
+REAL COMMUNITY GROUND-TRUTH REPORTS PER AREA (field observations submitted by community focal points, extension workers, kebele/woreda officials, and NGO partners -- keyed by the same area name as the priority areas above; an area NOT listed here has zero submitted reports, which is itself worth stating plainly rather than ignoring. verification_status is "unverified" unless a report has actually been reviewed -- treat unverified reports as corroborating evidence, not proof, and say so if you cite one):
+{compact_json(community_evidence, max_chars=6000)}
+
 TASK:
 1. Provide executive_summary per the requirement above.
 2. Provide national_spatial_overview for Ethiopia-wide patterns, grounded in Stage 1's summaries.
 3. Provide compound_hazard_interpretation explaining where multiple indicators agree or disagree (drought vs. wet signals), using the real cross-indicator agreement data above.
-4. Provide priority_area_justification as an array with ONE entry per justification_id listed in "REAL, ALREADY-COMPUTED PRIORITY AREAS" above (echo the exact justification_id back, do not invent new ones or skip any). Each entry must have exactly these 3 keys: justification_id, differentiator (what distinguishes THIS area from the others, in plain language, using the real numbers already given -- do not restate the numbers themselves), recommended_intervention_type (a short category, e.g. "Drought / water-security response" or "Flood / wet-hazard mitigation response").
+4. Provide priority_area_justification as an array with ONE entry per justification_id listed in "REAL, ALREADY-COMPUTED PRIORITY AREAS" above (echo the exact justification_id back, do not invent new ones or skip any). Each entry must have exactly these 3 keys: justification_id, differentiator (what distinguishes THIS area from the others, in plain language, using the real numbers already given -- do not restate the numbers themselves; when this area has real community reports above, mention whether they corroborate or contradict the forecast-based signal, naming the report count and type -- e.g. "consistent with 3 community reports of pasture stress"; when it has none, do not claim ground-truth confirmation), recommended_intervention_type (a short category, e.g. "Drought / water-security response" or "Flood / wet-hazard mitigation response").
 
 Return only JSON with these keys: executive_summary, national_spatial_overview, compound_hazard_interpretation, priority_area_justification.""".strip()
 
@@ -229,8 +243,20 @@ Return only JSON with these keys: farmer_advisory, agro_pastoral_advisory, human
     return system_prompt, user_prompt
 
 
+_NO_COMMUNITY_REPORTS = {
+    "total_reports": 0,
+    "by_severity": {},
+    "by_type": {},
+    "feedback_signal": "no_ground_signal",
+    "recent_reports": [],
+    "verified_count": 0,
+}
+
+
 def _merge_priority_area_justifications(
-    deterministic: List[Dict[str, Any]], narrative: List[Dict[str, Any]],
+    deterministic: List[Dict[str, Any]],
+    narrative: List[Dict[str, Any]],
+    community_evidence: Dict[str, Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """Combines the real, deterministic per-area object (rank/scores/
     supporting indicators -- see build_priority_area_justifications) with
@@ -240,7 +266,15 @@ def _merge_priority_area_justifications(
     fallback path) degrades to empty narrative strings rather than dropping
     or corrupting the real numbers, since those numbers must always be
     trustworthy regardless of what the LLM did.
+
+    Also attaches the real (non-LLM-authored) community_reports summary for
+    this area from community_evidence -- keyed by area name, same as the
+    prompt Stage 2 was given -- defaulting to an explicit zero-report shape
+    (_NO_COMMUNITY_REPORTS) rather than omitting the key, so a consumer
+    never has to guess whether "missing" means "no reports" or "not
+    computed".
     """
+    community_evidence = community_evidence or {}
     narrative_by_id = {
         item.get("justification_id"): item for item in narrative if isinstance(item, dict) and item.get("justification_id")
     }
@@ -251,6 +285,7 @@ def _merge_priority_area_justifications(
             **entry,
             "differentiator": narrative_entry.get("differentiator") or "",
             "recommended_intervention_type": narrative_entry.get("recommended_intervention_type") or "",
+            "community_reports": community_evidence.get(entry.get("area"), _NO_COMMUNITY_REPORTS),
         })
     return merged
 
@@ -320,12 +355,21 @@ def run_staged_report_generation(
     system1, user1, images1 = build_stage1_prompt(request, evidence)
     stage1 = run_stage("stage1", STAGE1_SCHEMA, system1, user1, images1, model_tier="lite")
 
+    # Real, freshly-read (never cached) community ground-truth reports for
+    # this period's real priority areas -- see build_community_evidence_by_
+    # region's docstring for why this can't live inside the cached
+    # build_national_region_evidence() call above.
+    priority_areas = evidence.get("priority_area_justifications", [])
+    community_evidence = build_community_evidence_by_region(
+        [item["area"] for item in priority_areas if item.get("area")],
+    )
+
     # Step 9 -- Stage 2 (integrated synthesis: reconciling dry/wet signals,
     # hazard-exposure-vulnerability relationships, real priority rankings)
     # gets the "strong" model tier; Stage 1/3 (extraction, translation) stay
     # on the fast/free "lite" tier -- see GEMINI_MODEL_TIERS in
     # ai_map_interpretation.py.
-    system2, user2 = build_stage2_prompt(request, evidence, stage1)
+    system2, user2 = build_stage2_prompt(request, evidence, stage1, community_evidence)
     stage2 = run_stage("stage2", STAGE2_SCHEMA, system2, user2, [], model_tier="strong")
     # priority_area_justification from run_stage is narrative-only (either
     # real LLM output or the deterministic fallback's own narrative-only
@@ -333,7 +377,7 @@ def run_staged_report_generation(
     # merge it onto the real deterministic objects before it's used
     # downstream, so the numbers shown are never LLM-authored.
     stage2["priority_area_justification"] = _merge_priority_area_justifications(
-        evidence.get("priority_area_justifications", []), stage2.get("priority_area_justification", []),
+        priority_areas, stage2.get("priority_area_justification", []), community_evidence,
     )
 
     system3, user3 = build_stage3_prompt(request, stage1, stage2, retrieved_guidance)

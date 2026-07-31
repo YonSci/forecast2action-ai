@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "../config.js";
 import { getCurrentSeasonalPeriod } from "../constants/climateIndicators.js";
+import { getReportTypeLabel, getSignalSummary } from "../constants/communityReports.js";
+import { getLevelInfo } from "../constants/priorityLevels.js";
 
 // suffix/digits for formatting each real climate indicator fetched from
 // /api/seasonal-raster/area-indicator-stats (see below) -- purely display
@@ -105,20 +107,6 @@ function formatNumber(value, digits = 3) {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue)) return "N/A";
   return numberValue.toFixed(digits);
-}
-
-function getRiskClass(riskLevel) {
-  if (riskLevel === "trigger") return "risk-trigger";
-  if (riskLevel === "warning") return "risk-warning";
-  if (riskLevel === "watch") return "risk-watch";
-  return "risk-no_alert";
-}
-
-function getPriorityClass(priorityLevel) {
-  if (priorityLevel === "trigger" || priorityLevel === "high") return "priority-high";
-  if (priorityLevel === "warning" || priorityLevel === "moderate") return "priority-medium";
-  if (priorityLevel === "watch") return "priority-watch";
-  return "priority-low";
 }
 
 function getAdminLevelLabel(level) {
@@ -462,6 +450,7 @@ function SelectedAreaAdvisory({
 }) {
   const [copiedMessage, setCopiedMessage] = useState("");
   const [climateIndicatorStats, setClimateIndicatorStats] = useState(null);
+  const [communityReports, setCommunityReports] = useState([]);
   const hasSelectedArea = Boolean(selectedPriorityArea?.area_name);
 
   const climatePeriod = forecastSelection.seasonalPeriod || getCurrentSeasonalPeriod();
@@ -495,6 +484,36 @@ function SelectedAreaAdvisory({
 
     return () => controller.abort();
   }, [selectedAdminLevel, selectedAreaName, climatePeriod]);
+
+  // Same real GET /api/community-reports?district=<area_name> endpoint
+  // SelectedAreaCommunityReports.jsx already uses -- read here too so the
+  // advisory card can surface a compact ground-truth signal for the
+  // selected area without duplicating the full submission form/list, which
+  // stays the single place reports are actually authored.
+  useEffect(() => {
+    if (!selectedAreaName) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    fetch(
+      apiUrl(`/api/community-reports?district=${encodeURIComponent(selectedAreaName)}`),
+      { signal: controller.signal },
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        const items = Array.isArray(data) ? data : data?.reports || [];
+        setCommunityReports(items);
+      })
+      .catch(() => setCommunityReports([]));
+
+    return () => controller.abort();
+  }, [selectedAreaName]);
+
+  const communitySignal = useMemo(
+    () => getSignalSummary(communityReports),
+    [communityReports],
+  );
 
   const area = useMemo(() => {
     if (!selectedPriorityArea || !climateIndicatorStats) {
@@ -567,12 +586,24 @@ function SelectedAreaAdvisory({
           </p>
         </div>
         <div className="advisory-hero-badges">
-          <span className={`risk-pill ${getRiskClass(area.risk_level)}`}>
-            {titleCase(area.risk_level)}
-          </span>
-          <span className={`priority-score-pill ${getPriorityClass(area.priority_level)}`}>
-            Priority {formatNumber(area.priority_score)}
-          </span>
+          {/* Ranking by Drought Risk (or Wet Risk) specifically already
+              makes that hazard the point of this advisory -- showing the
+              other, unrelated hazard's badge alongside it is redundant.
+              Only collapses to one badge when the area was actually ranked
+              by one of these two (see selected_map_layer, set from rankBy
+              at selection time in TopInterventionAreas.jsx). */}
+          {area.drought_risk && area.selected_map_layer !== "population_r_wet" && (
+            <span className={`priority-score-pill ${getLevelInfo(area.drought_risk.level).className}`}>
+              {area.selected_map_layer !== "population_r_drought" ? "Drought: " : ""}
+              {getLevelInfo(area.drought_risk.level).label} ({area.drought_risk.value.toFixed(1)})
+            </span>
+          )}
+          {area.wet_risk && area.selected_map_layer !== "population_r_drought" && (
+            <span className={`priority-score-pill ${getLevelInfo(area.wet_risk.level).className}`}>
+              {area.selected_map_layer !== "population_r_wet" ? "Wet: " : ""}
+              {getLevelInfo(area.wet_risk.level).label} ({area.wet_risk.value.toFixed(1)})
+            </span>
+          )}
         </div>
       </div>
 
@@ -620,6 +651,36 @@ function SelectedAreaAdvisory({
             />
           ))}
         </div>
+      </div>
+
+      <div className="advisory-section-block">
+        <div className="advisory-block-heading">
+          <h3>Community ground truth</h3>
+          <p>Real field observations submitted for this area, used to check whether the forecast risk above is showing up as an actual impact yet.</p>
+        </div>
+        <div className="community-signal-row">
+          <div className={`ground-signal-badge ${communitySignal.className}`}>
+            <span>{communitySignal.signal}</span>
+            <strong>{communitySignal.total} {communitySignal.total === 1 ? "report" : "reports"}</strong>
+          </div>
+          <div className="risk-driver-grid">
+            <div className="risk-driver-card">
+              <span>High / severe reports</span>
+              <strong>{communitySignal.highOrSevere}</strong>
+            </div>
+            <div className="risk-driver-card">
+              <span>Latest observation</span>
+              <strong>{communitySignal.latest ? getReportTypeLabel(communitySignal.latest.report_type) : "N/A"}</strong>
+            </div>
+            <div className="risk-driver-card">
+              <span>Latest severity</span>
+              <strong>{communitySignal.latest ? titleCase(communitySignal.latest.severity) : "N/A"}</strong>
+            </div>
+          </div>
+        </div>
+        <a href="#community-ground-truth" className="advisory-ground-truth-link">
+          {communitySignal.total > 0 ? "View all reports for this area" : "Submit a ground-truth report for this area"} ↓
+        </a>
       </div>
 
       <div className="advisory-two-column">

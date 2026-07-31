@@ -7,6 +7,7 @@
   --line: #d9e3f2;
   --primary: #142850;
   --primary-2: #274a84;
+  --navy: #142850;
   --white: #ffffff;
   --shadow: 0 10px 30px rgba(13, 40, 80, 0.08);
   --radius-lg: 24px;
@@ -1554,6 +1555,19 @@ tbody td {
   font-weight: 900;
 }
 
+.drought-wet-risk-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.drought-wet-risk-pills .priority-score-pill {
+  font-size: 12px;
+  padding: 5px 9px;
+  min-width: 0;
+}
+
 .priority-high {
   background: #fdecea;
   color: #b42318;
@@ -1772,6 +1786,47 @@ tbody td {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 16px;
+}
+
+.community-signal-row {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.community-signal-row .ground-signal-badge {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.community-signal-row .risk-driver-grid {
+  flex: 1;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.advisory-ground-truth-link {
+  display: inline-flex;
+  margin-top: 16px;
+  color: #1570ef;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+
+.advisory-ground-truth-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .community-signal-row {
+    flex-direction: column;
+  }
+
+  .community-signal-row .ground-signal-badge {
+    text-align: left;
+  }
 }
 
 .advisory-context-grid div,
@@ -2510,6 +2565,36 @@ tbody td {
 .severity-severe {
   background: #fdecec;
   color: #b42318;
+}
+
+.verification-pill {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.verification-unverified {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.verification-verified {
+  background: #e8f9f0;
+  color: #027a48;
+}
+
+.verification-disputed {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.ground-report-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 @media (max-width: 1100px) {

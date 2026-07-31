@@ -12,7 +12,7 @@ from typing import Any, Optional
 from uuid import uuid4
 
 import pandas as pd
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import Response
@@ -27,6 +27,7 @@ from app.api.community_reports_store import (
     CANONICAL_REPORT_TYPES,
     CommunityReport,
     REPORTS_PATH,
+    VerifyReportRequest,
     canonical_report_type,
     load_reports,
     save_reports,
@@ -1728,6 +1729,23 @@ def post_community_report(report: CommunityReport):
         "message": "Community report submitted successfully.",
         "report": new_report,
     }
+
+
+@app.patch("/api/community-reports/{report_id}/verify")
+def verify_community_report(report_id: str, request: VerifyReportRequest):
+    if request.status not in ("verified", "disputed"):
+        raise HTTPException(status_code=400, detail="status must be 'verified' or 'disputed'")
+
+    reports = load_reports()
+    for report in reports:
+        if report.get("id") == report_id:
+            report["verification_status"] = request.status
+            report["verified_by"] = request.verified_by
+            report["verified_at"] = datetime.now(timezone.utc).isoformat()
+            save_reports(reports)
+            return {"success": True, "report": report}
+
+    raise HTTPException(status_code=404, detail=f"No community report with id={report_id}")
 
 
 @app.get("/api/community-reports")

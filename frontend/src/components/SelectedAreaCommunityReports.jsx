@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "../config.js";
+import {
+  REPORT_TYPES,
+  getReportTypeLabel,
+  getSeverityClass,
+  getSignalSummary,
+} from "../constants/communityReports.js";
 
 const LEAD_LABELS = {
   week_1: "Week 1",
@@ -22,26 +28,6 @@ const LANGUAGE_LABELS = {
   am: "Amharic",
   sw: "Swahili",
 };
-
-// Kept in sync with the backend's canonical CANONICAL_REPORT_TYPES
-// (app/api/community_reports_store.py) -- river_overflow/unusual_heat
-// added here to match; the backend aliases a few older stored values
-// (pasture_poor/flooded_road/disease_concern/market_disruption) onto these
-// canonical ones at read time, so this list only needs the canonical set.
-const REPORT_TYPES = [
-  { value: "water_shortage", label: "Water shortage / water point stress" },
-  { value: "crop_wilting", label: "Crop wilting / crop stress" },
-  { value: "pasture_stress", label: "Pasture stress" },
-  { value: "livestock_stress", label: "Livestock stress" },
-  { value: "flooding", label: "Flooding / water logging" },
-  { value: "river_overflow", label: "River overflow" },
-  { value: "road_disruption", label: "Road or access disruption" },
-  { value: "unusual_heat", label: "Unusual heat" },
-  { value: "health_or_disease", label: "Health or disease concern" },
-  { value: "food_price_increase", label: "Food or livestock price pressure" },
-  { value: "no_impact_observed", label: "No impact observed yet" },
-  { value: "other", label: "Other local observation" },
-];
 
 const SEVERITY_OPTIONS = [
   { value: "low", label: "Low" },
@@ -106,70 +92,11 @@ function getInitialForm(area) {
   };
 }
 
-function getReportTypeLabel(value) {
-  return REPORT_TYPES.find((item) => item.value === value)?.label || titleCase(value);
-}
-
-function getSeverityClass(severity) {
-  if (severity === "severe") return "severity-severe";
-  if (severity === "high") return "severity-high";
-  if (severity === "moderate") return "severity-moderate";
-  return "severity-low";
-}
-
-function getSignalSummary(reports) {
-  const total = reports.length;
-
-  if (total === 0) {
-    return {
-      total,
-      highOrSevere: 0,
-      latest: null,
-      signal: "No ground reports yet",
-      className: "ground-signal-none",
-    };
-  }
-
-  const highOrSevere = reports.filter((report) =>
-    ["high", "severe"].includes(report.severity)
-  ).length;
-
-  const latest = reports[0];
-
-  if (highOrSevere >= 3) {
-    return {
-      total,
-      highOrSevere,
-      latest,
-      signal: "Strong ground signal",
-      className: "ground-signal-strong",
-    };
-  }
-
-  if (highOrSevere >= 1) {
-    return {
-      total,
-      highOrSevere,
-      latest,
-      signal: "Emerging ground signal",
-      className: "ground-signal-emerging",
-    };
-  }
-
-  return {
-    total,
-    highOrSevere,
-    latest,
-    signal: "Low ground signal",
-    className: "ground-signal-low",
-  };
-}
-
 function downloadReportsCsv(area, forecastSelection, reports) {
   const headers = [
     "Area",
     "Admin level",
-    "Lead",
+    "Period",
     "Hazard",
     "Risk level",
     "Report type",
@@ -190,7 +117,7 @@ function downloadReportsCsv(area, forecastSelection, reports) {
   const rows = reports.map((report) => [
     area.area_name,
     getAdminLevelLabel(area.admin_level),
-    getLeadLabel(forecastSelection.lead),
+    forecastSelection.hazardRiskPeriodLabel || getLeadLabel(forecastSelection.lead),
     titleCase(area.hazard),
     titleCase(area.risk_level),
     getReportTypeLabel(report.report_type),
@@ -381,6 +308,49 @@ function SelectedAreaCommunityReports({
     });
   }
 
+  // Verification is a real server-side action (PATCH /api/community-reports/
+  // {id}/verify) -- unlike delete/clear above, it updates the actual stored
+  // report, since a verified report is weighted higher in
+  // weighted_high_or_severe_count (app/api/community_reports_store.py),
+  // which feeds both the community-evidence signal shown here AND Stage 2
+  // of the AI report (build_community_evidence_by_region). Not available
+  // for locally-cached (backend-unreachable) reports -- there's nothing on
+  // the server yet to verify.
+  async function handleVerifyReport(reportId, status) {
+    if (usingLocalFallback) {
+      return;
+    }
+    const verifiedBy = window.prompt(
+      status === "verified"
+        ? "Verifying as (name, role, or organization):"
+        : "Disputing as (name, role, or organization):",
+      "",
+    );
+    if (!verifiedBy) {
+      return;
+    }
+
+    try {
+      const response = await fetch(apiUrl(`/api/community-reports/${reportId}/verify`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verified_by: verifiedBy, status }),
+      });
+      if (!response.ok) {
+        throw new Error(`Request failed ${response.status}`);
+      }
+      const data = await response.json();
+      setReports((currentReports) =>
+        currentReports.map((report) =>
+          report.id === reportId ? { ...report, ...data.report } : report,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+      window.alert("Could not update verification status -- check the backend connection.");
+    }
+  }
+
   function handleClearReports() {
     setReports([]);
     if (storageKey) {
@@ -390,7 +360,7 @@ function SelectedAreaCommunityReports({
 
   if (!hasSelectedArea) {
     return (
-      <section className="panel ground-truth-panel">
+      <section className="panel ground-truth-panel" id="community-ground-truth">
         <div className="section-heading">
           <h2>Community Ground-Truth Reports</h2>
           <p>
@@ -412,7 +382,7 @@ function SelectedAreaCommunityReports({
   }
 
   return (
-    <section className="panel ground-truth-panel">
+    <section className="panel ground-truth-panel" id="community-ground-truth">
       <div className="ground-truth-header">
         <div>
           <h2>Community Ground-Truth Reports</h2>
@@ -424,7 +394,7 @@ function SelectedAreaCommunityReports({
             Active area:{" "}
             <strong>
               {selectedPriorityArea.area_name} ·{" "}
-              {getLeadLabel(forecastSelection.lead)} ·{" "}
+              {forecastSelection.hazardRiskPeriodLabel || getLeadLabel(forecastSelection.lead)} ·{" "}
               {titleCase(selectedPriorityArea.hazard)}
             </strong>
           </p>
@@ -557,7 +527,7 @@ function SelectedAreaCommunityReports({
           </div>
 
           <button type="submit" className="primary-button">
-            Add ground-truth report
+            Submit ground-truth report
           </button>
         </form>
 
@@ -623,15 +593,43 @@ function SelectedAreaCommunityReports({
                     <span>Reporter: {titleCase(report.reporter_role)}</span>
                     <span>Confidence: {titleCase(report.confidence)}</span>
                     {report.contact && <span>Source: {report.contact}</span>}
+                    <span className={`verification-pill verification-${report.verification_status || "unverified"}`}>
+                      {report.verification_status === "verified" &&
+                        `Verified${report.verified_by ? ` by ${report.verified_by}` : ""}`}
+                      {report.verification_status === "disputed" &&
+                        `Disputed${report.verified_by ? ` by ${report.verified_by}` : ""}`}
+                      {(!report.verification_status || report.verification_status === "unverified") &&
+                        "Unverified"}
+                    </span>
                   </div>
 
-                  <button
-                    type="button"
-                    className="table-link-button"
-                    onClick={() => handleDeleteReport(report.id)}
-                  >
-                    Delete report
-                  </button>
+                  <div className="ground-report-card-actions">
+                    {!usingLocalFallback && report.verification_status !== "verified" && (
+                      <button
+                        type="button"
+                        className="table-link-button"
+                        onClick={() => handleVerifyReport(report.id, "verified")}
+                      >
+                        Mark verified
+                      </button>
+                    )}
+                    {!usingLocalFallback && report.verification_status !== "disputed" && (
+                      <button
+                        type="button"
+                        className="table-link-button"
+                        onClick={() => handleVerifyReport(report.id, "disputed")}
+                      >
+                        Dispute
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="table-link-button"
+                      onClick={() => handleDeleteReport(report.id)}
+                    >
+                      Delete report
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>

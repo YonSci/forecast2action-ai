@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "../config.js";
 import { getCurrentSeasonalPeriod } from "../constants/climateIndicators.js";
-import { getPriorityLevel } from "../constants/priorityLevels.js";
+import { combineDroughtWetLevel, getLevelInfo } from "../constants/priorityLevels.js";
 import {
   formatAreaExtent,
   formatBuiltUpExtentPct,
@@ -356,7 +356,7 @@ function TopInterventionAreas({
   }
 
   function handlePriorityAreaSelect(item) {
-    const priorityInfo = getPriorityLevel(item.priority_score);
+    const priorityInfo = combineDroughtWetLevel(item);
 
     // All five category columns' current values for this specific area, with
     // their real labels/formatting already resolved -- so RiskMap.jsx's popup
@@ -479,6 +479,21 @@ function TopInterventionAreas({
   // that mix-up.
   const rankByLabel = layerMetaByValue[rankBy]?.label || titleCase(rankBy);
 
+  // Ranking by Drought Risk (or Wet Risk) specifically already shows that
+  // metric's own mean in an earlier column -- repeating it as a badge next
+  // to an unrelated Wet Risk (or Drought Risk) badge is redundant. Only
+  // collapse to a single badge when rank_by IS one of these two; ranking by
+  // anything else (general Risk, Hazard, rainfall anomaly, etc.) still
+  // shows both, since neither hazard is favored by the current ranking.
+  const showDroughtBadge = rankBy !== "population_r_wet";
+  const showWetBadge = rankBy !== "population_r_drought";
+  const droughtWetColumnLabel =
+    showDroughtBadge && showWetBadge
+      ? "Drought / Wet Risk"
+      : showDroughtBadge
+        ? "Drought Risk"
+        : "Wet Risk";
+
   // Reports the currently-active layer for each category, plus the real
   // ranking result itself (count + how many are Trigger-level + the current
   // #1 area), up to Dashboard.jsx. RiskMap.jsx's "Key terms" glossary panel
@@ -488,7 +503,7 @@ function TopInterventionAreas({
   useEffect(() => {
     if (typeof onRankingContextChange === "function") {
       const triggerCount = rankingItems.filter(
-        (item) => getPriorityLevel(item.priority_score).level === "trigger",
+        (item) => combineDroughtWetLevel(item).level === "trigger",
       ).length;
 
       onRankingContextChange({
@@ -497,6 +512,7 @@ function TopInterventionAreas({
         exposureLayerMeta,
         vulnerabilityLayerMeta,
         riskLayerMeta,
+        rankBy,
         rankingCount: rankingItems.length,
         triggerCount,
         topRankedArea: rankingItems[0] || null,
@@ -732,7 +748,7 @@ function TopInterventionAreas({
               />
               <SortableColumnHeader
                 column="priority_score"
-                label="Priority score"
+                label={droughtWetColumnLabel}
                 sortColumn={sortColumn}
                 sortDirection={sortDirection}
                 onSort={handleSortClick}
@@ -765,7 +781,8 @@ function TopInterventionAreas({
           <tbody>
             {sortedItems.map((item) => {
               const isSelected = isSamePriorityArea(item, selectedPriorityArea);
-              const priorityInfo = getPriorityLevel(item.priority_score);
+              const droughtInfo = getLevelInfo(item.drought_risk?.level);
+              const wetInfo = getLevelInfo(item.wet_risk?.level);
 
               return (
                 <tr
@@ -812,11 +829,22 @@ function TopInterventionAreas({
                   </td>
 
                   <td>
-                    <span
-                      className={`priority-score-pill ${priorityInfo.className}`}
-                    >
-                      {priorityInfo.label} ({Number(item.priority_score).toFixed(2)})
-                    </span>
+                    <div className="drought-wet-risk-pills">
+                      {showDroughtBadge && (
+                        <span className={`priority-score-pill ${droughtInfo.className}`}>
+                          {showWetBadge ? "Drought: " : ""}
+                          {droughtInfo.label}
+                          {item.drought_risk ? ` (${item.drought_risk.value.toFixed(1)})` : ""}
+                        </span>
+                      )}
+                      {showWetBadge && (
+                        <span className={`priority-score-pill ${wetInfo.className}`}>
+                          {showDroughtBadge ? "Wet: " : ""}
+                          {wetInfo.label}
+                          {item.wet_risk ? ` (${item.wet_risk.value.toFixed(1)})` : ""}
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td>{formatPopulationExposed(item)}</td>

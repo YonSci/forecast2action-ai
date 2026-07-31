@@ -11,7 +11,11 @@ import {
 import "leaflet/dist/leaflet.css";
 import { apiUrl } from "../config.js";
 import { BASEMAP_OPTIONS } from "../constants/basemaps.js";
-import { PRIORITY_LEVELS, getPriorityLevel } from "../constants/priorityLevels.js";
+import {
+  PRIORITY_LEVELS,
+  combineDroughtWetLevel,
+  getLevelInfo,
+} from "../constants/priorityLevels.js";
 import {
   AREA_EXTENT_DEFINITION,
   CROPLAND_EXTENT_DEFINITION,
@@ -132,7 +136,14 @@ function getMarkerTooltipRows(item, rankingContext) {
     probabilityLayerMeta,
     vulnerabilityLayerMeta,
     riskLayerMeta,
+    rankBy,
   } = rankingContext || {};
+
+  // Same redundancy rule as TopInterventionAreas.jsx's badge column and
+  // SelectedAreaAdvisory.jsx's hero pills: ranking by Drought Risk (or Wet
+  // Risk) specifically means only that row is worth showing here.
+  const showDroughtRow = rankBy !== "population_r_wet";
+  const showWetRow = rankBy !== "population_r_drought";
 
   return [
     {
@@ -157,6 +168,26 @@ function getMarkerTooltipRows(item, rankingContext) {
     { label: "Livestock extent", value: formatLivestockExtentPct(item) },
     { label: "Built-up extent", value: formatBuiltUpExtentPct(item) },
     { label: "Roads extent", value: formatRoadsExtentPct(item) },
+    ...(showDroughtRow
+      ? [
+          {
+            label: "Drought Risk",
+            value: item.drought_risk
+              ? `${getLevelInfo(item.drought_risk.level).label} (${item.drought_risk.value.toFixed(1)})`
+              : "N/A",
+          },
+        ]
+      : []),
+    ...(showWetRow
+      ? [
+          {
+            label: "Wet Risk",
+            value: item.wet_risk
+              ? `${getLevelInfo(item.wet_risk.level).label} (${item.wet_risk.value.toFixed(1)})`
+              : "N/A",
+          },
+        ]
+      : []),
   ];
 }
 
@@ -501,7 +532,7 @@ function RiskMap({
             )}
 
             {rankedAreaMarkers.map(({ item, center }) => {
-              const priorityInfo = getPriorityLevel(item.priority_score);
+              const priorityInfo = combineDroughtWetLevel(item);
               const isActive =
                 hasPrioritySelection &&
                 getRankedAreaName(item) === selectedPriorityArea.area_name;
@@ -536,7 +567,7 @@ function RiskMap({
                   <Tooltip direction="top" offset={[0, -6]} opacity={1} className="risk-map-marker-tooltip">
                     <div className="risk-map-marker-tooltip-header">
                       <strong>#{item.rank} {getRankedAreaName(item)}</strong>
-                      <span>{priorityInfo.label} ({Number(item.priority_score).toFixed(2)})</span>
+                      <span>{priorityInfo.label}</span>
                     </div>
                     <div className="risk-map-marker-tooltip-rows">
                       {getMarkerTooltipRows(item, rankingContext).map((row) => (

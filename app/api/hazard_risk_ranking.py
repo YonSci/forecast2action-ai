@@ -28,6 +28,7 @@ from app.api.hazard_risk_maps import (
     get_map_statistics_cached,
     load_display_array,
 )
+from app.ml.risk_scoring import RISK_THRESHOLDS, classify_risk
 
 router = APIRouter(prefix="/api/hazard-risk", tags=["Ethiopia Hazard/Risk Layers"])
 
@@ -307,20 +308,13 @@ def population_stats_for_all_districts(
     return results
 
 
-def default_threshold_for(layer_value: str, period: str = "jjas") -> float:
-    """60% of the way from vmin to the metric's REAL observed ceiling.
-
-    Not 60% of the fixed catalog vmax -- for population_r_drought/
-    population_r_wet (0-100 "score" units), real data never gets anywhere
-    near the catalog vmax (confirmed: nationwide max drought/wet risk score
-    is only ~54/43 out of 100). A default threshold computed against the
-    fixed vmax is literally unreachable for these layers -- every pixel
-    always falls below it -- which silently zeroes out
-    above_threshold_fraction (25% of priority_score) AND the real
-    Population Exposed / Area Extent columns for every area, even the
-    single most severe one in the country. See the mean/max ceiling fix in
-    compute_district_ranking for the same root cause on priority_score's
-    normalization.
+def _observed_layer_range(layer_value: str, period: str) -> Tuple[float, float]:
+    """(vmin, real observed max) for a layer/period -- not the fixed catalog
+    vmax, which for a 0-100 "score" layer like population_r_drought/
+    population_r_wet is never actually reached by real data (nationwide max
+    drought/wet risk score is only ~54/43 out of 100). Falls back to the
+    catalog vmax only when statistics genuinely can't be computed (e.g. an
+    entirely NaN raster), never as the everyday case.
     """
     definition = LAYER_BY_VALUE[layer_value]
     vmin = float(definition["vmin"])
@@ -335,7 +329,51 @@ def default_threshold_for(layer_value: str, period: str = "jjas") -> float:
         except (KeyError, TypeError):
             vmax = catalog_vmax
 
+    return vmin, vmax
+
+
+def default_threshold_for(layer_value: str, period: str = "jjas") -> float:
+    """60% of the way from vmin to the metric's REAL observed ceiling.
+
+    Not 60% of the fixed catalog vmax -- a default threshold computed
+    against the fixed vmax is literally unreachable for a layer like
+    population_r_drought/population_r_wet -- every pixel always falls below
+    it -- which silently zeroes out above_threshold_fraction (25% of
+    priority_score) AND the real Population Exposed / Area Extent columns
+    for every area, even the single most severe one in the country. See the
+    mean/max ceiling fix in compute_district_ranking for the same root
+    cause on priority_score's normalization.
+    """
+    vmin, vmax = _observed_layer_range(layer_value, period)
     return round(vmin + 0.6 * (vmax - vmin), 3)
+
+
+# Drought Risk and Wet Risk are always classified for every ranked area
+# (regardless of what the caller ranks by) so the Trigger/Warning/Watch/No
+# alert badge shown throughout the app reflects the real hazard-specific
+# risk score, not a normalized composite of an arbitrary "Rank by" metric.
+DROUGHT_WET_RISK_LAYERS = ["population_r_drought", "population_r_wet"]
+
+
+def raw_layer_classification_thresholds(layer_value: str, period: str) -> Dict[str, float]:
+    """Trigger/Warning/Watch cutoffs on a layer's OWN raw scale, calibrated
+    against its real observed ceiling for this period -- same proportions
+    (0.80/0.60/0.35) as RISK_THRESHOLDS, which were tuned for a 0-1
+    normalized priority_score, applied instead as fractions of this layer's
+    real vmin-to-observed-max span. Reusing RISK_THRESHOLDS's fractions
+    directly (rather than re-declaring 0.8/0.6/0.35 here) keeps this in sync
+    if that tuning ever changes.
+
+    Without this, reusing RISK_THRESHOLDS' raw values (0.80, 0.60, 0.35) on
+    population_r_drought/population_r_wet's 0-100 scale would mean "Trigger"
+    could never fire -- the real nationwide max is only ~54/~43.
+    """
+    vmin, vmax = _observed_layer_range(layer_value, period)
+    span = max(vmax - vmin, 1e-9)
+    return {
+        level: round(vmin + fraction * span, 3)
+        for level, fraction in RISK_THRESHOLDS.items()
+    }
 
 
 def compute_district_ranking(
@@ -362,7 +400,9 @@ def compute_district_ranking(
         "roads_normalized",
     ]
     ordered_metrics = list(
-        dict.fromkeys([rank_by, *ALWAYS_COMPUTED_EXPOSURE_METRICS] + metrics)
+        dict.fromkeys(
+            [rank_by, *ALWAYS_COMPUTED_EXPOSURE_METRICS, *DROUGHT_WET_RISK_LAYERS] + metrics
+        )
     )
 
     for metric in ordered_metrics:
@@ -430,6 +470,9 @@ def compute_district_ranking(
         population_stats = population_stats_for_all_districts(
             features, admin_level, above_threshold_mask, rank_by_transform
         )
+
+    drought_thresholds = raw_layer_classification_thresholds("population_r_drought", period)
+    wet_thresholds = raw_layer_classification_thresholds("population_r_wet", period)
 
     items = []
     rank_definition = LAYER_BY_VALUE[rank_by]
@@ -522,6 +565,26 @@ def compute_district_ranking(
             else None
         )
 
+        drought_stats = metric_stats.get("population_r_drought", {}).get(district_id)
+        drought_risk = (
+            {
+                "value": round(drought_stats["mean"], 2),
+                "level": classify_risk(drought_stats["mean"], drought_thresholds),
+            }
+            if drought_stats
+            else None
+        )
+
+        wet_stats = metric_stats.get("population_r_wet", {}).get(district_id)
+        wet_risk = (
+            {
+                "value": round(wet_stats["mean"], 2),
+                "level": classify_risk(wet_stats["mean"], wet_thresholds),
+            }
+            if wet_stats
+            else None
+        )
+
         items.append(
             {
                 "admin_level": admin_level,
@@ -545,6 +608,8 @@ def compute_district_ranking(
                 "livestock_extent_pct": livestock_extent_pct,
                 "built_up_extent_pct": built_up_extent_pct,
                 "roads_extent_pct": roads_extent_pct,
+                "drought_risk": drought_risk,
+                "wet_risk": wet_risk,
                 "boundary_feature": {
                     "type": "Feature",
                     "id": feature.get("id") or props.get("id"),
@@ -576,6 +641,8 @@ def compute_district_ranking(
         "threshold": threshold,
         "count": len(selected),
         "ranking": selected,
+        "drought_risk_thresholds": drought_thresholds,
+        "wet_risk_thresholds": wet_thresholds,
     }
 
 

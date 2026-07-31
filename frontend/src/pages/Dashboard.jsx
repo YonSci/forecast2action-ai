@@ -131,15 +131,22 @@ function Dashboard() {
           selectedLanguage={selectedLanguage}
         />
       )}
+      {/* Submitted here, right before AI Map Interpretation & Advisory, so
+          it reads as feeding into that section -- and it genuinely does:
+          run_staged_report_generation pulls real, fresh community reports
+          into Stage 2 via build_community_evidence_by_region (see
+          app/context/community_context.py), so a report submitted here is
+          already part of the AI-generated advisory below on the next
+          "Generate report" click. */}
+      <SelectedAreaCommunityReports
+        selectedPriorityArea={selectedPriorityArea}
+        forecastSelection={forecastSelection}
+        selectedLanguage={selectedLanguage}
+      />
       <AIMapInterpretation
         forecastSelection={forecastSelection}
         adminSelection={adminSelection}
         selectedPriorityArea={selectedPriorityArea}
-        selectedLanguage={selectedLanguage}
-      />
-      <SelectedAreaCommunityReports
-        selectedPriorityArea={selectedPriorityArea}
-        forecastSelection={forecastSelection}
         selectedLanguage={selectedLanguage}
       />
     </main>
