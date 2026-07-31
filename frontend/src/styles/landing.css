@@ -492,6 +492,51 @@
   padding: 3px 7px;
 }
 
+.lp-tech-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lp-tool-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lp-tool-list li {
+  padding-top: 12px;
+  border-top: 1px solid var(--lp-line);
+}
+
+.lp-tool-list li:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.lp-tool-name {
+  display: block;
+  font-family: var(--lp-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--lp-teal);
+  margin-bottom: 3px;
+}
+
+.lp-tool-desc {
+  display: block;
+  color: var(--lp-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.lp-tool-desc code {
+  font-family: var(--lp-mono);
+  color: var(--lp-ink);
+  font-size: 0.82rem;
+}
+
 /* ---------- Workflow strip ---------- */
 .lp-flow {
   background:
@@ -638,10 +683,274 @@
 
 .lp-footer-row .lp-brand { font-size: 0.92rem; }
 
+.lp-footer-contact-link {
+  color: var(--lp-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.lp-footer-contact-link:hover, .lp-footer-contact-link:focus-visible { color: var(--lp-teal); }
+
 .lp-footer-meta {
   color: var(--lp-muted-2);
   font-size: 0.78rem;
   font-family: var(--lp-mono);
+}
+
+/* ---------- Reused hazard-methodology-* classes (defined for the light-
+   themed dashboard in mapSwitcher.css) need dark-theme overrides here,
+   since TechnicalDocumentation.jsx reuses them on this page's dark
+   .lp-feature-card background via the shared MethodologySteps component. */
+.lp-root .hazard-methodology-panel h4 { color: var(--lp-ink); }
+.lp-root .hazard-methodology-step-title { color: var(--lp-ink); }
+.lp-root .hazard-methodology-note { color: var(--lp-muted); }
+.lp-root .hazard-methodology-indicator-list li { color: var(--lp-muted); }
+.lp-root .hazard-methodology-table td { color: var(--lp-muted); border-bottom-color: rgba(148, 178, 219, 0.12); }
+.lp-root .hazard-methodology-table td:first-child { color: var(--lp-teal); }
+.lp-root .hazard-methodology-source-link { color: var(--lp-teal); }
+
+/* ---------- Dedicated sub-pages (Platform / How it works / Data sources / About) ---------- */
+.lp-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--lp-mono);
+  font-size: 0.76rem;
+  color: var(--lp-muted);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 0.15s ease;
+}
+
+.lp-back-link:hover, .lp-back-link:focus-visible { color: var(--lp-teal); }
+
+.lp-article-hero {
+  padding: 56px 0 40px;
+}
+
+.lp-article-hero h1 {
+  margin: 0 0 18px;
+  font-size: clamp(2.1rem, 3.6vw, 3rem);
+}
+
+.lp-article-hero .lp-hero-sub {
+  margin-bottom: 0;
+  max-width: 68ch;
+}
+
+.lp-article-section {
+  padding: 0 0 64px;
+}
+
+.lp-article-section + .lp-article-section {
+  padding-top: 0;
+}
+
+.lp-article-section h2 {
+  margin: 0 0 16px;
+  font-size: clamp(1.4rem, 2.2vw, 1.7rem);
+  letter-spacing: -0.015em;
+}
+
+.lp-article-section > .lp-wrap > p,
+.lp-prose p {
+  color: var(--lp-muted);
+  font-size: 1rem;
+  line-height: 1.75;
+  max-width: 74ch;
+}
+
+.lp-prose {
+  color: var(--lp-muted);
+  font-size: 1rem;
+  line-height: 1.75;
+  max-width: 74ch;
+}
+
+.lp-prose strong { color: var(--lp-ink); }
+
+.lp-article-divider {
+  border: none;
+  border-top: 1px solid var(--lp-line);
+  margin: 0 0 64px;
+}
+
+.lp-data-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius);
+  background: var(--lp-bg-panel);
+}
+
+.lp-data-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.lp-data-table th {
+  text-align: left;
+  padding: 12px 16px;
+  color: var(--lp-teal);
+  font-family: var(--lp-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--lp-line);
+  white-space: nowrap;
+}
+
+.lp-data-table td {
+  padding: 12px 16px;
+  color: var(--lp-muted);
+  border-bottom: 1px solid var(--lp-line);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.lp-data-table tr:last-child td { border-bottom: none; }
+
+.lp-data-table td strong,
+.lp-data-table td.lp-td-strong {
+  color: var(--lp-ink);
+  font-weight: 700;
+}
+
+.lp-data-table td code {
+  font-family: var(--lp-mono);
+  font-size: 0.8rem;
+  color: var(--lp-teal);
+}
+
+.lp-callout {
+  border: 1px solid var(--lp-line);
+  border-left: 3px solid var(--lp-teal);
+  border-radius: 12px;
+  padding: 18px 20px;
+  background: rgba(53, 212, 199, 0.04);
+  margin-bottom: 18px;
+}
+
+.lp-callout.lp-callout-amber { border-left-color: var(--lp-amber); background: rgba(247, 144, 9, 0.04); }
+.lp-callout.lp-callout-red { border-left-color: var(--lp-red); background: rgba(239, 74, 61, 0.04); }
+
+.lp-callout h4 {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  color: var(--lp-ink);
+}
+
+.lp-callout p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.lp-meta-line {
+  font-family: var(--lp-mono);
+  font-size: 0.76rem;
+  color: var(--lp-muted-2);
+  margin-top: -8px;
+  margin-bottom: 40px;
+}
+
+.lp-meta-line a { color: var(--lp-teal); text-decoration: none; }
+.lp-meta-line a:hover { text-decoration: underline; }
+
+.lp-pillar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 74ch;
+}
+
+.lp-pillar-list-item {
+  display: flex;
+  gap: 16px;
+}
+
+.lp-pillar-list-num {
+  font-family: var(--lp-mono);
+  color: var(--lp-teal);
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.lp-pillar-list-item h3 {
+  margin: 0 0 6px;
+  font-size: 1.02rem;
+}
+
+.lp-pillar-list-item p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+/* ---------- Contact page ---------- */
+.lp-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.lp-contact-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: var(--lp-radius);
+  background:
+    linear-gradient(var(--lp-bg-panel), var(--lp-bg-panel)) padding-box,
+    linear-gradient(155deg, rgba(53, 212, 199, 0.4), rgba(148, 178, 219, 0.1) 45%, rgba(148, 178, 219, 0.04)) border-box;
+  border: 1px solid transparent;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 18px 40px rgba(0, 0, 0, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lp-contact-card:hover, .lp-contact-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 22px 48px rgba(0, 0, 0, 0.36);
+}
+
+.lp-contact-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(53, 212, 199, 0.12);
+  color: var(--lp-teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-contact-icon svg { width: 21px; height: 21px; }
+
+.lp-contact-label {
+  display: block;
+  font-family: var(--lp-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lp-muted-2);
+  margin-bottom: 3px;
+}
+
+.lp-contact-value {
+  display: block;
+  color: var(--lp-ink);
+  font-weight: 700;
+  font-size: 0.92rem;
+  word-break: break-word;
 }
 
 /* ---------- Responsive ---------- */
@@ -661,4 +970,5 @@
   .lp-flow { grid-template-columns: 1fr; padding: 32px 24px; }
   .lp-flow-step::after { display: none; }
   .lp-final-cta { padding: 30px 24px 40px; }
+  .lp-contact-grid { grid-template-columns: 1fr; }
 }

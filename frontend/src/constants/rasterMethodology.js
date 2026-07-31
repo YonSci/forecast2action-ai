@@ -40,27 +40,28 @@ export const RASTER_METHODOLOGY = {
             "S_CDD_dry = clip((p_CDD − 50) / 40, 0, 1)",
             "S_CWD_dry = clip((50 − p_CWD) / 40, 0, 1)",
           ],
-          note: "P_rain = rainfall percentile (0–100). p_CDD/p_CWD = each index's own percentile rank. All percentiles are calendar-period-specific (e.g. JJAS compared only against historical JJAS).",
+          note: "P_rain/p_CDD/p_CWD =  percentile rank (0–100) values for the calendar period in question relative to historical baseline. SPI = standardized precipitation index (−3 to +3).",
         },
         {
           title: "2. Combine into the per-realization hazard index",
           formulas: [
             "H_drought = 0.35 × S_SPI_dry + 0.20 × S_rain_dry + 0.30 × S_CDD_dry + 0.15 × S_CWD_dry",
           ],
-          note: "Computed independently for every year (historical) or ensemble member (forecast) — not yet collapsed.",
+          note: "Computed independently for every year (historical) or ensemble member (forecast).",
         },
         {
-          title: "3. Collapse across realizations into probability and severity",
+          title:
+            "3. Collapse across realizations into probability and severity",
           formulas: [
             "P_drought = count(H_drought ≥ 0.60) / total_valid_realizations",
             "S_drought = mean(H_drought among realizations where H_drought ≥ 0.60)",
           ],
-          note: "High-hazard threshold = 0.60 (default). With a 25-member ensemble, P_drought moves in steps of 1/25 = 0.04. See the Probability category for more detail on this step.",
+          note: "High-hazard threshold = 0.60 (default).",
         },
         {
           title: "4. Recombine into the Hazard term",
           formulas: ["Hazard_drought = P_drought × S_drought"],
-          note: "This is the value shown on this map. The full risk score (Hazard × Exposure × Vulnerability) is shown under the Risk category.",
+          note: "This is the value shown on this map.",
         },
       ],
     },
@@ -83,20 +84,19 @@ export const RASTER_METHODOLOGY = {
           formulas: [
             "H_wet = 0.20 × S_SPI_wet + 0.20 × S_rain_wet + 0.20 × S_CWD_wet + 0.15 × S_Rx1day_wet + 0.25 × S_Rx5day_wet",
           ],
-          note: "Note this is a 5-signal combination (adds Rx1day/Rx5day), not a direct mirror of the drought-side weights.",
         },
         {
-          title: "3. Collapse across realizations into probability and severity",
+          title:
+            "3. Collapse across realizations into probability and severity",
           formulas: [
             "P_wet = count(H_wet ≥ 0.60) / total_valid_realizations",
             "S_wet = mean(H_wet among realizations classified as wetness events)",
           ],
-          note: "See the Probability category for more detail on this step.",
         },
         {
           title: "4. Recombine into the Hazard term",
           formulas: ["Hazard_wet = P_wet × S_wet"],
-          note: "This is the value shown on this map. The full risk score (Hazard × Exposure × Vulnerability) is shown under the Risk category.",
+          note: "This is the value shown on this map.",
         },
       ],
     },
@@ -112,14 +112,16 @@ export const RASTER_METHODOLOGY = {
           note: "Input data has either year × lat × lon (historical) or ensemble_member × lat × lon (forecast) dimensions. Each realization gets its own H_drought value (see Hazard methodology, step 2).",
         },
         {
-          title: "2. Probability = share of realizations that qualify as a drought event",
+          title:
+            "2. Probability = share of realizations that qualify as a drought event",
           formulas: [
             "P_drought = count(H_drought ≥ 0.60) / total_valid_realizations",
           ],
           note: "With a 25-member ensemble (this project's default), probability moves in increments of 1/25 = 0.04 = 4%.",
         },
         {
-          title: "3. Severity = average intensity among qualifying realizations",
+          title:
+            "3. Severity = average intensity among qualifying realizations",
           formulas: [
             "S_drought = mean(H_drought among realizations where H_drought ≥ 0.60)",
           ],
@@ -136,12 +138,14 @@ export const RASTER_METHODOLOGY = {
           note: "Input data has either year × lat × lon (historical) or ensemble_member × lat × lon (forecast) dimensions. Each realization gets its own H_wet value (see Hazard methodology, step 2).",
         },
         {
-          title: "2. Probability = share of realizations that qualify as a wetness event",
+          title:
+            "2. Probability = share of realizations that qualify as a wetness event",
           formulas: ["P_wet = count(H_wet ≥ 0.60) / total_valid_realizations"],
           note: "With a 25-member ensemble (this project's default), probability moves in increments of 1/25 = 0.04 = 4%.",
         },
         {
-          title: "3. Severity = average intensity among qualifying realizations",
+          title:
+            "3. Severity = average intensity among qualifying realizations",
           formulas: [
             "S_wet = mean(H_wet among realizations classified as wetness events)",
           ],
@@ -160,7 +164,7 @@ export const RASTER_METHODOLOGY = {
           formulas: [
             "V_drought = 0.60 × drought_sensitivity + 0.40 × adaptive_capacity_deficit",
           ],
-          note: "Both terms are 0–1 composite indices. The methodology doc lists which real indicators feed each composite (below) but does not publish the individual weight of each indicator within it.",
+          note: "Both terms are 0–1 composite indices.",
         },
         {
           title: "2. Drought-sensitivity indicators",
@@ -251,7 +255,7 @@ export const RASTER_METHODOLOGY = {
             "R_drought = 100 × P_drought × S_drought × E_drought × V_drought",
             "= 100 × Hazard_drought × E_drought × V_drought",
           ],
-          note: "This is a relative 0–100 risk score, not a probability percentage. See the Hazard, Probability, Exposure, and Vulnerability categories for how each term is built.",
+          note: "This is a relative 0-100 risk score, not a probability percentage.",
         },
         {
           title: "2. Classify",
@@ -269,7 +273,7 @@ export const RASTER_METHODOLOGY = {
             "R_wet = 100 × P_wet × S_wet × E_wet × V_wet",
             "= 100 × Hazard_wet × E_wet × V_wet",
           ],
-          note: "This is a relative 0–100 risk score, not a probability percentage. See the Hazard, Probability, Exposure, and Vulnerability categories for how each term is built.",
+          note: "This is a relative 0–100 risk score, not a probability percentage.",
         },
         {
           title: "2. Classify",
@@ -326,13 +330,13 @@ export const RASTER_METHODOLOGY = {
         },
         {
           title: "2. Two forms are maintained per layer",
-          formulas: [],
-          note: "Absolute exposure (people, hectares, livestock head, etc.) and a normalized exposure index (0–1), using robust 5th/95th-percentile normalization.",
+          formulas: ["E_normalized = clip( (X − P5) / (P95 − P5), 0, 1 )"],
+          note: "Absolute exposure (people, hectares, livestock head, etc.) is kept alongside this normalized 0–1 index. X = the layer's raw value at that cell; P5/P95 = the 5th/95th percentile",
         },
         {
           title: "3. No cross-layer combination formula",
           formulas: [],
-          note: "Each exposure layer (Population, Cropland, Livestock, Built-up, Roads, Health Facilities) is shown and used on its own, not combined into a single index — the methodology explicitly avoids combining incompatible physical units into one composite score unless separately requested.",
+          note: "Each exposure layer (Population, Cropland, Livestock, Built-up, Roads, Health Facilities) is shown and used on its own, not combined into a single index the methodology explicitly avoids combining incompatible physical units into one composite score unless separately requested.",
         },
       ],
     },

@@ -21,6 +21,11 @@ import {
   SEASONAL_PRODUCT_ORDER,
 } from "../constants/climateIndicators.js";
 import RasterMethodologyPanel from "./RasterMethodologyPanel.jsx";
+import {
+  getMethodologyForLayer,
+  RASTER_METHODOLOGY_SOURCE_URL,
+} from "../constants/rasterMethodology.js";
+import { CLIMATE_INDICATOR_METHODOLOGY } from "../constants/climateIndicatorMethodology.js";
 import "../styles/mapSwitcher.css";
 
 const OPTIONS = {
@@ -1778,6 +1783,9 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
                   indicator={seasonalIndicator}
                 />
                 <SeasonalMetadataGrid map={selectedSeasonalMap} />
+                <RasterMethodologyPanel
+                  methodology={CLIMATE_INDICATOR_METHODOLOGY[seasonalIndicator]}
+                />
               </aside>
             </div>
           ) : (
@@ -1944,8 +1952,8 @@ function ForecastLayerMap({ adminSelection = {}, onForecastSelectionChange }) {
               </p>
               <RasterLegend map={selectedHazardRiskMap} />
               <RasterMethodologyPanel
-                category={hazardRiskCategory}
-                layerValue={hazardRiskLayer}
+                methodology={getMethodologyForLayer(hazardRiskCategory, hazardRiskLayer)}
+                sourceUrl={RASTER_METHODOLOGY_SOURCE_URL}
               />
             </aside>
           </div>

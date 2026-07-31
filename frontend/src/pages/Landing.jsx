@@ -18,7 +18,9 @@ function HeroRiskCanvas() {
     const rows = 13;
     const cellW = W / cols;
     const cellH = H / rows;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
     function seededRandom(seed) {
       let s = seed;
@@ -57,7 +59,9 @@ function HeroRiskCanvas() {
         const b = stops[i + 1];
         if (v >= a[0] && v <= b[0]) {
           const t = (v - a[0]) / (b[0] - a[0] || 1);
-          const c = a[1].map((ch, idx) => Math.round(ch + (b[1][idx] - ch) * t));
+          const c = a[1].map((ch, idx) =>
+            Math.round(ch + (b[1][idx] - ch) * t),
+          );
           return `rgb(${c.join(",")})`;
         }
       }
@@ -100,11 +104,21 @@ function HeroRiskCanvas() {
           if (isHovered) vv = Math.min(1, vv + 0.12);
           ctx.fillStyle = colorForValue(vv);
           const pad = 1.4;
-          ctx.fillRect(x * cellW + pad, y * cellH + pad, cellW - pad * 2, cellH - pad * 2);
+          ctx.fillRect(
+            x * cellW + pad,
+            y * cellH + pad,
+            cellW - pad * 2,
+            cellH - pad * 2,
+          );
           if (isHot) {
             ctx.strokeStyle = `rgba(255,255,255,${0.25 + pulse * 0.35})`;
             ctx.lineWidth = 1.4;
-            ctx.strokeRect(x * cellW + pad, y * cellH + pad, cellW - pad * 2, cellH - pad * 2);
+            ctx.strokeRect(
+              x * cellW + pad,
+              y * cellH + pad,
+              cellW - pad * 2,
+              cellH - pad * 2,
+            );
           }
           if (isHovered) {
             ctx.save();
@@ -112,7 +126,12 @@ function HeroRiskCanvas() {
             ctx.shadowBlur = 14;
             ctx.strokeStyle = "rgba(234,241,251,0.95)";
             ctx.lineWidth = 2;
-            ctx.strokeRect(x * cellW + pad, y * cellH + pad, cellW - pad * 2, cellH - pad * 2);
+            ctx.strokeRect(
+              x * cellW + pad,
+              y * cellH + pad,
+              cellW - pad * 2,
+              cellH - pad * 2,
+            );
             ctx.restore();
           }
         }
@@ -191,19 +210,44 @@ function Landing() {
       <nav className="lp-nav">
         <div className="lp-wrap lp-nav-row">
           <a href="#lp-top" className="lp-brand">
-            <svg className="lp-brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <circle cx="16" cy="16" r="14.5" stroke="#35d4c7" strokeWidth="1.4" opacity="0.5" />
-              <path d="M16 3v6M16 23v6M3 16h6M23 16h6" stroke="#35d4c7" strokeWidth="1.4" opacity="0.5" />
+            <svg
+              className="lp-brand-mark"
+              viewBox="0 0 32 32"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                cx="16"
+                cy="16"
+                r="14.5"
+                stroke="#35d4c7"
+                strokeWidth="1.4"
+                opacity="0.5"
+              />
+              <path
+                d="M16 3v6M16 23v6M3 16h6M23 16h6"
+                stroke="#35d4c7"
+                strokeWidth="1.4"
+                opacity="0.5"
+              />
               <circle cx="16" cy="16" r="6.5" fill="#35d4c7" opacity="0.16" />
-              <circle cx="16" cy="16" r="6.5" stroke="#35d4c7" strokeWidth="1.6" />
+              <circle
+                cx="16"
+                cy="16"
+                r="6.5"
+                stroke="#35d4c7"
+                strokeWidth="1.6"
+              />
               <circle cx="20" cy="12" r="2.4" fill="#f79009" />
             </svg>
             Forecast2Action <span style={{ color: "#35d4c7" }}>AI</span>
           </a>
           <div className="lp-nav-links">
-            <a href="#lp-features">Platform</a>
-            <a href="#lp-workflow">How it works</a>
-            <a href="#lp-trust">Data sources</a>
+            <Link to="/platform">Platform</Link>
+            <Link to="/how-it-works">How it works</Link>
+            <Link to="/data-sources">Data sources</Link>
+            <Link to="/docs">Docs</Link>
+            <Link to="/about">About</Link>
           </div>
           <Link to="/dashboard" className="lp-btn lp-btn-ghost lp-btn-small">
             Launch Dashboard
@@ -216,17 +260,18 @@ function Landing() {
           <div className="lp-wrap lp-hero-grid">
             <div>
               <span className="lp-eyebrow">
-                <span className="lp-dot" /> Live ensemble forecasting · East Africa
+                <span className="lp-dot" /> Live ensemble forecasting · East
+                Africa
               </span>
               <h1>
-                See the next drought or flood <em>before it becomes a crisis</em>.
+                Forecast2Action AI{" "}
+                <em>Hydroclimatic Risk & Early Warning System Dashboard</em>
               </h1>
               <p className="lp-hero-sub">
                 Forecast2Action AI fuses seasonal ensemble forecasts, satellite
                 exposure data, and AI-generated interpretation into one
-                early-warning system — turning raw climate signals into
-                ranked, actionable alerts for the regions that need them
-                first.
+                early-warning system turning raw climate signals into ranked,
+                actionable alerts for the regions that need them first.
               </p>
               <div className="lp-hero-cta-row">
                 <Link to="/dashboard" className="lp-btn lp-btn-primary">
@@ -264,7 +309,13 @@ function Landing() {
                         strokeWidth="1.8"
                         strokeLinecap="round"
                       />
-                      <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="3.2"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
                     </svg>
                   </span>
                   <span className="lp-hl-text">
@@ -301,15 +352,24 @@ function Landing() {
               <span className="lp-hv-frame-label">
                 SEASONAL · <b>JJAS 2026</b> · DROUGHT RISK
               </span>
-              <div className="lp-hv-chip lp-a" style={{ top: "19%", left: "10%" }}>
+              <div
+                className="lp-hv-chip lp-a"
+                style={{ top: "19%", left: "10%" }}
+              >
                 SPI <b>−1.8</b>
                 <span className="lp-chip-sub">Severe dry signal</span>
               </div>
-              <div className="lp-hv-chip lp-b lp-trigger" style={{ top: "42%", right: "9%" }}>
+              <div
+                className="lp-hv-chip lp-b lp-trigger"
+                style={{ top: "42%", right: "9%" }}
+              >
                 Trigger <b>· 5 regions</b>
                 <span className="lp-chip-sub">Above threshold</span>
               </div>
-              <div className="lp-hv-chip lp-c" style={{ bottom: "22%", left: "14%" }}>
+              <div
+                className="lp-hv-chip lp-c"
+                style={{ bottom: "22%", left: "14%" }}
+              >
                 <b>83.7%</b> hazard prob.
                 <span className="lp-chip-sub">Drought · ensemble mean</span>
               </div>
@@ -321,21 +381,35 @@ function Landing() {
             </div>
           </div>
         </section>
-
+        {/* 
         <section className="lp-trust" id="lp-trust">
           <div className="lp-wrap lp-trust-row">
             <span className="lp-trust-label">Built on</span>
             <div className="lp-trust-items">
               <span className="lp-trust-item">
                 <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M4 12a8 8 0 1016 0 8 8 0 00-16 0z" stroke="currentColor" strokeWidth="1.6" />
-                  <path d="M4 12h16M12 4a12 12 0 010 16 12 12 0 010-16z" stroke="currentColor" strokeWidth="1.6" />
+                  <path
+                    d="M4 12a8 8 0 1016 0 8 8 0 00-16 0z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <path
+                    d="M4 12h16M12 4a12 12 0 010 16 12 12 0 010-16z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
                 </svg>
                 ECMWF SEAS5 · 25-member ensemble
               </span>
               <span className="lp-trust-item">
                 <svg viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="9" r="3" stroke="currentColor" strokeWidth="1.6" />
+                  <circle
+                    cx="12"
+                    cy="9"
+                    r="3"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
                   <path
                     d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"
                     stroke="currentColor"
@@ -357,23 +431,66 @@ function Landing() {
               </span>
               <span className="lp-trust-item">
                 <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M4 18c1.5-6 4-9 8-9s6.5 3 8 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  <circle cx="12" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+                  <path
+                    d="M4 18c1.5-6 4-9 8-9s6.5 3 8 9"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="12"
+                    cy="6"
+                    r="2"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
                 </svg>
                 GLW4 livestock density
               </span>
               <span className="lp-trust-item">
                 <svg viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.6" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.6" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.6" />
-                  <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.6" />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="7"
+                    height="7"
+                    rx="1"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <rect
+                    x="14"
+                    y="3"
+                    width="7"
+                    height="7"
+                    rx="1"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <rect
+                    x="3"
+                    y="14"
+                    width="7"
+                    height="7"
+                    rx="1"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <rect
+                    x="14"
+                    y="14"
+                    width="7"
+                    height="7"
+                    rx="1"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
                 </svg>
                 0.25° grid resolution
               </span>
             </div>
           </div>
-        </section>
+        </section> */}
 
         <section className="lp-section" id="lp-mission">
           <div className="lp-wrap">
@@ -381,11 +498,10 @@ function Landing() {
               <p className="lp-section-kicker">Why Forecast2Action AI</p>
               <h2>Transforming Complex Risks into Timely Community Action</h2>
               <p>
-                Built in response to interconnected regional challenges — from
-                climate extremes and food insecurity to health and
-                humanitarian crises — Forecast2Action AI bridges the gap
-                between raw geospatial intelligence and frontline
-                decision-making.
+                Built in response to interconnected regional challenges from
+                climate extremes and food insecurity to health and humanitarian
+                crises Forecast2Action AI bridges the gap between raw geospatial
+                intelligence and frontline decision-making.
               </p>
             </div>
             <div className="lp-feature-grid">
@@ -398,15 +514,21 @@ function Landing() {
                       strokeWidth="1.8"
                       strokeLinecap="round"
                     />
-                    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="4"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
                   </svg>
                 </div>
                 <h3>Anticipate Complex Hazards</h3>
                 <p>
                   Fuses ensemble forecasts, food-security vulnerability (FEWS
-                  NET), and livestock/population exposure layers into a
-                  single predictive risk model to catch compounding crises
-                  before they escalate.
+                  NET), and livestock/population exposure layers into a single
+                  predictive risk model to catch compounding crises before they
+                  escalate.
                 </p>
               </div>
               <div className="lp-feature-card">
@@ -418,15 +540,20 @@ function Landing() {
                       strokeWidth="1.8"
                       strokeLinejoin="round"
                     />
-                    <path d="M8 9h8M8 12.5h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path
+                      d="M8 9h8M8 12.5h5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
                 <h3>Reimagine Early Action</h3>
                 <p>
                   Replaces static reports with automated, AI-interpreted
-                  advisories delivered through accessible communication
-                  channels (SMS, WhatsApp, web dashboards) for immediate
-                  operational readiness.
+                  advisories delivered through accessible communication channels
+                  (SMS, WhatsApp, web dashboards) for immediate operational
+                  readiness.
                 </p>
               </div>
               <div className="lp-feature-card">
@@ -442,10 +569,9 @@ function Landing() {
                 </div>
                 <h3>Strengthen Community Resilience</h3>
                 <p>
-                  Empowers local responders, humanitarian agencies, and
-                  regional decision-makers across East Africa with cited,
-                  evidence-based alerts to deploy resources where they are
-                  needed most.
+                  Empowers local responders, humanitarian agencies, and regional
+                  decision-makers across East Africa with cited, evidence-based
+                  alerts to deploy resources where they are needed most.
                 </p>
               </div>
             </div>
@@ -458,9 +584,9 @@ function Landing() {
               <p className="lp-section-kicker">Platform</p>
               <h2>One system, from raw forecast to field-ready advisory</h2>
               <p>
-                Three capabilities work together — quantitative modeling,
-                automated alerting, and spatial ranking — so every advisory
-                is grounded in real, cited evidence.
+                Three capabilities work together quantitative modeling,
+                automated alerting, and spatial ranking so every advisory is
+                grounded in real, cited evidence.
               </p>
             </div>
             <div className="lp-feature-grid">
@@ -474,15 +600,20 @@ function Landing() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    <path d="M3 21h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path
+                      d="M3 21h18"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
                 <h3>Predictive modeling</h3>
                 <p>
-                  Standardized Precipitation Index, consecutive dry/wet
-                  spells, and rainfall percentiles are combined into a
-                  probability × severity hazard index across every ensemble
-                  member — not a single point estimate.
+                  Standardized Precipitation Index, consecutive dry/wet spells,
+                  and rainfall percentiles are combined into a probability ×
+                  severity hazard index across every ensemble member not a
+                  single point estimate.
                 </p>
                 <div className="lp-feature-tags">
                   <span className="lp-feature-tag">SPI</span>
@@ -499,16 +630,20 @@ function Landing() {
                       strokeWidth="1.8"
                       strokeLinejoin="round"
                     />
-                    <path d="M12 8v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path
+                      d="M12 8v5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                     <circle cx="12" cy="16" r="0.9" fill="currentColor" />
                   </svg>
                 </div>
                 <h3>Real-time alerts</h3>
                 <p>
                   Trigger / Warning / Watch / No-alert classification runs
-                  automatically against every ranked region, generating
-                  SMS- and WhatsApp-ready advisories the moment a threshold
-                  is crossed.
+                  automatically against every ranked region, generating SMS- and
+                  WhatsApp-ready advisories the moment a threshold is crossed.
                 </p>
                 <div className="lp-feature-tags">
                   <span className="lp-feature-tag">Trigger thresholds</span>
@@ -530,10 +665,10 @@ function Landing() {
                 </div>
                 <h3>Regional hazard tracking</h3>
                 <p>
-                  Every region, zone, and woreda is ranked by real exposure —
-                  population, cropland, livestock, roads, health facilities —
-                  and vulnerability, so intervention priority is never
-                  guessed from a map alone.
+                  Every region, zone, and woreda is ranked by real exposure
+                  population, cropland, livestock, roads, health facilities and
+                  vulnerability, so intervention priority is never guessed from
+                  a map alone.
                 </p>
                 <div className="lp-feature-tags">
                   <span className="lp-feature-tag">Admin 1 / 2 / 3</span>
@@ -545,7 +680,11 @@ function Landing() {
           </div>
         </section>
 
-        <section className="lp-section" id="lp-workflow" style={{ paddingTop: 0 }}>
+        <section
+          className="lp-section"
+          id="lp-workflow"
+          style={{ paddingTop: 0 }}
+        >
           <div className="lp-wrap">
             <div className="lp-flow">
               <div className="lp-flow-step">
@@ -560,8 +699,8 @@ function Landing() {
                 <span className="lp-flow-num">02</span>
                 <h4>Compute hazard indices</h4>
                 <p>
-                  Deterministic statistics — never a guess — turn raw
-                  indicators into a probability-weighted hazard score.
+                  Deterministic statistics never a guess turn raw indicators
+                  into a probability-weighted hazard score.
                 </p>
               </div>
               <div className="lp-flow-step">
@@ -576,8 +715,8 @@ function Landing() {
                 <span className="lp-flow-num">04</span>
                 <h4>Deliver the advisory</h4>
                 <p>
-                  AI-interpreted, citation-backed advisories reach responders
-                  as SMS, WhatsApp, or full dashboard reports.
+                  AI-interpreted, citation-backed advisories reach responders as
+                  SMS, WhatsApp, or full dashboard reports.
                 </p>
               </div>
             </div>
@@ -605,8 +744,8 @@ function Landing() {
       <div className="lp-ribbon">
         <span className="lp-ribbon-tag">Built for IGAD Hackathon 2026</span>
         <p>
-          "Reimagining the future of early warning and early action for
-          safer, more resilient communities across the region."
+          "Reimagining the future of early warning and early action for safer,
+          more resilient communities across the region."
         </p>
       </div>
 
@@ -620,13 +759,31 @@ function Landing() {
               aria-hidden="true"
               style={{ width: "22px", height: "22px" }}
             >
-              <circle cx="16" cy="16" r="14.5" stroke="#35d4c7" strokeWidth="1.4" opacity="0.5" />
+              <circle
+                cx="16"
+                cy="16"
+                r="14.5"
+                stroke="#35d4c7"
+                strokeWidth="1.4"
+                opacity="0.5"
+              />
               <circle cx="16" cy="16" r="6.5" fill="#35d4c7" opacity="0.16" />
-              <circle cx="16" cy="16" r="6.5" stroke="#35d4c7" strokeWidth="1.6" />
+              <circle
+                cx="16"
+                cy="16"
+                r="6.5"
+                stroke="#35d4c7"
+                strokeWidth="1.6"
+              />
             </svg>
             Forecast2Action AI
           </a>
-          <span className="lp-footer-meta">CLIMATE RISK &amp; EARLY WARNING · PROTOTYPE</span>
+          <Link to="/contact" className="lp-footer-contact-link">
+            Contact us
+          </Link>
+          <span className="lp-footer-meta">
+            CLIMATE RISK &amp; EARLY WARNING · PROTOTYPE
+          </span>
         </div>
       </footer>
     </div>
