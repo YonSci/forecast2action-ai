@@ -102,10 +102,6 @@ function About() {
                   <span className="lp-tool-name">Recharts</span>
                   <span className="lp-tool-desc">Chart rendering elsewhere in the dashboard.</span>
                 </li>
-                <li>
-                  <span className="lp-tool-name">html2canvas</span>
-                  <span className="lp-tool-desc">Captures a screenshot of the live map to attach to AI-generated reports.</span>
-                </li>
               </ul>
             </div>
             <div className="lp-feature-card">

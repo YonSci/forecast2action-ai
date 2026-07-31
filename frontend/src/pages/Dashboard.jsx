@@ -6,7 +6,6 @@ import AIMapInterpretation from "../components/AIMapInterpretation.jsx";
 import RiskMap from "../components/RiskMap.jsx";
 import TopInterventionAreas from "../components/TopInterventionAreas.jsx";
 import SelectedAreaAdvisory from "../components/SelectedAreaAdvisory.jsx";
-import ActionImplementationTracker from "../components/ActionImplementationTracker.jsx";
 import SelectedAreaCommunityReports from "../components/SelectedAreaCommunityReports.jsx";
 import { apiUrl } from "../config.js";
 
@@ -57,12 +56,6 @@ function Dashboard() {
   });
   const [selectedPriorityArea, setSelectedPriorityArea] = useState(null);
   const [rankingContext, setRankingContext] = useState(null);
-  // Populated by AIMapInterpretation.jsx whenever it builds a real Decision
-  // Context Envelope (POST /api/context/build) -- passed down to
-  // ActionImplementationTracker so its tasks can be tied to that same real,
-  // evidence-linked, policy-gated context instead of purely client-generated
-  // placeholders.
-  const [contextInfo, setContextInfo] = useState(null);
   async function loadCommunityReports() {
     try {
       const response = await fetchJson("/api/community-reports");
@@ -143,12 +136,6 @@ function Dashboard() {
         adminSelection={adminSelection}
         selectedPriorityArea={selectedPriorityArea}
         selectedLanguage={selectedLanguage}
-        onContextBuilt={setContextInfo}
-      />
-      <ActionImplementationTracker
-        selectedPriorityArea={selectedPriorityArea}
-        forecastSelection={forecastSelection}
-        contextId={contextInfo?.contextId || null}
       />
       <SelectedAreaCommunityReports
         selectedPriorityArea={selectedPriorityArea}

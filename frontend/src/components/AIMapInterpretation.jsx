@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import html2canvas from "html2canvas";
 import { apiUrl } from "../config.js";
 import {
   CLIMATE_INDICATORS,
@@ -82,7 +81,6 @@ const FALLBACK_AI_PROVIDER_OPTIONS = [
     label: "Google Gemini",
     description:
       "Fastest and most reliable with the full comprehensive map set (all 32 images).",
-    supports_screenshot: true,
     models: [
       {
         value: "gemini-flash-lite-latest",
@@ -100,7 +98,6 @@ const FALLBACK_AI_PROVIDER_OPTIONS = [
     label: "OpenRouter",
     description:
       "All models below confirmed to handle the full comprehensive map set (all 32 images).",
-    supports_screenshot: true,
     models: [
       {
         value: "google/gemini-2.5-flash-lite",
@@ -124,19 +121,6 @@ const FALLBACK_AI_PROVIDER_OPTIONS = [
       },
     ],
   },
-];
-
-// "auto" preserves today's implicit behavior exactly: prompt_version is
-// omitted from both the context/build and report requests, so v1 is used
-// unless a context_id causes merge_envelope_into_request (ai_map_interpretation
-// .py) to silently escalate to v2. Selecting v1/v2 explicitly here sends
-// that literal value to BOTH requests, so ContextAuditDrawer's displayed
-// provenance.prompt_version always matches what actually generated the
-// report -- see app/advisory/prompts/registry.py for the two known versions.
-const PROMPT_VERSION_OPTIONS = [
-  { value: "auto", label: "Automatic" },
-  { value: "v1", label: "v1 - Baseline" },
-  { value: "v2", label: "v2 - Context-aware" },
 ];
 
 function getProviderConfig(providerOptions, providerValue) {
@@ -325,7 +309,6 @@ function buildCacheKey({
   forecastSelection,
   adminSelection,
   normalizedLanguage,
-  useScreenshot,
   selectedProvider,
   selectedModel,
 }) {
@@ -364,7 +347,6 @@ function buildCacheKey({
       woredaLabel: adminSelection?.woredaLabel || "",
     },
     targetLanguage: normalizedLanguage || "en",
-    useScreenshot: Boolean(useScreenshot),
     aiProvider: selectedProvider || "gemini",
     aiModel: selectedModel || "auto",
     layerMode: "all-map-layers",
@@ -428,28 +410,6 @@ function saveCachedReport(cacheKey, report, contextFingerprint = null) {
   }
 }
 
-
-async function captureForecastMap() {
-  const target =
-    document.querySelector("#forecast-risk-map") ||
-    document.querySelector(".forecast-map-wrapper") ||
-    document.querySelector(".forecast-map") ||
-    document.querySelector(".leaflet-container");
-
-  if (!target) {
-    return null;
-  }
-
-  const canvas = await html2canvas(target, {
-    useCORS: true,
-    allowTaint: false,
-    backgroundColor: null,
-    scale: 0.7,
-    logging: false,
-  });
-
-  return canvas.toDataURL("image/png", 0.72);
-}
 
 function ReportList({ title, items }) {
   if (!Array.isArray(items) || items.length === 0) {
@@ -561,13 +521,11 @@ function AIMapInterpretation({
   selectedLanguage = "en",
   onContextBuilt,
 }) {
-  const [useScreenshot, setUseScreenshot] = useState(true);
   const [providerOptions, setProviderOptions] = useState(
     FALLBACK_AI_PROVIDER_OPTIONS,
   );
   const [selectedProvider, setSelectedProvider] = useState("gemini");
   const [selectedModel, setSelectedModel] = useState("gemini-flash-lite-latest");
-  const [selectedPromptVersion, setSelectedPromptVersion] = useState("auto");
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -627,7 +585,6 @@ function AIMapInterpretation({
       forecastSelection,
       adminSelection,
       normalizedLanguage,
-      useScreenshot,
       selectedProvider,
       selectedModel: resolvedSelectedModel || selectedModel,
     });
@@ -635,7 +592,6 @@ function AIMapInterpretation({
     forecastSelection,
     adminSelection,
     normalizedLanguage,
-    useScreenshot,
     selectedProvider,
     selectedModel,
     resolvedSelectedModel,
@@ -724,13 +680,10 @@ function AIMapInterpretation({
             language: normalizedLanguage,
             requested_provider: selectedProvider,
             requested_model: resolvedSelectedModel || "auto",
-            // Omitted (not sent as null -- ContextBuildRequest.prompt_version
-            // is a plain str, not Optional) when "auto", so this preserves
-            // the field's own "v1" default exactly as before this control
-            // existed.
-            ...(selectedPromptVersion !== "auto"
-              ? { prompt_version: selectedPromptVersion }
-              : {}),
+            // prompt_version is deliberately never sent -- the backend's own
+            // default (app/advisory/prompts) applies: v1 unless a context_id
+            // causes merge_envelope_into_request (ai_map_interpretation.py)
+            // to escalate to v2. No frontend control for this anymore.
           }),
         });
         if (contextResponse.ok) {
@@ -773,17 +726,6 @@ function AIMapInterpretation({
       const topAreas = [];
       const allMapLayerSummaries = {};
       const allClimateIndicatorSummaries = {};
-
-      let mapImageBase64 = null;
-      if (useScreenshot) {
-        try {
-          setStatusMessage("Capturing current map screenshot...");
-          mapImageBase64 = await captureForecastMap();
-        } catch (captureError) {
-          console.warn(captureError);
-          mapImageBase64 = null;
-        }
-      }
 
       const languageLabel = getLanguageLabel(normalizedLanguage);
       const providerLabel = selectedProviderConfig?.label || selectedProvider;
@@ -849,8 +791,8 @@ function AIMapInterpretation({
         top_admin_areas: topAreas,
         all_map_layer_summaries: allMapLayerSummaries,
         all_climate_indicator_summaries: allClimateIndicatorSummaries,
-        map_image_base64: mapImageBase64,
-        use_screenshot: Boolean(mapImageBase64),
+        map_image_base64: null,
+        use_screenshot: false,
         target_language: normalizedLanguage,
         target_language_label: languageLabel,
         audience_focus:
@@ -866,14 +808,8 @@ function AIMapInterpretation({
         // end-to-end testing: the context/build call succeeded but its
         // result was silently never forwarded here).
         context_id: contextId,
-        // Omitted when "auto" so merge_envelope_into_request's own
-        // None -> "v2"-when-context_id-present escalation still applies
-        // unchanged. Sent as the same literal value used for /context/build
-        // above when explicitly chosen, so ContextAuditDrawer's displayed
-        // provenance.prompt_version always matches what actually ran.
-        ...(selectedPromptVersion !== "auto"
-          ? { prompt_version: selectedPromptVersion }
-          : {}),
+        // prompt_version is deliberately never sent here either -- see the
+        // matching note on the /context/build call above.
       };
 
       const response = await fetch(apiUrl("/api/ai/map-interpretation"), {
@@ -963,36 +899,12 @@ function AIMapInterpretation({
           </select>
         </label>
 
-        <label>
-          <span>Prompt version</span>
-          <select
-            value={selectedPromptVersion}
-            onChange={(event) => setSelectedPromptVersion(event.target.value)}
-            disabled={loading}
-          >
-            {PROMPT_VERSION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <ContextQualityBadge contextInfo={contextInfo} />
         <ContextAuditDrawer contextId={contextInfo?.contextId || null} />
         <RetrievalDebugPanel contextId={contextInfo?.contextId || null} />
       </div>
 
       <div className="ai-action-bar">
-        <label className="ai-toggle">
-          <input
-            type="checkbox"
-            checked={useScreenshot}
-            onChange={(event) => setUseScreenshot(event.target.checked)}
-          />
-          Use current map screenshot
-        </label>
-
         <button
           type="button"
           className="ai-generate-button"
@@ -1032,9 +944,9 @@ function AIMapInterpretation({
           <p>
             Click <strong>Generate {contextSummary.language} advisory</strong>.
             The system will use all map layers, all climate indicators, local
-            RAG guidance, the selected language, and an optional map screenshot.
-            If the same request was already generated, it will load the saved
-            advisory instead of making another AI provider API call.
+            RAG guidance, and the selected language. If the same request was
+            already generated, it will load the saved advisory instead of
+            making another AI provider API call.
           </p>
         </div>
       )}
