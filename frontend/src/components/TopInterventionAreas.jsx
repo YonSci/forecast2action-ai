@@ -416,6 +416,11 @@ function TopInterventionAreas({
       zone: item.zone || "",
       woreda: item.woreda || "",
       selected_map_layer: rankBy,
+      // Real hazard_type ("drought"/"wet"/"dominant"/null) of whatever
+      // layer was actually ranked by -- lets SelectedAreaAdvisory.jsx apply
+      // the same drought/wet badge-redundancy rule as this table, keyed off
+      // the layer's real metadata instead of guessing from rankBy's string.
+      selected_map_layer_hazard_type: layerMetaByValue[rankBy]?.hazard_type,
       selected_period: period,
       metrics_display: metricsDisplay,
       priority_level: priorityInfo.level,
@@ -479,14 +484,19 @@ function TopInterventionAreas({
   // that mix-up.
   const rankByLabel = layerMetaByValue[rankBy]?.label || titleCase(rankBy);
 
-  // Ranking by Drought Risk (or Wet Risk) specifically already shows that
-  // metric's own mean in an earlier column -- repeating it as a badge next
-  // to an unrelated Wet Risk (or Drought Risk) badge is redundant. Only
-  // collapse to a single badge when rank_by IS one of these two; ranking by
-  // anything else (general Risk, Hazard, rainfall anomaly, etc.) still
-  // shows both, since neither hazard is favored by the current ranking.
-  const showDroughtBadge = rankBy !== "population_r_wet";
-  const showWetBadge = rankBy !== "population_r_drought";
+  // Ranking by ANY drought-specific layer (Drought Hazard, Drought
+  // Probability, Drought Vulnerability, Drought Risk -- not just Drought
+  // Risk itself) already makes drought the point of this ranking, so an
+  // unrelated Wet Risk badge alongside it is redundant, and vice versa.
+  // Keyed off the layer's own real hazard_type metadata (LAYER_DEFINITIONS
+  // in app/api/hazard_risk_catalog_shared.py), not a literal layer-value
+  // string match -- that's what missed Drought Probability/Vulnerability
+  // before. hazard_type "dominant" (Risk Class, Dominant Hazard Code) or
+  // null (pure exposure layers like Population, Cropland) still show both,
+  // since neither hazard is favored by those.
+  const rankByHazardType = layerMetaByValue[rankBy]?.hazard_type;
+  const showDroughtBadge = rankByHazardType !== "wet";
+  const showWetBadge = rankByHazardType !== "drought";
   const droughtWetColumnLabel =
     showDroughtBadge && showWetBadge
       ? "Drought / Wet Risk"
@@ -513,6 +523,7 @@ function TopInterventionAreas({
         vulnerabilityLayerMeta,
         riskLayerMeta,
         rankBy,
+        rankByHazardType,
         rankingCount: rankingItems.length,
         triggerCount,
         topRankedArea: rankingItems[0] || null,
@@ -540,6 +551,7 @@ function TopInterventionAreas({
     riskLayerMeta,
     rankingItems,
     rankBy,
+    rankByHazardType,
     period,
     adminLevel,
   ]);

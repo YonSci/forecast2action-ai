@@ -586,21 +586,24 @@ function SelectedAreaAdvisory({
           </p>
         </div>
         <div className="advisory-hero-badges">
-          {/* Ranking by Drought Risk (or Wet Risk) specifically already
-              makes that hazard the point of this advisory -- showing the
-              other, unrelated hazard's badge alongside it is redundant.
-              Only collapses to one badge when the area was actually ranked
-              by one of these two (see selected_map_layer, set from rankBy
-              at selection time in TopInterventionAreas.jsx). */}
-          {area.drought_risk && area.selected_map_layer !== "population_r_wet" && (
+          {/* Ranking by ANY drought-specific layer (Drought Hazard,
+              Probability, Vulnerability, or Risk -- not just Risk itself)
+              already makes drought the point of this advisory, so showing
+              the unrelated Wet Risk badge alongside it is redundant, and
+              vice versa. Keyed off the real hazard_type of whatever was
+              ranked by (selected_map_layer_hazard_type, set in
+              TopInterventionAreas.jsx from LAYER_DEFINITIONS' own
+              metadata) -- "dominant" or null (exposure-only layers) still
+              show both, since neither hazard is favored by those. */}
+          {area.drought_risk && area.selected_map_layer_hazard_type !== "wet" && (
             <span className={`priority-score-pill ${getLevelInfo(area.drought_risk.level).className}`}>
-              {area.selected_map_layer !== "population_r_drought" ? "Drought: " : ""}
+              {area.selected_map_layer_hazard_type !== "drought" ? "Drought: " : ""}
               {getLevelInfo(area.drought_risk.level).label} ({area.drought_risk.value.toFixed(1)})
             </span>
           )}
-          {area.wet_risk && area.selected_map_layer !== "population_r_drought" && (
+          {area.wet_risk && area.selected_map_layer_hazard_type !== "drought" && (
             <span className={`priority-score-pill ${getLevelInfo(area.wet_risk.level).className}`}>
-              {area.selected_map_layer !== "population_r_wet" ? "Wet: " : ""}
+              {area.selected_map_layer_hazard_type !== "wet" ? "Wet: " : ""}
               {getLevelInfo(area.wet_risk.level).label} ({area.wet_risk.value.toFixed(1)})
             </span>
           )}

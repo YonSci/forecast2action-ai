@@ -136,14 +136,16 @@ function getMarkerTooltipRows(item, rankingContext) {
     probabilityLayerMeta,
     vulnerabilityLayerMeta,
     riskLayerMeta,
-    rankBy,
+    rankByHazardType,
   } = rankingContext || {};
 
   // Same redundancy rule as TopInterventionAreas.jsx's badge column and
-  // SelectedAreaAdvisory.jsx's hero pills: ranking by Drought Risk (or Wet
-  // Risk) specifically means only that row is worth showing here.
-  const showDroughtRow = rankBy !== "population_r_wet";
-  const showWetRow = rankBy !== "population_r_drought";
+  // SelectedAreaAdvisory.jsx's hero pills: ranking by ANY drought-specific
+  // layer (Hazard, Probability, Vulnerability, or Risk) means only the
+  // Drought row is worth showing here, and vice versa for wet -- keyed off
+  // the ranked layer's real hazard_type, not just the Risk layer values.
+  const showDroughtRow = rankByHazardType !== "wet";
+  const showWetRow = rankByHazardType !== "drought";
 
   return [
     {
