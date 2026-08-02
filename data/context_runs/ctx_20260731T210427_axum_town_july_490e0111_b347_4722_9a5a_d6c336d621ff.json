@@ -1,0 +1,764 @@
+{
+  "context_id": "490e0111-b347-4722-9a5a-d6c336d621ff",
+  "forecast": {
+    "forecast_scale": "subseasonal",
+    "lead": "",
+    "hazard_risk_period": "July",
+    "rank_by": "population_normalized",
+    "admin_selection_mode": "top",
+    "top_n": 5,
+    "threshold": 0.6,
+    "evidence_status": "forecast_signal"
+  },
+  "geography": {
+    "country": "ethiopia",
+    "admin_level": "admin3",
+    "area_name": "Axum town",
+    "region": "Tigray",
+    "zone": "Central",
+    "woreda": "Axum town",
+    "region_id": "tigray",
+    "zone_id": "tigray_central",
+    "woreda_id": "tigray_central_axum_town",
+    "boundary_version": "eth_admin_boundary_pipeline_v1",
+    "boundary_feature": {
+      "type": "Feature",
+      "id": "admin3_tigray_central_axum_town_24",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              38.70063254600012,
+              14.11680367100007
+            ],
+            [
+              38.70093698300019,
+              14.11826153900006
+            ],
+            [
+              38.701048708000144,
+              14.120327502000066
+            ],
+            [
+              38.70167372900005,
+              14.123622427999976
+            ],
+            [
+              38.70193364400018,
+              14.125299566000024
+            ],
+            [
+              38.7021843440001,
+              14.126917211000034
+            ],
+            [
+              38.70263812200017,
+              14.12993275700012
+            ],
+            [
+              38.70274928500004,
+              14.132445381000025
+            ],
+            [
+              38.70302271000003,
+              14.133364554000138
+            ],
+            [
+              38.702934664,
+              14.133392846000163
+            ],
+            [
+              38.704445077,
+              14.13525954000005
+            ],
+            [
+              38.70451037900011,
+              14.135332301000119
+            ],
+            [
+              38.70590502400012,
+              14.13688624700012
+            ],
+            [
+              38.70736504400014,
+              14.13847331200003
+            ],
+            [
+              38.707729850000135,
+              14.139028605000078
+            ],
+            [
+              38.70862287700004,
+              14.139386378000097
+            ],
+            [
+              38.7090691140001,
+              14.139783239000167
+            ],
+            [
+              38.70979939200009,
+              14.140378604000148
+            ],
+            [
+              38.7108547310001,
+              14.140855460000182
+            ],
+            [
+              38.711951633000126,
+              14.140579353000135
+            ],
+            [
+              38.71361701700005,
+              14.140383183000097
+            ],
+            [
+              38.713759726000035,
+              14.140394959000162
+            ],
+            [
+              38.71507893800015,
+              14.14050381700008
+            ],
+            [
+              38.71621561200004,
+              14.14090148200006
+            ],
+            [
+              38.71779913400013,
+              14.141220403999966
+            ],
+            [
+              38.71897662500015,
+              14.141459577000148
+            ],
+            [
+              38.720276248999994,
+              14.141461093000089
+            ],
+            [
+              38.72125101500001,
+              14.141422593000073
+            ],
+            [
+              38.72259077100006,
+              14.141820464999967
+            ],
+            [
+              38.72417450000006,
+              14.141980817000103
+            ],
+            [
+              38.72539285300007,
+              14.142021844000055
+            ],
+            [
+              38.726611302000094,
+              14.141983601000163
+            ],
+            [
+              38.726991586999986,
+              14.142003566000142
+            ],
+            [
+              38.72738290800015,
+              14.142024110000023
+            ],
+            [
+              38.72848003400014,
+              14.141549767000129
+            ],
+            [
+              38.72904880800013,
+              14.141391880000128
+            ],
+            [
+              38.72965842700006,
+              14.141035877000093
+            ],
+            [
+              38.73010638800008,
+              14.140005945000098
+            ],
+            [
+              38.730554018000134,
+              14.139253436000104
+            ],
+            [
+              38.73096145100004,
+              14.138144192000027
+            ],
+            [
+              38.731246670000075,
+              14.137351868000167
+            ],
+            [
+              38.731369253000025,
+              14.136717890000114
+            ],
+            [
+              38.7313951160001,
+              14.1366864150001
+            ],
+            [
+              38.73165588300009,
+              14.136369070000057
+            ],
+            [
+              38.73189767800011,
+              14.136322159000144
+            ],
+            [
+              38.732506956000066,
+              14.136243573000058
+            ],
+            [
+              38.73364456400009,
+              14.135848514000145
+            ],
+            [
+              38.734416611000086,
+              14.135492679000095
+            ],
+            [
+              38.73535105900015,
+              14.135176652000155
+            ],
+            [
+              38.73591990400001,
+              14.134939484000029
+            ],
+            [
+              38.736529497000106,
+              14.134583463000183
+            ],
+            [
+              38.73705772700015,
+              14.134346247999986
+            ],
+            [
+              38.73774849500006,
+              14.134029945000009
+            ],
+            [
+              38.738561142000094,
+              14.133674141000085
+            ],
+            [
+              38.7391300700001,
+              14.133357701000023
+            ],
+            [
+              38.739942803000076,
+              14.13292262800013
+            ],
+            [
+              38.740268012000115,
+              14.132645554000135
+            ],
+            [
+              38.74089985800015,
+              14.132386733000146
+            ],
+            [
+              38.741039994000175,
+              14.132329329000186
+            ],
+            [
+              38.74160878100008,
+              14.13213177900019
+            ],
+            [
+              38.742421728000124,
+              14.131498536000095
+            ],
+            [
+              38.74315318100014,
+              14.131102997000141
+            ],
+            [
+              38.743722229000184,
+              14.130667650000078
+            ],
+            [
+              38.74538800100015,
+              14.130035303999989
+            ],
+            [
+              38.7461191810001,
+              14.129877546999978
+            ],
+            [
+              38.74705350300013,
+              14.129640738000035
+            ],
+            [
+              38.74778511600016,
+              14.129086656000027
+            ],
+            [
+              38.74855738000008,
+              14.128492981000022
+            ],
+            [
+              38.748842136000064,
+              14.128057323000007
+            ],
+            [
+              38.748842788000104,
+              14.127462840000135
+            ],
+            [
+              38.74884491600011,
+              14.125520863000133
+            ],
+            [
+              38.74900740200002,
+              14.125481400000126
+            ],
+            [
+              38.74941381100018,
+              14.125204398000164
+            ],
+            [
+              38.75006388100013,
+              14.124927648000153
+            ],
+            [
+              38.751078969000105,
+              14.12508723000002
+            ],
+            [
+              38.75156646600004,
+              14.124929205
+            ],
+            [
+              38.75189143600011,
+              14.124850276000132
+            ],
+            [
+              38.752784779000194,
+              14.12493046000003
+            ],
+            [
+              38.75338055900011,
+              14.12464050900013
+            ],
+            [
+              38.753431017000025,
+              14.124615952000113
+            ],
+            [
+              38.75335447600003,
+              14.123860974000024
+            ],
+            [
+              38.75359950200004,
+              14.12259299200008
+            ],
+            [
+              38.75360094200016,
+              14.121253428000102
+            ],
+            [
+              38.75360137600018,
+              14.120849174000057
+            ],
+            [
+              38.75388751700012,
+              14.119105647000083
+            ],
+            [
+              38.753888368000105,
+              14.11831300200015
+            ],
+            [
+              38.75409230700001,
+              14.117480932000035
+            ],
+            [
+              38.75417518200004,
+              14.115935357000183
+            ],
+            [
+              38.75425763200013,
+              14.114786105000121
+            ],
+            [
+              38.75425852400019,
+              14.113953828000092
+            ],
+            [
+              38.754341566000164,
+              14.11224972400015
+            ],
+            [
+              38.75434245700012,
+              14.111417446000189
+            ],
+            [
+              38.754343476000145,
+              14.110466271000064
+            ],
+            [
+              38.754466403000094,
+              14.10943595700013
+            ],
+            [
+              38.75446716700014,
+              14.108722575000058
+            ],
+            [
+              38.75353451300009,
+              14.107493021000096
+            ],
+            [
+              38.75179161300008,
+              14.104518807000034
+            ],
+            [
+              38.75122209400013,
+              14.104240147000098
+            ],
+            [
+              38.75127723100019,
+              14.104198599000028
+            ],
+            [
+              38.750262772000156,
+              14.104103243000111
+            ],
+            [
+              38.74881344900007,
+              14.104054582999993
+            ],
+            [
+              38.74644598200018,
+              14.104193562000034
+            ],
+            [
+              38.74417524299997,
+              14.104238315000089
+            ],
+            [
+              38.741566634000094,
+              14.103999765000083
+            ],
+            [
+              38.740122305,
+              14.103929442000037
+            ],
+            [
+              38.73760523200002,
+              14.103806870000028
+            ],
+            [
+              38.73422358500011,
+              14.103614550000088
+            ],
+            [
+              38.732386782000106,
+              14.104414119000069
+            ],
+            [
+              38.73208287300008,
+              14.104455163000125
+            ],
+            [
+              38.73030901300007,
+              14.104694721000044
+            ],
+            [
+              38.725041762000046,
+              14.105678981000096
+            ],
+            [
+              38.72339856200017,
+              14.106148631000053
+            ],
+            [
+              38.721997148000014,
+              14.106429935000051
+            ],
+            [
+              38.72088549300014,
+              14.106805875000077
+            ],
+            [
+              38.72006354000007,
+              14.107323604000044
+            ],
+            [
+              38.71894942700004,
+              14.107523626000045
+            ],
+            [
+              38.718954685000085,
+              14.107469229999992
+            ],
+            [
+              38.718284402000165,
+              14.107729998000082
+            ],
+            [
+              38.717560485000035,
+              14.108266968999999
+            ],
+            [
+              38.71708195600013,
+              14.108621919000086
+            ],
+            [
+              38.71616636700014,
+              14.108844175000172
+            ],
+            [
+              38.71484991,
+              14.109400952000158
+            ],
+            [
+              38.714220282000156,
+              14.10967937099997
+            ],
+            [
+              38.713132786000074,
+              14.110124743000085
+            ],
+            [
+              38.7118731700001,
+              14.110960738000074
+            ],
+            [
+              38.71055725400009,
+              14.111070826000116
+            ],
+            [
+              38.70775216100009,
+              14.11257493200003
+            ],
+            [
+              38.70506166200016,
+              14.113911646000133
+            ],
+            [
+              38.70185669000017,
+              14.114912693999997
+            ],
+            [
+              38.700482154000156,
+              14.116083483000182
+            ],
+            [
+              38.70063254600012,
+              14.11680367100007
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "admin3_tigray_central_axum_town_24",
+        "admin_level": "admin3",
+        "name": "Axum town",
+        "region": "Tigray",
+        "region_id": "tigray",
+        "zone": "Central",
+        "zone_id": "tigray_central",
+        "woreda": "Axum town",
+        "woreda_id": "tigray_central_axum_town"
+      }
+    }
+  },
+  "hazard_evidence": {
+    "layer_value": "population_normalized",
+    "layer_label": "Population",
+    "hazard_type": null,
+    "category": "exposure",
+    "units": "normalized",
+    "rank_value": 1.0,
+    "priority_score": 1.0,
+    "rank": 1,
+    "metrics": {
+      "population_normalized": 1.0,
+      "cropland_total_normalized": 0.6966966986656189,
+      "livestock_cattle_normalized": 0.606060802936554,
+      "built_up_normalized": 0.9998031258583069,
+      "roads_normalized": 0.9705536365509033,
+      "population_r_drought": 9.805039405822754,
+      "population_r_wet": 6.543063640594482
+    },
+    "observed_ceiling": 1.0
+  },
+  "impact": {
+    "population_total": 68098,
+    "population_exposed": 64073,
+    "population_exposed_pct": 94.1,
+    "area_total_km2": 741.1,
+    "area_extent_km2": 741.1,
+    "area_extent_pct": 100.0,
+    "cropland_extent_pct": 100.0
+  },
+  "community": {
+    "feedback_signal": "no_ground_signal",
+    "total_reports": 0,
+    "by_severity": {},
+    "by_type": {},
+    "recent_reports": []
+  },
+  "operational": {
+    "audience": "disaster_manager",
+    "language": "en",
+    "requested_provider": "openrouter",
+    "requested_model": "openai/gpt-5.6-luna"
+  },
+  "policy": {
+    "policy_id": "default_policy_v1",
+    "thresholds": {
+      "trigger": 0.8,
+      "warning": 0.6,
+      "watch": 0.35
+    },
+    "trigger_status": "trigger",
+    "approval_rules_version": "v1"
+  },
+  "knowledge": {
+    "retrieved_items": [
+      {
+        "id": "drought_trigger_disaster_manager_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "disaster_manager",
+        "sector": "Disaster Risk Management",
+        "title": "Activate drought anticipatory action coordination",
+        "rationale": "Severe rainfall deficit and high exposure require immediate coordination before impacts worsen.",
+        "actions": [
+          "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+          "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+          "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+          "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+          "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support."
+        ],
+        "source_title": "Forecast2Action drought anticipatory action guidance",
+        "source_note": "Prototype local knowledge item for drought trigger-level early action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 3.0,
+        "final_score": 3.4
+      },
+      {
+        "id": "heavy_rainfall_trigger_any_001",
+        "hazard": "heavy_rainfall",
+        "risk_level": "trigger",
+        "audience": "any",
+        "sector": "Emergency Preparedness",
+        "title": "Activate flood preparedness and public safety actions",
+        "rationale": "Trigger-level heavy rainfall risk requires immediate preparedness and public safety messaging.",
+        "actions": [
+          "Activate local flood preparedness coordination.",
+          "Issue clear public safety messages for flood-prone areas.",
+          "Prioritize monitoring of river crossings, low-lying settlements and roads.",
+          "Prepare evacuation support for highly exposed communities where needed.",
+          "Use community reports to identify flooded roads, river overflow and blocked drainage."
+        ],
+        "source_title": "Forecast2Action flood trigger early action guide",
+        "source_note": "Prototype local knowledge item for trigger-level heavy rainfall and flood preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 1.0,
+        "final_score": 1.4
+      },
+      {
+        "id": "heavy_rainfall_warning_disaster_manager_001",
+        "hazard": "heavy_rainfall",
+        "risk_level": "warning",
+        "audience": "disaster_manager",
+        "sector": "Flood Preparedness",
+        "title": "Prepare for heavy rainfall and localized flooding",
+        "rationale": "Above-normal rainfall signal may increase flood, road access and displacement risks.",
+        "actions": [
+          "Identify flood-prone settlements, roads, river crossings and drainage hotspots.",
+          "Coordinate with local authorities to prepare flood warning and safety messages.",
+          "Advise communities to avoid crossing flooded roads, rivers and seasonal streams.",
+          "Check readiness of evacuation routes, temporary shelters and emergency communication channels.",
+          "Monitor river levels, drainage congestion and community reports of flooded roads."
+        ],
+        "source_title": "Forecast2Action heavy rainfall preparedness guide",
+        "source_note": "Prototype local knowledge item for heavy rainfall and flood preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "warning"
+        ],
+        "retrieval_score": 0.5,
+        "final_score": 0.9
+      }
+    ],
+    "retrieval_mode": "keyword_metadata"
+  },
+  "provenance": {
+    "context_id": "490e0111-b347-4722-9a5a-d6c336d621ff",
+    "context_version": "v1",
+    "created_at": "2026-07-31T21:04:27.606486+00:00",
+    "prompt_version": "v1",
+    "context_fingerprint": "1cfeae6b090dd583deda97aa01e685f9a5a3bbb0f6876ec3f1f3f86078d10604",
+    "ai_provider": "openrouter",
+    "ai_model": "openai/gpt-5.6-luna",
+    "source_endpoints": [
+      "app.api.hazard_risk_ranking.compute_district_ranking",
+      "app.api.community_reports_store.summarize_reports",
+      "app.decision.policy_engine.load_policy_for_hazard",
+      "app.retrieval.hybrid_retriever.retrieve"
+    ]
+  },
+  "quality_score": 0.85,
+  "quality_flags": [
+    "no_community_reports"
+  ]
+}
