@@ -11,7 +11,6 @@ import json
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict
 
 from app.decision.schemas import Policy
 
@@ -54,20 +53,3 @@ def load_policy_for_hazard(hazard_type: str, country: str = "ethiopia") -> Polic
         hazard_type, country, filename,
     )
     return _load_policy_file("default_policy.json")
-
-
-def evaluate_trigger_status(priority_score: float, thresholds: Dict[str, float]) -> str:
-    """Classifies a 0-1 priority_score against a POLICY-supplied threshold
-    dict. Deliberately does not import app.ml.risk_scoring.classify_risk
-    directly (that function is hardwired to RISK_THRESHOLDS) -- this is what
-    lets a future policy diverge per-hazard without touching risk_scoring.py.
-    The default drought/heavy_rainfall policies use the exact same values as
-    RISK_THRESHOLDS, so today's behavior is unchanged.
-    """
-    if priority_score >= thresholds["trigger"]:
-        return "trigger"
-    if priority_score >= thresholds["warning"]:
-        return "warning"
-    if priority_score >= thresholds["watch"]:
-        return "watch"
-    return "no_alert"

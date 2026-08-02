@@ -57,6 +57,16 @@ class HazardEvidence(BaseModel):
     rank: Optional[int] = None
     metrics: Dict[str, float] = Field(default_factory=dict)  # other computed layers for this area
     observed_ceiling: Optional[float] = None  # get_map_statistics_cached(...)["max"], the real normalization ceiling
+    # Real, always-computed {"value": float, "level": "trigger"|"warning"|"watch"|"no_alert"}
+    # from app.api.hazard_risk_ranking.compute_district_ranking, regardless of
+    # what rank_by/layer_value this context was actually built for -- see
+    # app.context.policy_context.resolve_real_trigger_status, the single
+    # source of truth for trigger classification (never the generic
+    # priority_score above, which is trivially ~1.0 for whatever area ranks
+    # #1 under ANY metric, including Exposure, and does not reflect real
+    # drought/wet severity).
+    drought_risk: Optional[Dict[str, Any]] = None
+    wet_risk: Optional[Dict[str, Any]] = None
 
 
 class ImpactContext(BaseModel):

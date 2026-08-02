@@ -99,25 +99,6 @@ def _all_text(report: Dict[str, Any]) -> str:
     return " ".join(parts)
 
 
-def _known_place_names(envelope: "DecisionContextEnvelope", top_admin_areas: List[Dict[str, Any]]) -> List[str]:
-    """Every real admin name the report is legitimately allowed to mention --
-    NOT just the envelope's own single selected area. A real advisory report
-    (via top_admin_areas) legitimately names MANY areas beyond the one the
-    envelope itself was built around, so checking only the envelope's own
-    fields produced false positives on entirely correct report text (caught
-    during manual end-to-end testing: real area names like "Abadir" were
-    flagged as invented purely because they weren't the envelope's own area).
-    """
-    names = [envelope.geography.area_name, envelope.geography.region, envelope.geography.zone, envelope.geography.woreda]
-    for area in envelope.hazard_evidence.metrics.keys():
-        names.append(area)
-    for item in top_admin_areas:
-        for key in ("area_name", "region", "zone", "woreda"):
-            if item.get(key):
-                names.append(item[key])
-    return [name for name in names if name]
-
-
 _CAPITALIZED_PHRASE_PATTERN = re.compile(r"\b([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})\b(?!-)")
 
 # Confirmed via live testing (step 11): once priority_area_justification's
@@ -166,94 +147,21 @@ def _filter_unmatched_names(candidates: List[str], known_names_lower: List[str])
     ]
 
 
-def _check_invented_locations(
-    report: Dict[str, Any], envelope: "DecisionContextEnvelope", top_admin_areas: List[Dict[str, Any]],
-) -> List[str]:
-    """Heuristic only -- flags admin-looking capitalized phrases in the
-    priority_area_justification text that don't match any name in the
-    envelope OR top_admin_areas. Necessarily imperfect: false positives (a
-    valid name phrased differently) and false negatives (a hallucinated
-    name that happens to coincidentally match) are both possible. A soft
-    flag, not a hard block.
-    """
-    justification_text = _join_sentences([_item_narrative_text(item) for item in report.get("priority_area_justification", [])])
-    known_names_lower = [name.lower() for name in _known_place_names(envelope, top_admin_areas)]
-
-    # Substring containment, not exact match: a real area name like
-    # "Erer (HR)" won't exact-match the regex's own extracted "Erer"
-    # substring, and a real name is sometimes only PART of a known multi-
-    # word name (e.g. "West Hararge" containing "Hararge").
-    candidate_names = _extract_candidate_place_names(justification_text)
-    unmatched = _filter_unmatched_names(candidate_names, known_names_lower)
-
-    if unmatched:
-        return [f"Mentioned name(s) not found in the supplied context: {', '.join(sorted(set(unmatched))[:5])}"]
-    return []
-
-
-def _check_modified_risk_values(
-    report: Dict[str, Any], envelope: "DecisionContextEnvelope", top_admin_areas: List[Dict[str, Any]],
-) -> List[str]:
-    """Flags a quoted risk_score/priority_score number in the report text
-    that doesn't match (to 2 decimals) ANY real score in the envelope or
-    top_admin_areas -- a report legitimately describing several ranked
-    areas quotes several different real scores, not just the envelope's own
-    single selected-area score (same false-positive fix as above).
-    """
-    text = _all_text(report)
-    quoted_scores = re.findall(r"\b(?:priority[_ ]score|risk[_ ]score)[^\d]{0,10}(\d\.\d{1,3})\b", text, re.IGNORECASE)
-
-    real_values = {round(envelope.hazard_evidence.priority_score, 2)}
-    for item in top_admin_areas:
-        if item.get("risk_score") is not None:
-            real_values.add(round(float(item["risk_score"]), 2))
-
-    flags = []
-    for quoted in quoted_scores:
-        if round(float(quoted), 2) not in real_values:
-            flags.append(f"Quoted score {quoted} does not match any real score in the supplied context")
-    return flags
-
-
-def _check_forecast_vs_observed(report: Dict[str, Any], envelope: "DecisionContextEnvelope") -> List[str]:
-    if envelope.forecast.evidence_status not in ("forecast_signal", "model_projection"):
-        return []
-
-    text = _all_text(report)
-    if CONFIRMED_LANGUAGE_PATTERN.search(text):
-        return [
-            "Report uses confirmed/observed language while the underlying evidence_status is "
-            f"'{envelope.forecast.evidence_status}' (a forecast, not a confirmed observation)."
-        ]
-    return []
-
-
-def validate_against_context(
-    report: Dict[str, Any],
-    envelope: "DecisionContextEnvelope",
-    top_admin_areas: List[Dict[str, Any]] | None = None,
-) -> Tuple[Dict[str, Any], List[str]]:
-    """Returns (report, violations). `report` is returned unmodified except
-    for report["_metadata"]["validation_flags"], which is appended to (never
-    overwritten) so this can be called alongside other metadata-setting code.
-
-    `top_admin_areas` should be the SAME list actually sent to the LLM (the
-    real ranked areas the report is legitimately allowed to describe) -- see
-    _known_place_names's docstring for why omitting this produces false
-    positives on entirely correct report text.
-    """
-    top_admin_areas = top_admin_areas or []
-
-    violations: List[str] = []
-    violations.extend(_check_invented_locations(report, envelope, top_admin_areas))
-    violations.extend(_check_modified_risk_values(report, envelope, top_admin_areas))
-    violations.extend(_check_forecast_vs_observed(report, envelope))
-
-    metadata = report.setdefault("_metadata", {})
-    existing_flags = metadata.get("validation_flags", [])
-    metadata["validation_flags"] = existing_flags + violations
-
-    return report, violations
+# validate_against_context (envelope-scoped invented-locations/modified-
+# risk-values/forecast-vs-observed checks) was removed here: every one of
+# its checks was fully superseded by the "_evidence" versions below, which
+# run unconditionally for every staged report (validate_against_evidence)
+# against the REAL evidence the report was actually generated from
+# (evidence["priority_area_justifications"], covering every real priority
+# area) -- not an envelope's single selected area plus a separately-built
+# top_admin_areas list. Since a context_id is sent on every real request,
+# validate_against_context always ran too, and its narrower reference data
+# produced confirmed false positives (e.g. flagging Harari's real, legitimately-
+# cited priority_score as "not found in the supplied context" purely because
+# the envelope was built around a different area). Removed rather than fixed
+# in place, since fixing it would have just reimplemented the "_evidence"
+# checks a second time for no benefit -- generate_ai_map_interpretation no
+# longer calls it at all, only using the envelope for evidence_citations now.
 
 
 # Step 11 -- generalizes the checks above to run for EVERY staged report,

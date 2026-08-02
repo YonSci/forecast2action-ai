@@ -24,12 +24,16 @@ const TOP_OPTIONS = [
   { value: 10, label: "Top 10" },
 ];
 
+// Hazard/Probability/Vulnerability are deliberately NOT offered here as
+// their own "Rank by" categories -- applyHazardTypeSync (below) always
+// keeps all four in lockstep with whichever drought/wet metric is active,
+// so their columns are shown regardless of which one you'd rank by; the
+// only thing choosing among them would change is sort order/threshold,
+// and Risk (their real composite, and what drives the Trigger/Warning/
+// Watch badges) is the operationally meaningful one to rank by instead.
 const CATEGORY_OPTIONS = [
-  { value: "hazard", label: "Hazard" },
-  { value: "probability", label: "Probability" },
-  { value: "exposure", label: "Exposure" },
-  { value: "vulnerability", label: "Vulnerability" },
   { value: "risk", label: "Risk" },
+  { value: "exposure", label: "Exposure" },
 ];
 
 // Which layer each category starts on, and what stays remembered per
@@ -175,7 +179,7 @@ function TopInterventionAreas({
   const period = forecastSelection.hazardRiskPeriod || getCurrentSeasonalPeriod();
 
   const [rankingLayers, setRankingLayers] = useState([]);
-  const [category, setCategory] = useState("hazard");
+  const [category, setCategory] = useState("risk");
   const [selectedByCategory, setSelectedByCategory] = useState(
     DEFAULT_SELECTED_BY_CATEGORY,
   );
@@ -491,10 +495,15 @@ function TopInterventionAreas({
   // Keyed off the layer's own real hazard_type metadata (LAYER_DEFINITIONS
   // in app/api/hazard_risk_catalog_shared.py), not a literal layer-value
   // string match -- that's what missed Drought Probability/Vulnerability
-  // before. hazard_type "dominant" (Risk Class, Dominant Hazard Code) or
-  // null (pure exposure layers like Population, Cropland) still show both,
-  // since neither hazard is favored by those.
+  // before.
+  //
+  // Ranking by Exposure (Population, Cropland, Livestock, etc.) has NO
+  // hazard_type at all (it's null in LAYER_DEFINITIONS) -- that's a
+  // genuinely different case from "redundant", it's "not what this view is
+  // about", so the whole column is hidden rather than collapsed to one
+  // badge or shown as both.
   const rankByHazardType = layerMetaByValue[rankBy]?.hazard_type;
+  const showRiskColumn = Boolean(rankByHazardType);
   const showDroughtBadge = rankByHazardType !== "wet";
   const showWetBadge = rankByHazardType !== "drought";
   const droughtWetColumnLabel =
@@ -758,13 +767,15 @@ function TopInterventionAreas({
                 sortDirection={sortDirection}
                 onSort={handleSortClick}
               />
-              <SortableColumnHeader
-                column="priority_score"
-                label={droughtWetColumnLabel}
-                sortColumn={sortColumn}
-                sortDirection={sortDirection}
-                onSort={handleSortClick}
-              />
+              {showRiskColumn && (
+                <SortableColumnHeader
+                  column="priority_score"
+                  label={droughtWetColumnLabel}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSortClick}
+                />
+              )}
               <SortableColumnHeader
                 column="population_exposed"
                 label={`Population exposed (to ${rankByLabel})`}
@@ -840,24 +851,26 @@ function TopInterventionAreas({
                     )}
                   </td>
 
-                  <td>
-                    <div className="drought-wet-risk-pills">
-                      {showDroughtBadge && (
-                        <span className={`priority-score-pill ${droughtInfo.className}`}>
-                          {showWetBadge ? "Drought: " : ""}
-                          {droughtInfo.label}
-                          {item.drought_risk ? ` (${item.drought_risk.value.toFixed(1)})` : ""}
-                        </span>
-                      )}
-                      {showWetBadge && (
-                        <span className={`priority-score-pill ${wetInfo.className}`}>
-                          {showDroughtBadge ? "Wet: " : ""}
-                          {wetInfo.label}
-                          {item.wet_risk ? ` (${item.wet_risk.value.toFixed(1)})` : ""}
-                        </span>
-                      )}
-                    </div>
-                  </td>
+                  {showRiskColumn && (
+                    <td>
+                      <div className="drought-wet-risk-pills">
+                        {showDroughtBadge && (
+                          <span className={`priority-score-pill ${droughtInfo.className}`}>
+                            {showWetBadge ? "Drought: " : ""}
+                            {droughtInfo.label}
+                            {item.drought_risk ? ` (${item.drought_risk.value.toFixed(1)})` : ""}
+                          </span>
+                        )}
+                        {showWetBadge && (
+                          <span className={`priority-score-pill ${wetInfo.className}`}>
+                            {showDroughtBadge ? "Wet: " : ""}
+                            {wetInfo.label}
+                            {item.wet_risk ? ` (${item.wet_risk.value.toFixed(1)})` : ""}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  )}
 
                   <td>{formatPopulationExposed(item)}</td>
                   <td>{formatAreaExtent(item)}</td>
@@ -878,7 +891,7 @@ function TopInterventionAreas({
 
             {rankingItems.length === 0 && (
               <tr>
-                <td colSpan="11">
+                <td colSpan={showRiskColumn ? 11 : 10}>
                   No areas matched the selected ranking configuration.
                 </td>
               </tr>

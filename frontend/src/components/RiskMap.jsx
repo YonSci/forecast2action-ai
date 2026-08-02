@@ -102,7 +102,9 @@ function getBoundaryFeatureCenter(boundaryFeature) {
     return null;
   }
 
-  const latLngs = collectLatLngsFromCoordinates(boundaryFeature.geometry?.coordinates);
+  const latLngs = collectLatLngsFromCoordinates(
+    boundaryFeature.geometry?.coordinates,
+  );
   if (!latLngs.length) {
     return null;
   }
@@ -123,7 +125,9 @@ function getBoundaryFeatureCenter(boundaryFeature) {
 }
 
 function getRankedAreaName(item) {
-  return item.area_name || item.woreda || item.zone || item.region || "Selected area";
+  return (
+    item.area_name || item.woreda || item.zone || item.region || "Selected area"
+  );
 }
 
 // Same real fields/formatters as SelectedAreaAdvisory.jsx's "Impact-based
@@ -139,30 +143,46 @@ function getMarkerTooltipRows(item, rankingContext) {
     rankByHazardType,
   } = rankingContext || {};
 
-  // Same redundancy rule as TopInterventionAreas.jsx's badge column and
+  // Same rule as TopInterventionAreas.jsx's badge column and
   // SelectedAreaAdvisory.jsx's hero pills: ranking by ANY drought-specific
   // layer (Hazard, Probability, Vulnerability, or Risk) means only the
   // Drought row is worth showing here, and vice versa for wet -- keyed off
   // the ranked layer's real hazard_type, not just the Risk layer values.
-  const showDroughtRow = rankByHazardType !== "wet";
-  const showWetRow = rankByHazardType !== "drought";
+  // Ranking by Exposure has no hazard_type at all, so both rows are
+  // dropped entirely rather than shown together.
+  const showDroughtRow =
+    Boolean(rankByHazardType) && rankByHazardType !== "wet";
+  const showWetRow =
+    Boolean(rankByHazardType) && rankByHazardType !== "drought";
 
   return [
     {
       label: hazardLayerMeta?.label || "Hazard",
-      value: formatMetricValue(item.metrics?.[hazardLayerMeta?.value], hazardLayerMeta),
+      value: formatMetricValue(
+        item.metrics?.[hazardLayerMeta?.value],
+        hazardLayerMeta,
+      ),
     },
     {
       label: probabilityLayerMeta?.label || "Probability",
-      value: formatMetricValue(item.metrics?.[probabilityLayerMeta?.value], probabilityLayerMeta),
+      value: formatMetricValue(
+        item.metrics?.[probabilityLayerMeta?.value],
+        probabilityLayerMeta,
+      ),
     },
     {
       label: vulnerabilityLayerMeta?.label || "Vulnerability",
-      value: formatMetricValue(item.metrics?.[vulnerabilityLayerMeta?.value], vulnerabilityLayerMeta),
+      value: formatMetricValue(
+        item.metrics?.[vulnerabilityLayerMeta?.value],
+        vulnerabilityLayerMeta,
+      ),
     },
     {
       label: riskLayerMeta?.label || "Risk",
-      value: formatMetricValue(item.metrics?.[riskLayerMeta?.value], riskLayerMeta),
+      value: formatMetricValue(
+        item.metrics?.[riskLayerMeta?.value],
+        riskLayerMeta,
+      ),
     },
     { label: "Population exposed", value: formatPopulationExposed(item) },
     { label: "Area extent", value: formatAreaExtent(item) },
@@ -212,7 +232,10 @@ function getIntensityColor(score) {
   let lower = INTENSITY_COLOR_STOPS[0];
   let upper = INTENSITY_COLOR_STOPS[INTENSITY_COLOR_STOPS.length - 1];
   for (let i = 0; i < INTENSITY_COLOR_STOPS.length - 1; i += 1) {
-    if (value >= INTENSITY_COLOR_STOPS[i].stop && value <= INTENSITY_COLOR_STOPS[i + 1].stop) {
+    if (
+      value >= INTENSITY_COLOR_STOPS[i].stop &&
+      value <= INTENSITY_COLOR_STOPS[i + 1].stop
+    ) {
       lower = INTENSITY_COLOR_STOPS[i];
       upper = INTENSITY_COLOR_STOPS[i + 1];
       break;
@@ -325,7 +348,9 @@ function onEachBoundaryFeature(feature, layer) {
     }
 
     if (props.rank) {
-      labelParts.push(`<p><strong>Rank:</strong> ${escapeHtml(props.rank)}</p>`);
+      labelParts.push(
+        `<p><strong>Rank:</strong> ${escapeHtml(props.rank)}</p>`,
+      );
     }
 
     props.metrics_display.forEach((item) => {
@@ -438,7 +463,10 @@ function RiskMap({
         definition: getTermDefinition(riskLayerMeta.value),
       },
       { label: "Priority score", definition: PRIORITY_SCORE_DEFINITION },
-      { label: "Population exposed", definition: POPULATION_EXPOSED_DEFINITION },
+      {
+        label: "Population exposed",
+        definition: POPULATION_EXPOSED_DEFINITION,
+      },
       { label: "Area extent", definition: AREA_EXTENT_DEFINITION },
       { label: "Cropland extent", definition: CROPLAND_EXTENT_DEFINITION },
     ].filter(Boolean);
@@ -566,10 +594,19 @@ function RiskMap({
                     click: () => rankingContext?.selectArea?.(item),
                   }}
                 >
-                  <Tooltip direction="top" offset={[0, -6]} opacity={1} className="risk-map-marker-tooltip">
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -6]}
+                    opacity={1}
+                    className="risk-map-marker-tooltip"
+                  >
                     <div className="risk-map-marker-tooltip-header">
-                      <strong>#{item.rank} {getRankedAreaName(item)}</strong>
-                      <span>{priorityInfo.label}</span>
+                      <strong>
+                        #{item.rank} {getRankedAreaName(item)}
+                      </strong>
+                      {rankingContext?.rankByHazardType && (
+                        <span>{priorityInfo.label}</span>
+                      )}
                     </div>
                     <div className="risk-map-marker-tooltip-rows">
                       {getMarkerTooltipRows(item, rankingContext).map((row) => (
@@ -589,11 +626,7 @@ function RiskMap({
         <aside className="forecast-legend-card">
           {rankedAreaMarkers.length > 0 && (
             <div className="risk-map-marker-hint">
-              <p>
-                Points show the {rankedAreaMarkers.length} ranked areas from
-                the Priority Intervention Areas table. Click a point to open
-                its Forecast-to-Action Advisory.
-              </p>
+              <p>Risk</p>
               <div className="risk-map-intensity-scale">
                 <span
                   className="risk-map-intensity-bar"
@@ -604,8 +637,8 @@ function RiskMap({
                   }}
                 />
                 <div className="risk-map-intensity-labels">
-                  <span>Lower priority</span>
-                  <span>Higher priority</span>
+                  <span>Lower Risk</span>
+                  <span>Higher Risk</span>
                 </div>
               </div>
             </div>
@@ -621,8 +654,8 @@ function RiskMap({
             </div>
           ) : (
             <p>
-              Select a ranking metric in Priority Intervention Areas to see
-              its definition here.
+              Select a ranking metric in Priority Intervention Areas to see its
+              definition here.
             </p>
           )}
         </aside>

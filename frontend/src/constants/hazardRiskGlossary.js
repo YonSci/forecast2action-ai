@@ -14,8 +14,7 @@ export const HAZARD_RISK_TERM_DEFINITIONS = {
     "Modeled probability (%) that above-normal wet conditions occur this period.",
   v_drought:
     "Relative susceptibility to drought impact (0-1), based on livelihood and socioeconomic factors.",
-  v_wet:
-    "Relative susceptibility to flood / excess-wetness impact (0-1).",
+  v_wet: "Relative susceptibility to flood / excess-wetness impact (0-1).",
   population_r_drought:
     "Composite drought risk score (0-100) = Probability x Severity x Exposure x Vulnerability.",
   population_r_wet:

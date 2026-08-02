@@ -127,6 +127,8 @@ def build_hazard_geo_impact_context(
         rank=item.get("rank"),
         metrics=item.get("metrics", {}),
         observed_ceiling=_observed_ceiling(rank_by, period),
+        drought_risk=item.get("drought_risk"),
+        wet_risk=item.get("wet_risk"),
     )
 
     impact = ImpactContext(

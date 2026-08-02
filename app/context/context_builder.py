@@ -25,7 +25,7 @@ from app.context.hashing import (
 )
 from app.context.knowledge_context import build_knowledge_context
 from app.context.operational_context import build_operational_context
-from app.context.policy_context import build_policy_context
+from app.context.policy_context import build_policy_context, resolve_real_trigger_status
 from app.context.repository import get_repository
 from app.context.schemas import DecisionContextEnvelope, ProvenanceContext
 from app.context.validators import compute_quality_score
@@ -76,10 +76,20 @@ def build_context(
     geography.country = country
 
     community = build_community_context(geography.area_name)
-    policy = build_policy_context(hazard_evidence.hazard_type or "any", hazard_evidence.priority_score, country=country)
+
+    # Real trigger_status from the same drought_risk/wet_risk classification
+    # the ranking table uses -- NOT hazard_evidence.priority_score, which is
+    # trivially ~1.0 for whatever ranks #1 under ANY metric (see
+    # resolve_real_trigger_status's docstring for the exact bug this fixes).
+    # effective_hazard_type can differ from hazard_evidence.hazard_type when
+    # this context was built by ranking on Exposure (hazard_type is None) --
+    # it resolves to whichever real hazard is more severe for this area, so
+    # policy/knowledge retrieval below is never driven by an empty hazard.
+    effective_hazard_type, trigger_status = resolve_real_trigger_status(hazard_evidence)
+    policy = build_policy_context(effective_hazard_type, trigger_status, country=country)
 
     knowledge_query = {
-        "hazard": hazard_evidence.hazard_type or "",
+        "hazard": effective_hazard_type or "",
         "risk_level": policy.trigger_status,
         "audience": audience,
         "feedback_signal": community.feedback_signal,
@@ -95,7 +105,7 @@ def build_context(
     exposure_data_hash = hash_exposure_evidence(impact.model_dump())
     community_data_hash = hash_community_evidence(community.model_dump())
     knowledge_base_hash = hash_action_library()
-    decision_policy_hash = hash_policy_file(_policy_file_path(hazard_evidence.hazard_type or "any", country))
+    decision_policy_hash = hash_policy_file(_policy_file_path(effective_hazard_type or "any", country))
 
     fingerprint = compute_context_fingerprint(
         forecast_data_hash=forecast_data_hash,
@@ -142,8 +152,8 @@ def build_context(
     if persist:
         get_repository().save(envelope)
         logger.info(
-            "context_built context_id=%s area=%s hazard=%s trigger_status=%s quality_score=%.2f",
-            context_id, geography.area_name, hazard_evidence.hazard_type, policy.trigger_status, quality_score,
+            "context_built context_id=%s area=%s ranked_by_hazard=%s effective_hazard=%s trigger_status=%s quality_score=%.2f",
+            context_id, geography.area_name, hazard_evidence.hazard_type, effective_hazard_type, policy.trigger_status, quality_score,
         )
 
     return envelope

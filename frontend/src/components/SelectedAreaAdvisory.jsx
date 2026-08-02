@@ -593,15 +593,18 @@ function SelectedAreaAdvisory({
               vice versa. Keyed off the real hazard_type of whatever was
               ranked by (selected_map_layer_hazard_type, set in
               TopInterventionAreas.jsx from LAYER_DEFINITIONS' own
-              metadata) -- "dominant" or null (exposure-only layers) still
-              show both, since neither hazard is favored by those. */}
-          {area.drought_risk && area.selected_map_layer_hazard_type !== "wet" && (
+              metadata). Ranking by Exposure has NO hazard_type (null) --
+              that's not "redundant", it's "not what this view is about", so
+              both badges are hidden entirely rather than shown together. */}
+          {area.drought_risk && area.selected_map_layer_hazard_type &&
+            area.selected_map_layer_hazard_type !== "wet" && (
             <span className={`priority-score-pill ${getLevelInfo(area.drought_risk.level).className}`}>
               {area.selected_map_layer_hazard_type !== "drought" ? "Drought: " : ""}
               {getLevelInfo(area.drought_risk.level).label} ({area.drought_risk.value.toFixed(1)})
             </span>
           )}
-          {area.wet_risk && area.selected_map_layer_hazard_type !== "drought" && (
+          {area.wet_risk && area.selected_map_layer_hazard_type &&
+            area.selected_map_layer_hazard_type !== "drought" && (
             <span className={`priority-score-pill ${getLevelInfo(area.wet_risk.level).className}`}>
               {area.selected_map_layer_hazard_type !== "wet" ? "Wet: " : ""}
               {getLevelInfo(area.wet_risk.level).label} ({area.wet_risk.value.toFixed(1)})

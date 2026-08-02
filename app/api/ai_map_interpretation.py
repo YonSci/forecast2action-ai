@@ -1820,7 +1820,6 @@ async def generate_ai_map_interpretation(request: AIMapInterpretationRequest) ->
         )
 
     if envelope:
-        from app.advisory.response_validator import validate_against_context
         from app.retrieval.citation_builder import build_citations
 
         # Citations must be deterministic, not LLM-generated: none of the
@@ -1832,7 +1831,13 @@ async def generate_ai_map_interpretation(request: AIMapInterpretationRequest) ->
         # already-retrieved knowledge items from the envelope instead.
         report["evidence_citations"] = build_citations(envelope.knowledge.retrieved_items)
 
-        report, _violations = validate_against_context(report, envelope, request.top_admin_areas)
+        # Content validation against the envelope's own narrower data
+        # (validate_against_context) was removed -- it was fully superseded
+        # by validate_against_evidence, which already ran unconditionally
+        # inside run_staged_report_generation against the REAL evidence the
+        # report was generated from (every real priority area, not just this
+        # envelope's single selected area), and was producing confirmed
+        # false positives on legitimately-cited real numbers as a result.
 
     return report
 
