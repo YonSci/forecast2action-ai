@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiUrl } from "../config.js";
 
-const LANGUAGE_OPTIONS = [
-  { value: "en", label: "English" },
-  { value: "am", label: "Amharic" },
-  { value: "om", label: "Oromifa / Afaan Oromo" },
-  { value: "ti", label: "Tigrinya" },
-  { value: "so", label: "Somali" },
-];
-
 // This app only ever covers Ethiopia, so there's exactly one Country option
 // -- it exists as its own tier (rather than folded into "no selection") so
 // it can carry the same explicit-intent behavior as "All zones"/"All
@@ -113,8 +105,6 @@ function findLabel(options, value) {
 }
 
 function AdminBoundarySelector({
-  selectedLanguage = "en",
-  onLanguageChange,
   onSelectionChange,
   onClearPrioritySelection,
 }) {
@@ -368,12 +358,6 @@ function AdminBoundarySelector({
     clearPrioritySelection();
   }
 
-  function handleLanguageChange(event) {
-    if (typeof onLanguageChange === "function") {
-      onLanguageChange(event.target.value);
-    }
-  }
-
   function handleResetSelection() {
     setSelectedCountryId(DEFAULT_COUNTRY_ID);
     setSelectedRegionId("");
@@ -469,23 +453,6 @@ function AdminBoundarySelector({
             <option value=""></option>
             <option value={ALL_VALUE}>All woredas</option>
             {filteredWoredas.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="map-control">
-          <label htmlFor="shared-language-select">
-            Community message language
-          </label>
-          <select
-            id="shared-language-select"
-            value={selectedLanguage}
-            onChange={handleLanguageChange}
-          >
-            {LANGUAGE_OPTIONS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>

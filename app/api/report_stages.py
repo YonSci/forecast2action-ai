@@ -660,9 +660,24 @@ def run_staged_report_generation(
     merged: Dict[str, Any] = {**_base_report_fields(request), **stage1, **stage2, **stage3}
     merged = validate_report_shape(merged)
 
+    # Which stages (if any) silently dropped to the deterministic rule-based
+    # path -- e.g. one transient provider error on Stage 2 alone. Surfaced
+    # explicitly here (not just buried in "stages" below) because the old
+    # single "ai_engine": "staged_workflow" value was true even when every
+    # stage had fallen back, giving the UI no honest way to say so -- and
+    # fallback_report() never translates, so a fallback stage's text is
+    # always English regardless of target_language.
+    fallback_stages = [name for name, meta in stage_metadata.items() if meta.get("ai_engine") == "rule_based_fallback"]
+    if not fallback_stages:
+        ai_engine = "staged_workflow"
+    elif len(fallback_stages) == len(stage_metadata):
+        ai_engine = "staged_workflow_full_fallback"
+    else:
+        ai_engine = "staged_workflow_partial_fallback"
+
     stage1_meta = stage_metadata.get("stage1", {})
     merged["_metadata"] = {
-        "ai_engine": "staged_workflow",
+        "ai_engine": ai_engine,
         "provider": stage1_meta.get("provider"),
         "model": stage1_meta.get("model"),
         "requested_provider": normalize_provider(request.requested_provider),
@@ -671,6 +686,7 @@ def run_staged_report_generation(
         "target_language_code": normalize_language_code(request.target_language),
         "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
         "period": period,
+        "fallback_stages": fallback_stages,
         "stages": stage_metadata,
     }
 

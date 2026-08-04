@@ -75,12 +75,39 @@ const LANGUAGE_LABELS = {
   ar: "Arabic",
 };
 
+// The 5 languages the backend's report pipeline actually supports (see
+// get_language_instruction in app/api/ai_map_interpretation.py) -- this
+// selector also drives SelectedAreaAdvisory's SMS/WhatsApp text and
+// SelectedAreaCommunityReports' submission language (shared Dashboard-level
+// state), not just this panel, which is why it lives here as the single
+// control rather than duplicated per-section.
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "am", label: "Amharic" },
+  { value: "om", label: "Oromifa / Afaan Oromo" },
+  { value: "ti", label: "Tigrinya" },
+  { value: "so", label: "Somali" },
+];
+
+const STAGE_LABELS = {
+  stage1: "Evidence Interpretation",
+  stage2: "Integrated Risk Synthesis",
+  stage3: "Action Translation",
+};
+
 const FALLBACK_AI_PROVIDER_OPTIONS = [
+  {
+    value: "free_auto",
+    label: "Automatic (recommended)",
+    description:
+      "Tries Gemini first, then automatically fails over to OpenRouter and OpenAI if Gemini is unavailable -- the most resilient option.",
+    models: [],
+  },
   {
     value: "gemini",
     label: "Google Gemini",
     description:
-      "Fastest and most reliable with the full comprehensive map set (all 32 images).",
+      "Fastest and most reliable with the full comprehensive map set (all 32 images). No automatic failover if Gemini itself is unavailable -- pick Automatic for resilience.",
     models: [
       {
         value: "gemini-flash-lite-latest",
@@ -595,13 +622,18 @@ function AIMapInterpretation({
   adminSelection = {},
   selectedPriorityArea = null,
   selectedLanguage = "en",
+  onLanguageChange,
   onContextBuilt,
 }) {
   const [providerOptions, setProviderOptions] = useState(
     FALLBACK_AI_PROVIDER_OPTIONS,
   );
-  const [selectedProvider, setSelectedProvider] = useState("gemini");
-  const [selectedModel, setSelectedModel] = useState("gemini-flash-lite-latest");
+  // Defaults to "free_auto" (Gemini -> OpenRouter -> OpenAI failover), not
+  // a single fixed provider -- a transient outage on one provider used to
+  // mean every stage silently dropped to the English-only rule-based
+  // fallback with no retry. "auto" model = let the provider chain pick.
+  const [selectedProvider, setSelectedProvider] = useState("free_auto");
+  const [selectedModel, setSelectedModel] = useState("auto");
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -964,12 +996,27 @@ function AIMapInterpretation({
             disabled={loading}
           >
             {(
-              selectedProviderConfig?.models || [
-                { value: "auto", label: "Automatic" },
-              ]
+              selectedProviderConfig?.models?.length
+                ? selectedProviderConfig.models
+                : [{ value: "auto", label: "Automatic" }]
             ).map((model) => (
               <option key={model.value} value={model.value}>
                 {model.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span>Output language</span>
+          <select
+            value={normalizedLanguage}
+            onChange={(event) => onLanguageChange?.(event.target.value)}
+            disabled={loading || typeof onLanguageChange !== "function"}
+          >
+            {LANGUAGE_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </select>
@@ -1049,6 +1096,21 @@ function AIMapInterpretation({
                     ? ` · Language: ${report.target_language}`
                     : ""}
               </p>
+              {Array.isArray(report?._metadata?.fallback_stages) &&
+                report._metadata.fallback_stages.length > 0 && (
+                  <p className="ai-fallback-warning">
+                    ⚠{" "}
+                    {report._metadata.fallback_stages
+                      .map((name) => STAGE_LABELS[name] || name)
+                      .join(", ")}{" "}
+                    used the rule-based fallback (no live AI provider
+                    completed).
+                    {report?._metadata?.target_language_code &&
+                    report._metadata.target_language_code !== "en"
+                      ? ` That text is plain English, not ${report._metadata.target_language} -- the fallback path does not translate.`
+                      : ""}
+                  </p>
+                )}
             </div>
             <div className="ai-report-buttons">
               <button

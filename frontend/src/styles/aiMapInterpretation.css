@@ -134,6 +134,17 @@
   color: var(--muted);
 }
 
+.ai-fallback-warning {
+  margin-top: 10px !important;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff8e6;
+  border: 1px solid #f5d68a;
+  color: #8a5a00 !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+
 .ai-report-buttons {
   display: flex;
   gap: 10px;

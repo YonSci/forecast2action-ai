@@ -100,8 +100,6 @@ function Dashboard() {
       )}
       {errorMessage && <div className="error-banner">{errorMessage}</div>}
       <AdminBoundarySelector
-        selectedLanguage={selectedLanguage}
-        onLanguageChange={setSelectedLanguage}
         onSelectionChange={setAdminSelection}
         onClearPrioritySelection={() => setSelectedPriorityArea(null)}
       />
@@ -148,6 +146,7 @@ function Dashboard() {
         adminSelection={adminSelection}
         selectedPriorityArea={selectedPriorityArea}
         selectedLanguage={selectedLanguage}
+        onLanguageChange={setSelectedLanguage}
       />
     </main>
   );

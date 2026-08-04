@@ -556,6 +556,7 @@ def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
     assert report["humanitarian_priorities"]["monitoring"] == ["h1"]
     assert report["sms_summary"] == "sms"
     assert report["_metadata"]["ai_engine"] == "staged_workflow"
+    assert report["_metadata"]["fallback_stages"] == []
     assert set(report["_metadata"]["stages"].keys()) == {"stage1", "stage2", "stage3"}
 
     # priority_area_justification is the MERGED real object (deterministic
@@ -685,6 +686,11 @@ def test_run_staged_report_generation_falls_back_for_failed_stage_only(monkeypat
     assert report["executive_summary"]
     assert report["_metadata"]["stages"]["stage2"]["ai_engine"] == "rule_based_fallback"
     assert report["_metadata"]["stages"]["stage1"]["provider"] == "gemini"
+    # Partial fallback (stage2 only) must be visible at the top level, not
+    # just buried in "stages" -- this is what lets the UI honestly warn that
+    # part of the report is untranslated rule-based English text.
+    assert report["_metadata"]["fallback_stages"] == ["stage2"]
+    assert report["_metadata"]["ai_engine"] == "staged_workflow_partial_fallback"
 
     # Even on Stage 2 failure, the real deterministic priority-area numbers
     # survive (merged with the fallback's own generic-but-grounded narrative)
@@ -693,3 +699,23 @@ def test_run_staged_report_generation_falls_back_for_failed_stage_only(monkeypat
     assert justification["justification_id"] == "Afar::drought"
     assert justification["priority_score"] == 0.9
     assert justification["differentiator"]
+
+
+def test_run_staged_report_generation_flags_full_fallback(monkeypatch):
+    monkeypatch.setattr(
+        report_stages,
+        "build_national_region_evidence",
+        lambda period, admin_level, use_cache: {"cross_indicator_findings": [], "priority_area_justifications": []},
+    )
+    monkeypatch.setattr(report_stages, "build_community_evidence_by_region", lambda region_names: {})
+    monkeypatch.setattr(report_stages, "select_curated_stage1_images", lambda request, evidence, period: [])
+    monkeypatch.setattr(
+        report_stages,
+        "call_configured_ai_provider_for_stage",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("all providers exhausted")),
+    )
+
+    report = report_stages.run_staged_report_generation(_request(), [])
+
+    assert set(report["_metadata"]["fallback_stages"]) == {"stage1", "stage2", "stage3"}
+    assert report["_metadata"]["ai_engine"] == "staged_workflow_full_fallback"

@@ -68,9 +68,22 @@ OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/ap
 # AI_PROVIDER env default) but is no longer offered as a UI choice.
 AI_PROVIDER_OPTIONS = [
     {
+        # Default: tries Gemini first, then automatically fails over to
+        # OpenRouter/OpenAI (see call_configured_ai_provider_for_stage's
+        # "auto"/"free_auto" branch) instead of surfacing a single Gemini
+        # hiccup as a full rule-based-fallback report. "models" stays empty
+        # (no fixed model to pick) -- the frontend's model dropdown already
+        # falls back to a single "Automatic" entry when this is empty.
+        "value": "free_auto",
+        "label": "Automatic (recommended)",
+        "description": "Tries Gemini first, then automatically fails over to OpenRouter and OpenAI if Gemini is unavailable -- the most resilient option.",
+        "supports_screenshot": True,
+        "models": [],
+    },
+    {
         "value": "gemini",
         "label": "Google Gemini",
-        "description": "Fastest and most reliable with the full comprehensive map set (all 32 images).",
+        "description": "Fastest and most reliable with the full comprehensive map set (all 32 images). No automatic failover if Gemini itself is unavailable -- pick Automatic for resilience.",
         "supports_screenshot": True,
         "models": [
             {"value": "gemini-flash-lite-latest", "label": "Gemini Flash-Lite (latest, fastest)"},
@@ -928,6 +941,18 @@ def fallback_report(
 ) -> Dict[str, Any]:
     language_code = normalize_language_code(request.target_language)
     language_label = get_language_label(language_code)
+    # This whole function only ever produces hardcoded ENGLISH sentences --
+    # unlike a real LLM call, it has no translation capability. Silently
+    # stamping "target_language": language_label on English text falsely
+    # implied a Amharic/Oromifa/Tigrinya/Somali request had been honored;
+    # this note (surfaced in executive_summary/data_quality_notes/sms below,
+    # and content_language_code in _metadata) makes the mismatch explicit
+    # instead of hiding it.
+    language_mismatch_note = (
+        None if language_code == "en" else
+        f"This automated summary is shown in English, not {language_label} as requested, because no "
+        f"configured AI provider completed successfully -- the rule-based fallback does not translate content."
+    )
     forecast_window = title_case(request.forecast_selection.forecastScale)
     lead = title_case(request.forecast_selection.lead)
     admin_scope = request.map_context.admin_scope or "Ethiopia"
@@ -966,6 +991,7 @@ def fallback_report(
             f"Active map layer: {active_layer}; Active climate indicator: {active_indicator}; "
             f"Seasonal period: {seasonal_period}; Map product: {seasonal_product}; "
             f"Output language: {language_label}. The report is using the rule-based fallback because no configured AI provider completed successfully."
+            + (f" {language_mismatch_note}" if language_mismatch_note else "")
         ),
         "national_spatial_overview": [
             "The Ethiopia-wide interpretation should use all hazard/risk layers and all climate indicators, not only the priority intervention list.",
@@ -975,6 +1001,7 @@ def fallback_report(
         "indicator_by_indicator_summary": indicator_summary,
         "data_quality_notes": [
             "This report is using the rule-based fallback because no configured AI provider completed successfully -- review raw statistics and cross-indicator agreement scores directly for data-quality context.",
+            *([language_mismatch_note] if language_mismatch_note else []),
         ],
         "compound_hazard_interpretation": _fallback_compound_hazard_interpretation(evidence),
         "priority_area_justification": _fallback_priority_area_justification_narrative(evidence),
@@ -1017,7 +1044,8 @@ def fallback_report(
             "immediate_action": [],
         },
         "sms_summary": (
-            f"EARLY WARNING: {admin_scope}. {forecast_window} {lead} forecast. "
+            ("[EN fallback -- translation unavailable] " if language_mismatch_note else "")
+            + f"EARLY WARNING: {admin_scope}. {forecast_window} {lead} forecast. "
             f"Monitor local climate conditions and follow guidance from local authorities."
         ),
         "_metadata": {
@@ -1029,6 +1057,11 @@ def fallback_report(
             "used_screenshot": bool(get_map_image_data_url(request)),
             "target_language": language_label,
             "target_language_code": language_code,
+            # Always "en" -- this function never translates, regardless of
+            # what was requested (see language_mismatch_note above). Lets a
+            # caller detect target_language_code != content_language_code
+            # without parsing prose.
+            "content_language_code": "en",
             "retrieved_guidance_titles": [item["title"] for item in retrieved_guidance],
             "error": error_message,
             "provider_errors": provider_errors or [],

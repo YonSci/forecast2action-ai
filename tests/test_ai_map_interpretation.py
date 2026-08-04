@@ -56,3 +56,32 @@ def test_fallback_report_handles_missing_evidence_gracefully():
     assert report["layer_by_layer_summary"] == []
     assert report["indicator_by_indicator_summary"] == []
     assert report["_metadata"]["ai_engine"] == "rule_based_fallback"
+
+
+def test_fallback_report_english_request_has_no_mismatch_note():
+    # target_language defaults to "en" -- the fallback's real English content
+    # matches what was requested, so no mismatch disclosure is needed.
+    report = fallback_report(_request(), retrieved_guidance=[], evidence=None)
+
+    assert report["_metadata"]["content_language_code"] == "en"
+    assert report["_metadata"]["target_language_code"] == "en"
+    assert "shown in English" not in report["executive_summary"]
+    assert "[EN fallback" not in report["sms_summary"]
+    assert not any("shown in English" in note for note in report["data_quality_notes"])
+
+
+def test_fallback_report_non_english_request_discloses_it_is_actually_english():
+    # This function never translates -- it used to silently stamp
+    # "target_language": "Amharic" on hardcoded English sentences, which
+    # falsely implied the request had been honored. It must now say plainly,
+    # in every user-facing field, that the content is English.
+    request = _request()
+    request.target_language = "am"
+
+    report = fallback_report(request, retrieved_guidance=[], evidence=None)
+
+    assert report["_metadata"]["target_language_code"] == "am"
+    assert report["_metadata"]["content_language_code"] == "en"
+    assert "shown in English, not Amharic" in report["executive_summary"]
+    assert any("shown in English, not Amharic" in note for note in report["data_quality_notes"])
+    assert report["sms_summary"].startswith("[EN fallback -- translation unavailable] ")
