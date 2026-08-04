@@ -122,6 +122,26 @@ _GENERIC_CAPITALIZED_WORDS = {
     # Belg = short rains Feb-May, Bega = dry season Oct-Jan) -- legitimate
     # domain vocabulary the LLM correctly uses, not an invented place.
     "kiremt", "belg", "bega",
+    # Real risk-class labels (see RISK_CLASS_BANDS / _risk_definition_block
+    # in app.api.report_stages) -- Stage 2 is explicitly instructed to
+    # classify risk_score using these 5 real classes ("Very low"/"Low"/
+    # "Moderate"/"High"/"Very high"), so this is expected, correct
+    # vocabulary, not an invented place. Confirmed live: "Very High, up
+    # from Low" was being flagged as unmatched place names "Very High" /
+    # "Low" before this was added.
+    "very", "low", "moderate", "high",
+    # Real climate-indicator vocabulary (see VISIBLE_CLIMATE_INDICATORS /
+    # CLIMATE_INDICATOR_LABELS in app.api.ai_map_interpretation) that can
+    # appear as standalone capitalized fragments mid-sentence -- "Rx" is
+    # the confirmed live false positive ("the Rx anomaly", "Rx1day" itself
+    # never matches the phrase regex since the trailing digit breaks the
+    # word boundary, but the standalone "Rx" reference does); the rest are
+    # added defensively for the same reason (each word/acronym of "Rx1day
+    # (Daily Rainfall)", "Rx5day (5-Day Rainfall)", "Rainfall Total",
+    # "Standardized Precipitation Index", "Consecutive dry/wet days",
+    # "Rainfall percentile").
+    "rx", "rainfall", "total", "daily", "standardized", "precipitation", "index",
+    "consecutive", "dry", "wet", "days", "percentile", "anomaly", "spi", "cdd", "cwd",
 }
 
 
@@ -144,10 +164,23 @@ def _extract_candidate_place_names(text: str) -> List[str]:
     return candidates
 
 
+def _is_generic_phrase(name: str) -> bool:
+    """True when EVERY word in a (possibly multi-word) candidate is a known
+    generic/domain word -- not just the whole phrase as one literal string.
+    Catches real combinations like "Very High"/"Very Low" (risk-class
+    labels) without needing every 2-word pairing enumerated in
+    _GENERIC_CAPITALIZED_WORDS individually; a single generic word alone
+    ("Low", "Rx") is also covered since a 1-word phrase trivially satisfies
+    "every word is generic".
+    """
+    words = name.lower().split()
+    return bool(words) and all(word in _GENERIC_CAPITALIZED_WORDS for word in words)
+
+
 def _filter_unmatched_names(candidates: List[str], known_names_lower: List[str]) -> List[str]:
     return [
         name for name in candidates
-        if name.lower() not in _GENERIC_CAPITALIZED_WORDS
+        if not _is_generic_phrase(name)
         and not any(name.lower() in known or known in name.lower() for known in known_names_lower)
     ]
 

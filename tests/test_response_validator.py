@@ -136,6 +136,31 @@ def test_validate_against_evidence_does_not_flag_real_season_names_or_cross_item
     assert violations == []
 
 
+def test_validate_against_evidence_does_not_flag_real_risk_classes_or_indicator_vocabulary():
+    # Regression test for 2 real false positives confirmed via live
+    # dashboard use: Stage 2 is explicitly instructed (see
+    # _risk_definition_block in app.api.report_stages) to classify
+    # risk_score using the real "Very low/Low/Moderate/High/Very high"
+    # classes, and Stage 1/2 both legitimately discuss the real Rx1day/
+    # Rx5day climate indicators ("Rx" surfaces standalone since the digit
+    # in "Rx1day" breaks the phrase regex's own word boundary). Neither is
+    # an invented place name.
+    report = _report([
+        {
+            "justification_id": "Harari::drought", "area": "Harari", "priority_score": 0.599, "risk_score": 23.6,
+            "differentiator": (
+                "Classified as Very High, up from Low last period, corroborated by the Rx anomaly "
+                "and a Moderate hazard probability."
+            ),
+            "recommended_intervention_type": "Drought / water-security response",
+        },
+    ])
+
+    _, violations = validate_against_evidence(report, REAL_EVIDENCE)
+
+    assert violations == []
+
+
 def test_all_text_extracts_narrative_from_priority_area_justification_objects_not_dict_repr():
     report = _report([
         {"justification_id": "Harari::drought", "area": "Harari", "priority_score": 0.599, "differentiator": "unique differentiator text"},
