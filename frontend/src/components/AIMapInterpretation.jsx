@@ -427,6 +427,82 @@ function ReportList({ title, items }) {
   );
 }
 
+// layer_by_layer_summary/indicator_by_indicator_summary items are real
+// structured objects (layer/indicator, national_signal, national_mean,
+// highest_areas, lowest_areas, affected_area_pct, interpretation,
+// confidence -- see app/context/statistical_evidence.py's
+// build_structured_layer_summaries/build_structured_indicator_summaries),
+// not flat strings -- rendered as cards instead of ReportList's plain
+// <li>{item}</li>, which would show "[object Object]" for a raw object.
+function StructuredSummaryList({ title, items, keyField }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+  return (
+    <div className="ai-report-section">
+      <h4>{title}</h4>
+      <div className="ai-structured-summary-list">
+        {items.map((item, index) => {
+          if (!item || typeof item !== "object") {
+            // Defensive: a legacy cached report generated before this
+            // change may still have plain strings here.
+            return (
+              <p className="ai-structured-summary-legacy" key={`${title}-${index}`}>
+                {item}
+              </p>
+            );
+          }
+          const key = item[keyField];
+          return (
+            <div className="ai-structured-summary-item" key={key || index}>
+              <div className="ai-structured-summary-head">
+                <strong>{titleCase(key)}</strong>
+                {item.national_signal && (
+                  <span className="ai-structured-summary-signal">{titleCase(item.national_signal)}</span>
+                )}
+                {item.confidence && (
+                  <span className={`ai-structured-summary-confidence confidence-${item.confidence}`}>
+                    {item.confidence} confidence
+                  </span>
+                )}
+              </div>
+              {item.interpretation && <p>{item.interpretation}</p>}
+              <div className="ai-structured-summary-stats">
+                {item.national_mean !== null && item.national_mean !== undefined && (
+                  <span>national mean {item.national_mean}</span>
+                )}
+                {item.affected_area_pct !== null && item.affected_area_pct !== undefined && (
+                  <span>{item.affected_area_pct}% high/very-high area</span>
+                )}
+                {Array.isArray(item.highest_areas) && item.highest_areas.length > 0 && (
+                  <span>highest: {item.highest_areas.join(", ")}</span>
+                )}
+                {Array.isArray(item.lowest_areas) && item.lowest_areas.length > 0 && (
+                  <span>lowest: {item.lowest_areas.join(", ")}</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function formatStructuredSummaryForCopy(items, keyField) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  return items.map((item) => {
+    if (!item || typeof item !== "object") {
+      return `- ${item}`;
+    }
+    const label = titleCase(item[keyField]);
+    const signal = item.national_signal ? ` [${item.national_signal}]` : "";
+    return `- ${label}${signal}: ${item.interpretation || ""}`;
+  });
+}
+
 function formatStructuredAdvisory(data, labels) {
   if (!data) {
     return [];
@@ -467,10 +543,10 @@ function copyReport(report) {
     report.title || "AI Map Interpretation & Advisory",
     "",
     "Indicator-by-indicator summary",
-    ...(report.indicator_by_indicator_summary || []).map((item) => `- ${item}`),
+    ...formatStructuredSummaryForCopy(report.indicator_by_indicator_summary, "indicator"),
     "",
     "Layer-by-layer hazard summary",
-    ...(report.layer_by_layer_summary || []).map((item) => `- ${item}`),
+    ...formatStructuredSummaryForCopy(report.layer_by_layer_summary, "layer"),
     "",
     "Ethiopia-wide spatial overview",
     ...(report.national_spatial_overview || []).map((item) => `- ${item}`),
@@ -996,13 +1072,15 @@ function AIMapInterpretation({
 
           {/* Split view: indicator-by-indicator (left) | layer-by-layer hazard (right) */}
           <div className="ai-split-view">
-            <ReportList
+            <StructuredSummaryList
               title="Indicator-by-indicator summary"
               items={report.indicator_by_indicator_summary}
+              keyField="indicator"
             />
-            <ReportList
+            <StructuredSummaryList
               title="Layer-by-layer hazard summary"
               items={report.layer_by_layer_summary}
+              keyField="layer"
             />
           </div>
 

@@ -19,6 +19,29 @@ function fnum(value, digits = 2) {
   return Number(value).toFixed(digits);
 }
 
+// supporting_indicators/contradicting_indicators are real {indicator,
+// value, units} objects (see app/context/statistical_evidence.py's
+// _indicator_evidence_objects) -- e.g. {"indicator": "rainfall_anomaly",
+// "value": -47.2, "units": "%"} -- not bare name strings, so the real
+// value that made each one match is visible here, not just its name.
+function formatIndicatorEvidence(indicators) {
+  if (!Array.isArray(indicators) || indicators.length === 0) {
+    return "";
+  }
+  return indicators
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return entry;
+      }
+      const value = entry?.value;
+      const units = entry?.units || "";
+      const unitsText = units && units !== "%" ? ` ${units}` : units;
+      const valueText = value === null || value === undefined ? "" : ` (${value}${unitsText})`;
+      return `${entry?.indicator || ""}${valueText}`;
+    })
+    .join(", ");
+}
+
 function AreaCard({ item }) {
   return (
     <div className="ai-priority-justification-item">
@@ -46,7 +69,7 @@ function AreaCard({ item }) {
           {item.cross_indicator_signal !== `strong_${item.hazard_type}` &&
             " (independent analysis -- may not align with this area's risk-based hazard type)"}
           {Array.isArray(item.supporting_indicators) && item.supporting_indicators.length > 0 &&
-            ` · indicators: ${item.supporting_indicators.join(", ")}`}
+            ` · indicators: ${formatIndicatorEvidence(item.supporting_indicators)}`}
         </p>
       )}
 

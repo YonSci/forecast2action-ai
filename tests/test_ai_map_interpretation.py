@@ -1,0 +1,58 @@
+from app.api.ai_map_interpretation import AIMapInterpretationRequest, fallback_report
+
+
+def _request():
+    return AIMapInterpretationRequest()
+
+
+def test_fallback_report_layer_and_indicator_summaries_are_structured_objects_from_real_evidence():
+    # Phase 3 #17 -- fallback_report used to build these 2 fields from
+    # request.all_map_layer_summaries/all_climate_indicator_summaries (an
+    # older, separate data source) as flat "Label: text" strings. It now
+    # uses the SAME real `evidence` Stage 1's real LLM call receives, in
+    # the same structured-object shape STAGE1_SCHEMA now requires, so the
+    # deterministic fallback is never shape- or data-source-inconsistent
+    # with a real report.
+    evidence = {
+        "hazard_risk_layers": {
+            "h_dry_mean": {
+                "layer_label": "Drought Hazard (mean)",
+                "national": {"mean": 0.482},
+                "regional": [
+                    {"area_name": "South Ethiopia", "mean": 0.82},
+                    {"area_name": "Addis Ababa", "mean": 0.1},
+                ],
+                "class_area_pct": {"very_low": 10.0, "low": 20.0, "moderate": 30.0, "high": 25.0, "very_high": 15.0},
+            },
+        },
+        "categorical_layers": {},
+        "climate_indicators": {
+            "spi": {
+                "national": {"mean": -1.6},
+                "regional": [{"area_name": "Somali", "mean": -2.1}],
+                "category": "severely_dry",
+            },
+        },
+    }
+
+    report = fallback_report(_request(), retrieved_guidance=[], evidence=evidence)
+
+    assert isinstance(report["layer_by_layer_summary"], list)
+    layer_item = report["layer_by_layer_summary"][0]
+    assert isinstance(layer_item, dict)
+    assert layer_item["layer"] == "h_dry_mean"
+    assert layer_item["national_mean"] == 0.482
+    assert "South Ethiopia" in layer_item["interpretation"]
+
+    indicator_item = report["indicator_by_indicator_summary"][0]
+    assert isinstance(indicator_item, dict)
+    assert indicator_item["indicator"] == "spi"
+    assert indicator_item["national_signal"] == "severely_dry"
+
+
+def test_fallback_report_handles_missing_evidence_gracefully():
+    report = fallback_report(_request(), retrieved_guidance=[], evidence=None)
+
+    assert report["layer_by_layer_summary"] == []
+    assert report["indicator_by_indicator_summary"] == []
+    assert report["_metadata"]["ai_engine"] == "rule_based_fallback"

@@ -164,3 +164,29 @@ def test_all_text_flattens_timescale_and_category_structured_advisory_fields():
     assert "conserve water now" in text
     assert "prepare for dry spell" in text
     assert "pre-position supplies" in text
+
+
+def test_all_text_extracts_interpretation_from_structured_layer_and_indicator_summaries():
+    # Phase 3 #17 -- layer_by_layer_summary/indicator_by_indicator_summary
+    # items are now real structured objects (layer/indicator, national_
+    # signal, national_mean, highest_areas, lowest_areas, affected_area_pct,
+    # interpretation, confidence), not flat strings. Before this fix,
+    # _item_narrative_text's dict branch only recognized differentiator/
+    # recommended_intervention_type, so interpretation (the ONLY LLM-
+    # authored narrative field on these objects) would be silently dropped
+    # from every scan -- confirmed_language detection included.
+    report = _report(
+        [],
+        layer_by_layer_summary=[
+            {"layer": "h_dry_mean", "national_signal": "high", "national_mean": 0.48, "highest_areas": ["Harari"], "lowest_areas": [], "affected_area_pct": 34.0, "interpretation": "unique layer interpretation text", "confidence": "moderate"},
+        ],
+        indicator_by_indicator_summary=[
+            {"indicator": "spi", "national_signal": "severely_dry", "national_mean": -1.6, "highest_areas": [], "lowest_areas": ["Somali"], "affected_area_pct": None, "interpretation": "unique indicator interpretation text", "confidence": "moderate"},
+        ],
+    )
+
+    text = _all_text(report)
+
+    assert "unique layer interpretation text" in text
+    assert "unique indicator interpretation text" in text
+    assert "national_signal" not in text  # not a raw dict repr

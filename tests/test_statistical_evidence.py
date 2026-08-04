@@ -2,9 +2,12 @@ import numpy as np
 from affine import Affine
 
 from app.context.statistical_evidence import (
+    _indicator_evidence_objects,
     area_weighted_statistics,
     build_cross_indicator_findings,
     build_priority_area_justifications,
+    build_structured_indicator_summaries,
+    build_structured_layer_summaries,
     class_area_percentages,
     classify_by_quintiles,
     classify_by_risk_bands,
@@ -113,10 +116,19 @@ def test_cross_indicator_findings_strong_drought_signal(monkeypatch):
     assert by_area["National"]["agreement_score"] == 1.0
     assert by_area["National"]["confidence"] == "high"
     assert by_area["Region A"]["signal"] == "strong_drought"
-    assert set(by_area["Region A"]["supporting_indicators"]) == {
+    supporting = by_area["Region A"]["supporting_indicators"]
+    supporting_names = {item["indicator"] for item in supporting}
+    assert supporting_names == {
         "rainfall_anomaly", "rainfall_percentile", "spi", "cdd_anomaly", "drought_probability",
     }
     assert by_area["Region A"]["contradicting_indicators"] == []
+
+    # Real values, not just names -- e.g. rainfall_anomaly=-50.0% and
+    # drought_probability=0.8 (a real 0-1 fraction) reported as 80.0%.
+    by_indicator = {item["indicator"]: item for item in supporting}
+    assert by_indicator["rainfall_anomaly"] == {"indicator": "rainfall_anomaly", "value": -50.0, "units": "%"}
+    assert by_indicator["drought_probability"] == {"indicator": "drought_probability", "value": 80.0, "units": "%"}
+    assert by_indicator["cdd_anomaly"] == {"indicator": "cdd_anomaly", "value": 5.0, "units": "days"}
 
 
 def test_cross_indicator_findings_strong_wet_signal(monkeypatch):
@@ -131,6 +143,17 @@ def test_cross_indicator_findings_strong_wet_signal(monkeypatch):
 
     assert by_area["Region A"]["signal"] == "strong_wet"
     assert by_area["Region A"]["confidence"] == "high"
+
+
+def test_indicator_evidence_objects_rx_anomaly_picks_larger_real_magnitude():
+    # rx_anomaly has no single real value of its own -- it's met if either
+    # rx1day or rx5day anomaly is positive -- so the reported value must be
+    # whichever real component has the larger magnitude, never fabricated.
+    values = {"rx1day_anomaly": 2.0, "rx5day_anomaly": -6.0}
+    objects = _indicator_evidence_objects(["rx_anomaly"], values)
+    assert objects == [{"indicator": "rx_anomaly", "value": -6.0, "units": "mm"}]
+
+    assert _indicator_evidence_objects(["rx_anomaly"], {}) == [{"indicator": "rx_anomaly", "value": None, "units": "mm"}]
 
 
 def test_cross_indicator_findings_mixed_signal_reports_contradictions(monkeypatch):
@@ -256,3 +279,92 @@ def test_weighted_exposure_by_region_matches_hand_computed_sum(monkeypatch):
     assert by_name["Region A"]["exposed"] == 40.0
     assert by_name["Region A"]["exposed_pct"] == 100.0
     assert by_name["Region B"]["exposed"] == 0.0
+
+
+def test_build_structured_layer_summaries_continuous_layer():
+    evidence = {
+        "hazard_risk_layers": {
+            "h_dry_mean": {
+                "layer_label": "Drought Hazard (mean)",
+                "national": {"mean": 0.482},
+                "regional": [
+                    {"area_name": "South Ethiopia", "mean": 0.82},
+                    {"area_name": "Harari", "mean": 0.79},
+                    {"area_name": "Somali", "mean": 0.55},
+                    {"area_name": "Amhara", "mean": 0.4},
+                    {"area_name": "Addis Ababa", "mean": 0.1},
+                ],
+                "class_area_pct": {"very_low": 10.0, "low": 20.0, "moderate": 30.0, "high": 25.0, "very_high": 15.0},
+            },
+        },
+        "categorical_layers": {},
+    }
+
+    summaries = build_structured_layer_summaries(evidence)
+
+    assert len(summaries) == 1
+    item = summaries[0]
+    assert item["layer"] == "h_dry_mean"
+    assert item["national_mean"] == 0.482
+    assert item["highest_areas"] == ["South Ethiopia", "Harari"]
+    assert item["lowest_areas"] == ["Amhara", "Addis Ababa"]
+    assert item["affected_area_pct"] == 40.0  # high + very_high
+    assert item["national_signal"] == "moderate"  # dominant class by area %
+    assert "South Ethiopia" in item["interpretation"]
+    assert item["confidence"] == "moderate"
+
+
+def test_build_structured_layer_summaries_categorical_layer():
+    evidence = {
+        "hazard_risk_layers": {},
+        "categorical_layers": {
+            "population_risk_class": {
+                "layer_label": "Risk Class",
+                "class_area_pct": {"very_low": 70.0, "low": 15.0, "moderate": 10.0, "high": 4.0, "very_high": 1.0},
+            },
+        },
+    }
+
+    summaries = build_structured_layer_summaries(evidence)
+
+    assert len(summaries) == 1
+    item = summaries[0]
+    assert item["layer"] == "population_risk_class"
+    assert item["national_signal"] == "very_low"
+    assert item["national_mean"] is None
+    assert item["highest_areas"] == []
+    assert item["affected_area_pct"] == 5.0  # high + very_high
+    assert "Very Low" in item["interpretation"]
+
+
+def test_build_structured_indicator_summaries_uses_real_spi_category_not_quintiles():
+    evidence = {
+        "climate_indicators": {
+            "spi": {
+                "national": {"mean": -1.6},
+                "regional": [
+                    {"area_name": "Somali", "mean": -2.1},
+                    {"area_name": "Afar", "mean": -1.8},
+                    {"area_name": "Amhara", "mean": -0.5},
+                    {"area_name": "Harari", "mean": 0.0},
+                    {"area_name": "Addis Ababa", "mean": 0.15},
+                ],
+                "category": "severely_dry",
+                # Deliberately no class_area_pct -- SPI never has one (see
+                # INDICATORS_WITH_CLIMATOLOGY's docstring).
+            },
+        },
+    }
+
+    summaries = build_structured_indicator_summaries(evidence)
+
+    assert len(summaries) == 1
+    item = summaries[0]
+    assert item["indicator"] == "spi"
+    assert item["national_signal"] == "severely_dry"  # real McKee category, not a quintile label
+    # highest_areas/lowest_areas stay direction-consistent with every other
+    # indicator (highest = numerically largest) -- the driest (most
+    # negative) real areas are in lowest_areas, not a flipped "driest_areas".
+    assert item["highest_areas"] == ["Addis Ababa", "Harari"]
+    assert item["lowest_areas"] == ["Afar", "Somali"]
+    assert item["affected_area_pct"] is None

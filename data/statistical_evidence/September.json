@@ -1,19 +1,16 @@
 {
-  "period": "September",
+  "period": "september",
   "admin_level": "admin1",
   "forecast_metadata": {
     "country": "Ethiopia",
     "forecast_initialization": "2026-05-01",
     "valid_period": "September 2026",
     "forecast_lead_months": 4,
-    "forecast_system": null,
-    "forecast_system_note": "Not documented in this pipeline -- no forecast_source/model name is recorded for any real raster (confirmed: seasonal_raster_catalog.json does not exist on disk, no per-file metadata sidecars exist; this project's own architecture doc lists real seasonal-forecast-system ingestion as a future roadmap item).",
-    "ensemble_members": null,
-    "ensemble_members_note": "Not documented -- no raw ensemble member data or count exists anywhere in this pipeline. Drought/Wet Probability layers ARE real ensemble-derived exceedance probabilities and are used elsewhere as the confidence proxy (see probability_layer_evidence), but a member count for them isn't recorded.",
+    "forecast_system": "ECMWF-SEAS5",
+    "ensemble_members": 25,
     "spatial_resolution_degrees": 0.25,
-    "spatial_resolution_km": "~27.6 km north-south (constant); ~26.7-27.6 km east-west (varies with latitude across Ethiopia's 3-15N extent)",
-    "climatology_period": null,
-    "climatology_period_note": "Not documented in this pipeline -- climatology/anomaly rasters exist and are used directly (see departure_from_climatology), but the specific reference period they were computed against isn't recorded in this dataset.",
+    "spatial_resolution_km": "~27.6 km",
+    "climatology_period": "1993-2025",
     "administrative_level": "national + region (admin1)",
     "population_reference_year": 2020,
     "population_source": "WorldPop Ethiopia 2020 population count, 1km",
@@ -266,7 +263,7 @@
       },
       "departure": {
         "indicator": "rainfall_total",
-        "period": "September",
+        "period": "september",
         "national_anomaly": {
           "min": -147.11978149414062,
           "max": 30.20248794555664,
@@ -950,7 +947,7 @@
       },
       "departure": {
         "indicator": "cdd",
-        "period": "September",
+        "period": "september",
         "national_anomaly": {
           "min": -4.59030294418335,
           "max": 10.05212116241455,
@@ -1450,7 +1447,7 @@
       },
       "departure": {
         "indicator": "cwd",
-        "period": "September",
+        "period": "september",
         "national_anomaly": {
           "min": -5.3575758934021,
           "max": 3.4133334159851074,
@@ -1950,7 +1947,7 @@
       },
       "departure": {
         "indicator": "rx1day",
-        "period": "September",
+        "period": "september",
         "national_anomaly": {
           "min": -20.534027099609375,
           "max": 7.761016845703125,
@@ -2450,7 +2447,7 @@
       },
       "departure": {
         "indicator": "rx5day",
-        "period": "September",
+        "period": "september",
         "national_anomaly": {
           "min": -30.62042999267578,
           "max": 37.77564239501953,
@@ -2950,7 +2947,7 @@
       },
       "departure": {
         "indicator": "rainfall_percentile",
-        "period": "September",
+        "period": "september",
         "national_anomaly": {
           "min": -64.70264434814453,
           "max": 315.1360168457031,
@@ -3849,7 +3846,7 @@
       },
       "departure": {
         "layer_value": "p_drought",
-        "period": "September",
+        "period": "september",
         "national": {
           "min": 0.0,
           "max": 0.800000011920929,
@@ -4233,7 +4230,7 @@
       },
       "departure": {
         "layer_value": "p_wet",
-        "period": "September",
+        "period": "september",
         "national": {
           "min": 0.0,
           "max": 0.7599999904632568,
@@ -5733,6 +5730,190 @@
           "exposed": 0.0,
           "exposed_pct": 0.0
         }
+      ],
+      "roads_exposed_by_region": [
+        {
+          "area_name": "Tigray",
+          "total": 18.285602122545242,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Afar",
+          "total": 12.875031962736102,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Amhara",
+          "total": 76.74373270804062,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Oromia",
+          "total": 181.92662940420269,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Somali",
+          "total": 86.88276207144372,
+          "exposed": 0.37898512929677963,
+          "exposed_pct": 0.44
+        },
+        {
+          "area_name": "Benishangul-Gumuz",
+          "total": 27.50318634044379,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Central Ethiopia",
+          "total": 23.784845650196075,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "South Ethiopia",
+          "total": 38.19971216097474,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "South West Ethiopia",
+          "total": 26.54591060616076,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Gambela",
+          "total": 10.595097731333226,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Harari",
+          "total": 1.982129454612732,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Addis Ababa",
+          "total": 4.0,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Dire Dawa",
+          "total": 5.27669021487236,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Sidama",
+          "total": 14.929451629519463,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Contested",
+          "total": 11.34185247682035,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        }
+      ],
+      "healthsites_exposed_by_region": [
+        {
+          "area_name": "Tigray",
+          "total": 2.800000011920929,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Afar",
+          "total": 1.0000000149011612,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Amhara",
+          "total": 22.000000283122063,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Oromia",
+          "total": 13.200000137090683,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Somali",
+          "total": 3.6000000536441803,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Benishangul-Gumuz",
+          "total": 1.4000000357627869,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Central Ethiopia",
+          "total": 4.800000041723251,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "South Ethiopia",
+          "total": 2.4000000208616257,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "South West Ethiopia",
+          "total": 0.6000000089406967,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Gambela",
+          "total": 2.000000014901161,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Harari",
+          "total": 0.6000000238418579,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Addis Ababa",
+          "total": 4.0,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Dire Dawa",
+          "total": 2.4000000059604645,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Sidama",
+          "total": 3.600000038743019,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Contested",
+          "total": 2.400000035762787,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        }
       ]
     },
     "population_r_drought": {
@@ -5921,7 +6102,979 @@
           "exposed": 0.28828829526901245,
           "exposed_pct": 2.94
         }
+      ],
+      "roads_exposed_by_region": [
+        {
+          "area_name": "Tigray",
+          "total": 18.285602122545242,
+          "exposed": 1.382845938205719,
+          "exposed_pct": 7.56
+        },
+        {
+          "area_name": "Afar",
+          "total": 12.875031962736102,
+          "exposed": 0.2653889060020447,
+          "exposed_pct": 2.06
+        },
+        {
+          "area_name": "Amhara",
+          "total": 76.74373270804062,
+          "exposed": 1.6113372445106506,
+          "exposed_pct": 2.1
+        },
+        {
+          "area_name": "Oromia",
+          "total": 181.92662940420269,
+          "exposed": 7.195210218429565,
+          "exposed_pct": 3.96
+        },
+        {
+          "area_name": "Somali",
+          "total": 86.88276207144372,
+          "exposed": 0.23526854813098907,
+          "exposed_pct": 0.27
+        },
+        {
+          "area_name": "Benishangul-Gumuz",
+          "total": 27.50318634044379,
+          "exposed": 1.0,
+          "exposed_pct": 3.64
+        },
+        {
+          "area_name": "Central Ethiopia",
+          "total": 23.784845650196075,
+          "exposed": 5.849168598651886,
+          "exposed_pct": 24.59
+        },
+        {
+          "area_name": "South Ethiopia",
+          "total": 38.19971216097474,
+          "exposed": 8.729113221168518,
+          "exposed_pct": 22.85
+        },
+        {
+          "area_name": "South West Ethiopia",
+          "total": 26.54591060616076,
+          "exposed": 2.1952894926071167,
+          "exposed_pct": 8.27
+        },
+        {
+          "area_name": "Gambela",
+          "total": 10.595097731333226,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Harari",
+          "total": 1.982129454612732,
+          "exposed": 0.7130586504936218,
+          "exposed_pct": 35.97
+        },
+        {
+          "area_name": "Addis Ababa",
+          "total": 4.0,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Dire Dawa",
+          "total": 5.27669021487236,
+          "exposed": 3.0,
+          "exposed_pct": 56.85
+        },
+        {
+          "area_name": "Sidama",
+          "total": 14.929451629519463,
+          "exposed": 6.996671497821808,
+          "exposed_pct": 46.86
+        },
+        {
+          "area_name": "Contested",
+          "total": 11.34185247682035,
+          "exposed": 0.29678207635879517,
+          "exposed_pct": 2.62
+        }
+      ],
+      "healthsites_exposed_by_region": [
+        {
+          "area_name": "Tigray",
+          "total": 2.800000011920929,
+          "exposed": 1.0,
+          "exposed_pct": 35.71
+        },
+        {
+          "area_name": "Afar",
+          "total": 1.0000000149011612,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Amhara",
+          "total": 22.000000283122063,
+          "exposed": 0.20000000298023224,
+          "exposed_pct": 0.91
+        },
+        {
+          "area_name": "Oromia",
+          "total": 13.200000137090683,
+          "exposed": 1.2000000029802322,
+          "exposed_pct": 9.09
+        },
+        {
+          "area_name": "Somali",
+          "total": 3.6000000536441803,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Benishangul-Gumuz",
+          "total": 1.4000000357627869,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Central Ethiopia",
+          "total": 4.800000041723251,
+          "exposed": 2.4000000059604645,
+          "exposed_pct": 50.0
+        },
+        {
+          "area_name": "South Ethiopia",
+          "total": 2.4000000208616257,
+          "exposed": 1.2000000029802322,
+          "exposed_pct": 50.0
+        },
+        {
+          "area_name": "South West Ethiopia",
+          "total": 0.6000000089406967,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Gambela",
+          "total": 2.000000014901161,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Harari",
+          "total": 0.6000000238418579,
+          "exposed": 0.6000000238418579,
+          "exposed_pct": 100.0
+        },
+        {
+          "area_name": "Addis Ababa",
+          "total": 4.0,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        },
+        {
+          "area_name": "Dire Dawa",
+          "total": 2.4000000059604645,
+          "exposed": 1.2000000029802322,
+          "exposed_pct": 50.0
+        },
+        {
+          "area_name": "Sidama",
+          "total": 3.600000038743019,
+          "exposed": 1.0000000149011612,
+          "exposed_pct": 27.78
+        },
+        {
+          "area_name": "Contested",
+          "total": 2.400000035762787,
+          "exposed": 0.0,
+          "exposed_pct": 0.0
+        }
       ]
     }
-  }
+  },
+  "cross_indicator_findings": [
+    {
+      "area": "National",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -19.7,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.78,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Addis Ababa",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.33,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": 11.5,
+          "units": "%"
+        },
+        {
+          "indicator": "rx_anomaly",
+          "value": 8.06,
+          "units": "mm"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "low"
+    },
+    {
+      "area": "Afar",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -7.15,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.09,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Amhara",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -22.53,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 1.45,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Benishangul-Gumuz",
+      "signal": "strong_drought",
+      "agreement_score": 1.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -43.88,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 9.55,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -1.51,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 1.32,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 54.38,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "high"
+    },
+    {
+      "area": "Central Ethiopia",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -25.36,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.24,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Contested",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -28.22,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.82,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Dire Dawa",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.6,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -31.58,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 16.83,
+          "units": "percentile"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.84,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Gambela",
+      "signal": "strong_drought",
+      "agreement_score": 1.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -77.65,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 1.15,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -2.69,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 4.65,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 68.8,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "high"
+    },
+    {
+      "area": "Harari",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -22.05,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 3.95,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Oromia",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -19.27,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 3.36,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    },
+    {
+      "area": "Sidama",
+      "signal": "strong_drought",
+      "agreement_score": 1.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -41.04,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 8.92,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -1.7,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 4.67,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 52.0,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [
+        {
+          "indicator": "rx_anomaly",
+          "value": 4.66,
+          "units": "mm"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "area": "Somali",
+      "signal": "strong_wet",
+      "agreement_score": 0.83,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": 4.61,
+          "units": "%"
+        },
+        {
+          "indicator": "spi",
+          "value": 1.03,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cwd_anomaly",
+          "value": 1.56,
+          "units": "days"
+        },
+        {
+          "indicator": "rx_anomaly",
+          "value": 11.72,
+          "units": "mm"
+        },
+        {
+          "indicator": "wet_probability",
+          "value": 51.26,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [
+        {
+          "indicator": "cdd_anomaly",
+          "value": 1.94,
+          "units": "days"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "area": "South Ethiopia",
+      "signal": "strong_drought",
+      "agreement_score": 1.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -44.75,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 3.74,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -1.73,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 6.98,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 63.69,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "high"
+    },
+    {
+      "area": "South West Ethiopia",
+      "signal": "strong_drought",
+      "agreement_score": 1.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -82.81,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 1.77,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -2.55,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 5.8,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 65.6,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "high"
+    },
+    {
+      "area": "Tigray",
+      "signal": "no_clear_signal",
+      "agreement_score": 0.4,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -16.32,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 4.15,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "confidence": "medium"
+    }
+  ],
+  "priority_area_justifications": [
+    {
+      "justification_id": "Sidama::drought",
+      "rank": 1,
+      "area": "Sidama",
+      "hazard_type": "drought",
+      "priority_score": 0.584,
+      "risk_score": 13.947645014248973,
+      "hazard_probability": 0.519981294875379,
+      "vulnerability": 0.4140649135763825,
+      "population_exposed": 3253000.2656173706,
+      "population_exposed_pct": 68.83,
+      "roads_exposed_pct": 46.86,
+      "healthsites_exposed_pct": 27.78,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -41.04,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 8.92,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -1.7,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 4.67,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 52.0,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [
+        {
+          "indicator": "rx_anomaly",
+          "value": 4.66,
+          "units": "mm"
+        }
+      ],
+      "cross_indicator_signal": "strong_drought",
+      "confidence": "high"
+    },
+    {
+      "justification_id": "Harari::drought",
+      "rank": 2,
+      "area": "Harari",
+      "hazard_type": "drought",
+      "priority_score": 0.496,
+      "risk_score": 12.185750803175416,
+      "hazard_probability": 0.45332701235316597,
+      "vulnerability": 0.5507091671037463,
+      "population_exposed": 240167.69826507568,
+      "population_exposed_pct": 84.86,
+      "roads_exposed_pct": 35.97,
+      "healthsites_exposed_pct": 100.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -22.05,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 3.95,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "no_clear_signal",
+      "confidence": "medium"
+    },
+    {
+      "justification_id": "Central Ethiopia::drought",
+      "rank": 3,
+      "area": "Central Ethiopia",
+      "hazard_type": "drought",
+      "priority_score": 0.446,
+      "risk_score": 9.89843198725492,
+      "hazard_probability": 0.42671353243916854,
+      "vulnerability": 0.43612827357551714,
+      "population_exposed": 2790794.504436493,
+      "population_exposed_pct": 45.35,
+      "roads_exposed_pct": 24.59,
+      "healthsites_exposed_pct": 50.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -25.36,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.24,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "no_clear_signal",
+      "confidence": "medium"
+    },
+    {
+      "justification_id": "Dire Dawa::drought",
+      "rank": 4,
+      "area": "Dire Dawa",
+      "hazard_type": "drought",
+      "priority_score": 0.438,
+      "risk_score": 9.802946448021777,
+      "hazard_probability": 0.42668093108982363,
+      "vulnerability": 0.48735645618147916,
+      "population_exposed": 29732.69007873535,
+      "population_exposed_pct": 6.05,
+      "roads_exposed_pct": 56.85,
+      "healthsites_exposed_pct": 50.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -31.58,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 16.83,
+          "units": "percentile"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 2.84,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "no_clear_signal",
+      "confidence": "medium"
+    },
+    {
+      "justification_id": "South Ethiopia::drought",
+      "rank": 5,
+      "area": "South Ethiopia",
+      "hazard_type": "drought",
+      "priority_score": 0.387,
+      "risk_score": 7.948045354338007,
+      "hazard_probability": 0.6369208476766,
+      "vulnerability": 0.5043805156474587,
+      "population_exposed": 2628790.054190576,
+      "population_exposed_pct": 34.73,
+      "roads_exposed_pct": 22.85,
+      "healthsites_exposed_pct": 50.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -44.75,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 3.74,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -1.73,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 6.98,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 63.69,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "strong_drought",
+      "confidence": "high"
+    },
+    {
+      "justification_id": "Somali::wet",
+      "rank": 1,
+      "area": "Somali",
+      "hazard_type": "wet",
+      "priority_score": 0.265,
+      "risk_score": 1.158735913628686,
+      "hazard_probability": 0.5125574754824339,
+      "vulnerability": 0.5947959591131294,
+      "population_exposed": 104815.06823730469,
+      "population_exposed_pct": 1.66,
+      "roads_exposed_pct": 0.44,
+      "healthsites_exposed_pct": 0.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": 4.61,
+          "units": "%"
+        },
+        {
+          "indicator": "spi",
+          "value": 1.03,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cwd_anomaly",
+          "value": 1.56,
+          "units": "days"
+        },
+        {
+          "indicator": "rx_anomaly",
+          "value": 11.72,
+          "units": "mm"
+        },
+        {
+          "indicator": "wet_probability",
+          "value": 51.26,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [
+        {
+          "indicator": "cdd_anomaly",
+          "value": 1.94,
+          "units": "days"
+        }
+      ],
+      "cross_indicator_signal": "strong_wet",
+      "confidence": "high"
+    },
+    {
+      "justification_id": "Sidama::wet",
+      "rank": 2,
+      "area": "Sidama",
+      "hazard_type": "wet",
+      "priority_score": 0.206,
+      "risk_score": 9.211633297109236,
+      "hazard_probability": 0.2733367588421074,
+      "vulnerability": 0.5262600249597846,
+      "population_exposed": 0.0,
+      "population_exposed_pct": 0.0,
+      "roads_exposed_pct": 0.0,
+      "healthsites_exposed_pct": 0.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -41.04,
+          "units": "%"
+        },
+        {
+          "indicator": "rainfall_percentile",
+          "value": 8.92,
+          "units": "percentile"
+        },
+        {
+          "indicator": "spi",
+          "value": -1.7,
+          "units": "std dev"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 4.67,
+          "units": "days"
+        },
+        {
+          "indicator": "drought_probability",
+          "value": 52.0,
+          "units": "%"
+        }
+      ],
+      "contradicting_indicators": [
+        {
+          "indicator": "rx_anomaly",
+          "value": 4.66,
+          "units": "mm"
+        }
+      ],
+      "cross_indicator_signal": "strong_drought",
+      "confidence": "high"
+    },
+    {
+      "justification_id": "Harari::wet",
+      "rank": 3,
+      "area": "Harari",
+      "hazard_type": "wet",
+      "priority_score": 0.187,
+      "risk_score": 8.65707372543235,
+      "hazard_probability": 0.34667298963836124,
+      "vulnerability": 0.5186255148040174,
+      "population_exposed": 0.0,
+      "population_exposed_pct": 0.0,
+      "roads_exposed_pct": 0.0,
+      "healthsites_exposed_pct": 0.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -22.05,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 3.95,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "no_clear_signal",
+      "confidence": "medium"
+    },
+    {
+      "justification_id": "Oromia::wet",
+      "rank": 4,
+      "area": "Oromia",
+      "hazard_type": "wet",
+      "priority_score": 0.14,
+      "risk_score": 2.471771306644941,
+      "hazard_probability": 0.27004494097971293,
+      "vulnerability": 0.5602807057444024,
+      "population_exposed": 0.0,
+      "population_exposed_pct": 0.0,
+      "roads_exposed_pct": 0.0,
+      "healthsites_exposed_pct": 0.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": -19.27,
+          "units": "%"
+        },
+        {
+          "indicator": "cdd_anomaly",
+          "value": 3.36,
+          "units": "days"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "no_clear_signal",
+      "confidence": "medium"
+    },
+    {
+      "justification_id": "Addis Ababa::wet",
+      "rank": 5,
+      "area": "Addis Ababa",
+      "hazard_type": "wet",
+      "priority_score": 0.139,
+      "risk_score": 6.597665010764726,
+      "hazard_probability": 0.3499965535209014,
+      "vulnerability": 0.5876405596829465,
+      "population_exposed": 0.0,
+      "population_exposed_pct": 0.0,
+      "roads_exposed_pct": 0.0,
+      "healthsites_exposed_pct": 0.0,
+      "supporting_indicators": [
+        {
+          "indicator": "rainfall_anomaly",
+          "value": 11.5,
+          "units": "%"
+        },
+        {
+          "indicator": "rx_anomaly",
+          "value": 8.06,
+          "units": "mm"
+        }
+      ],
+      "contradicting_indicators": [],
+      "cross_indicator_signal": "no_clear_signal",
+      "confidence": "low"
+    }
+  ]
 }

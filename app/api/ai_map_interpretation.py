@@ -312,6 +312,12 @@ AI_MAP_REPORT_SCHEMA_V2: Dict[str, Any] = {
         "farmer_advisory": _TIMESCALED_ADVISORY_SCHEMA,
         "agro_pastoral_advisory": _TIMESCALED_ADVISORY_SCHEMA,
         "humanitarian_priorities": _HUMANITARIAN_PRIORITIES_SCHEMA,
+        # Phase 3 #17 -- same reasoning as farmer_advisory above: overrides
+        # v1's array<string> declaration so the final validation pass
+        # leaves these real structured objects untouched instead of
+        # stringifying them.
+        "layer_by_layer_summary": {"type": "array", "items": {"type": "object"}},
+        "indicator_by_indicator_summary": {"type": "array", "items": {"type": "object"}},
     },
     "required": [
         *AI_MAP_REPORT_SCHEMA["required"],
@@ -334,8 +340,15 @@ STAGE1_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "layer_by_layer_summary": {"type": "array", "items": {"type": "string"}},
-        "indicator_by_indicator_summary": {"type": "array", "items": {"type": "string"}},
+        # Object, not string, as of Phase 3 #17 -- each entry is a real
+        # structured summary (national_signal, national_mean, highest_areas,
+        # lowest_areas, affected_area_pct, interpretation, confidence; see
+        # app.context.statistical_evidence.build_structured_layer_summaries/
+        # build_structured_indicator_summaries), not a free-text bullet, so
+        # the frontend/response_validator/downstream stages get a real,
+        # machine-checkable shape instead of prose to re-parse.
+        "layer_by_layer_summary": {"type": "array", "items": {"type": "object"}},
+        "indicator_by_indicator_summary": {"type": "array", "items": {"type": "object"}},
         "data_quality_notes": {"type": "array", "items": {"type": "string"}},
     },
     "required": ["layer_by_layer_summary", "indicator_by_indicator_summary", "data_quality_notes"],
@@ -684,14 +697,18 @@ def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> Li
     return selected
 
 
-def build_system_prompt(version: Optional[str] = None) -> str:
+def build_system_prompt(version: Optional[str] = None, stage: Optional[str] = None) -> str:
     """Thin wrapper over app.advisory.prompts.registry -- defaults to "v1"
     (the original, unchanged prompt text) so old callers with no
-    prompt_version keep getting identical behavior.
+    prompt_version keep getting identical behavior. `stage` ("stage1"/
+    "stage2"/"stage3", see app.api.report_stages) selects that stage's own
+    role framing instead of the legacy, stage-agnostic one -- omitting it
+    (every call site in this file does) preserves this module's own
+    single-call behavior unchanged.
     """
     from app.advisory.prompts.registry import get_system_prompt
 
-    return get_system_prompt(version or "v1")
+    return get_system_prompt(version or "v1", stage)
 
 
 def build_user_prompt(request: AIMapInterpretationRequest, retrieved_guidance: List[Dict[str, str]]) -> str:
@@ -849,32 +866,13 @@ def validate_report_shape(report: Dict[str, Any]) -> Dict[str, Any]:
     return validate_stage_shape(report, AI_MAP_REPORT_SCHEMA_V2)
 
 
-def _describe_top_bottom_areas(summary: Dict[str, Any]) -> str:
-    """Grounds the rule-based fallback's layer/indicator bullets in real
-    area names when summarize_hazard_risk_layer/summarize_climate_indicator
-    (app/context/spatial_summary.py) provided them, instead of the generic
-    "review hotspot areas" placeholder text -- so the no-LLM-available path
-    is meaningfully specific too, not just the real-provider path.
-    """
-    top_areas = summary.get("top_areas") or []
-    bottom_areas = summary.get("bottom_areas") or []
-    if not top_areas and not bottom_areas:
-        return "national summary was provided. Review hotspot areas, low-value areas, and regional statistics to interpret the country-level pattern."
-
-    parts = []
-    if top_areas:
-        parts.append(f"highest in {', '.join(area['area_name'] for area in top_areas[:2])}")
-    if bottom_areas:
-        parts.append(f"lowest in {', '.join(area['area_name'] for area in bottom_areas[:2])}")
-    return "; ".join(parts) + "."
-
-
 def _fallback_compound_hazard_interpretation(evidence: Optional[Dict[str, Any]]) -> List[str]:
     """Grounds the rule-based fallback's compound-hazard bullet in the real,
     already-computed cross_indicator_findings (see app.context.statistical_
     evidence.build_cross_indicator_findings) when available, instead of a
     generic placeholder -- same "no LLM available doesn't mean no real data"
-    principle as _describe_top_bottom_areas above.
+    principle as build_structured_layer_summaries/build_structured_
+    indicator_summaries use for the layer/indicator summaries above.
     """
     findings = (evidence or {}).get("cross_indicator_findings") or []
     strong_drought = [f["area"] for f in findings if f.get("signal") == "strong_drought" and f.get("area") != "National"]
@@ -944,22 +942,20 @@ def fallback_report(
     seasonal_period = request.forecast_selection.seasonalPeriodLabel or request.map_context.seasonal_period_label or request.forecast_selection.seasonalPeriod or request.map_context.seasonal_period or lead
     seasonal_product = request.forecast_selection.seasonalProductLabel or request.map_context.seasonal_product_label or request.forecast_selection.seasonalProduct or request.map_context.seasonal_product or "N/A"
 
-    layer_summary = []
-    for key, label in MAP_LAYER_LABELS.items():
-        summary = request.all_map_layer_summaries.get(key)
-        if summary:
-            layer_summary.append(f"{label}: {_describe_top_bottom_areas(summary)}")
-        else:
-            layer_summary.append(f"{label}: no national summary was provided.")
+    # Phase 3 #17 -- real structured objects (national_signal, national_mean,
+    # highest/lowest_areas, affected_area_pct, interpretation, confidence),
+    # built from the SAME real `evidence` Stage 1's real LLM call receives
+    # (app.context.statistical_evidence.build_national_region_evidence),
+    # not the older request.all_map_layer_summaries/all_climate_indicator_
+    # summaries this used to read -- so the deterministic fallback is never
+    # shape- OR data-source-inconsistent with a real report.
+    from app.context.statistical_evidence import (
+        build_structured_indicator_summaries,
+        build_structured_layer_summaries,
+    )
 
-    indicator_summary = []
-    for key in VISIBLE_CLIMATE_INDICATORS:
-        label = CLIMATE_INDICATOR_LABELS.get(key, key)
-        summary = request.all_climate_indicator_summaries.get(key)
-        if summary:
-            indicator_summary.append(f"{label}: {_describe_top_bottom_areas(summary)}")
-        else:
-            indicator_summary.append(f"{label}: no national summary was provided.")
+    layer_summary = build_structured_layer_summaries(evidence or {})
+    indicator_summary = build_structured_indicator_summaries(evidence or {})
 
     return {
         "title": "AI Map Interpretation & Advisory",

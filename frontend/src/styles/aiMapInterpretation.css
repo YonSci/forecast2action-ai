@@ -350,6 +350,70 @@
   color: var(--navy);
 }
 
+/* ---- Structured layer/indicator summaries (Phase 3 #17) ---- */
+.ai-structured-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-structured-summary-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+}
+
+.ai-structured-summary-item p {
+  margin: 6px 0 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.ai-structured-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-structured-summary-signal {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: var(--navy);
+  text-transform: capitalize;
+}
+
+.ai-structured-summary-confidence {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ai-structured-summary-confidence.confidence-low {
+  color: #b45309;
+}
+
+.ai-structured-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ai-structured-summary-legacy {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
 
 /* Step 11 -- automated output validation flags (see
    app/advisory/response_validator.py::validate_against_evidence). Detect-

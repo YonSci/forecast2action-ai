@@ -63,18 +63,23 @@ def _join_sentences(parts: List[str]) -> str:
 
 def _item_narrative_text(item: Any) -> str:
     """Coerces one TEXT_FIELDS list item to plain text for scanning. Most
-    array items are strings, but priority_area_justification's items are
-    OBJECTS (see app.context.statistical_evidence.build_priority_area_
-    justifications) with mostly real, already-validated numbers -- only
-    differentiator/recommended_intervention_type are LLM-authored
-    narrative there, so only those two keys are scanned, not a raw Python
-    dict repr of the whole object (which the plain str(item) this replaced
-    would have produced, uselessly, for every scan of this field).
+    array items are strings, but some are OBJECTS with a mix of real,
+    already-validated fields and LLM-authored narrative -- only the
+    narrative keys are scanned, not a raw Python dict repr of the whole
+    object. Covers both known object shapes: priority_area_justification
+    (differentiator/recommended_intervention_type -- see app.context.
+    statistical_evidence.build_priority_area_justifications) and the
+    Phase 3 #17 structured layer_by_layer_summary/indicator_by_indicator_
+    summary objects (interpretation -- see build_structured_layer_
+    summaries/build_structured_indicator_summaries). A dict missing a given
+    key simply contributes nothing for that key, so this works for either
+    shape without needing to know which one it's looking at.
     """
     if isinstance(item, str):
         return item
     if isinstance(item, dict):
-        return _join_sentences([item[key] for key in ("differentiator", "recommended_intervention_type") if item.get(key)])
+        narrative_keys = ("differentiator", "recommended_intervention_type", "interpretation")
+        return _join_sentences([item[key] for key in narrative_keys if item.get(key)])
     return str(item)
 
 

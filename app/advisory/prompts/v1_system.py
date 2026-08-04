@@ -40,7 +40,23 @@ are real capabilities this app doesn't have yet (no evidence_layer_id
 concept exists in any schema; Stage 3's advisories and sms_summary are
 national-level, not per-area) -- adding them would be a scope expansion
 beyond a prompt-text revision, not a recommended low-risk addition.
+
+Phase 2 revision: the role statement used to claim "Your job is to
+interpret Ethiopia-wide forecast map layers and climate indicator maps" for
+EVERY stage, identically -- true for Stage 1 (which does exactly that), but
+a confirmed, real mismatch for Stage 2 (synthesizes an already-computed
+ranking, does not interpret raw layers) and Stage 3 (zero images, zero raw
+evidence, pure action translation). build_system_prompt_v1 now takes an
+optional `stage` and swaps in the matching STAGE_ROLE_BLOCKS entry instead;
+BASE_GROUNDING_RULES stays identical across every stage, since those rules
+(don't invent data, distinguish forecast from confirmed fact, etc.) are not
+stage-specific. Callers that don't pass a stage (the legacy single-call
+path in app.api.ai_map_interpretation, which genuinely does interpret
+everything -- layers, indicators, priorities, and advisories -- in one
+call) get LEGACY_ROLE_STATEMENT, the original claim, unchanged.
 """
+
+from typing import Optional
 
 BASE_GROUNDING_RULES = """
 SOURCE HIERARCHY:
@@ -64,10 +80,47 @@ OUTPUT QUALITY:
 - Do not give generic advice unrelated to the identified hazard, livelihood system, and forecast period.
 """.strip()
 
-SYSTEM_PROMPT_V1 = f"""
-You are an expert climate risk, agriculture, livestock, agro-pastoralism, and humanitarian early-warning analyst.
+ROLE_OPENING = "You are an expert climate risk, agriculture, livestock, agro-pastoralism, and humanitarian early-warning analyst working for Forecast2Action AI."
 
-Your job is to interpret Ethiopia-wide forecast map layers and climate indicator maps for Forecast2Action AI.
+# The original, stage-agnostic claim -- kept verbatim for the legacy
+# single-call path (app.api.ai_map_interpretation's call_*_model functions),
+# which genuinely does do all of this in one call.
+LEGACY_ROLE_STATEMENT = "Your job is to interpret Ethiopia-wide forecast map layers and climate indicator maps for Forecast2Action AI."
+
+STAGE_ROLE_BLOCKS = {
+    "stage1": (
+        "Your sole role in this stage is EVIDENCE INTERPRETATION. Interpret the real computed "
+        "evidence and images you are given, layer by layer and indicator by indicator, and flag "
+        "data-quality/uncertainty issues. Do not decide or explain priority areas, write an "
+        "executive summary, or produce advisories -- those happen in later stages you are not performing."
+    ),
+    "stage2": (
+        "Your sole role in this stage is INTEGRATED RISK SYNTHESIS. Use the supplied priority-area "
+        "ranking and cross-indicator findings exactly as given -- explain the interactions between "
+        "hazard, exposure, vulnerability, and climate indicators; do not re-derive, reorder, or invent "
+        "them. Do not produce operational advisories -- that happens in a later stage you are not performing."
+    ),
+    "stage3": (
+        "Your sole role in this stage is ACTION TRANSLATION. Translate the validated findings you "
+        "are given into audience-specific advisories. Do not reinterpret the climate forecast or "
+        "re-derive risk findings, and do not introduce new areas, hazards, or numbers that are not "
+        "already present in the given findings."
+    ),
+}
+
+
+def build_system_prompt_v1(stage: Optional[str] = None) -> str:
+    role = STAGE_ROLE_BLOCKS.get(stage, LEGACY_ROLE_STATEMENT)
+    return f"""
+{ROLE_OPENING}
+
+{role}
 
 {BASE_GROUNDING_RULES}
 """.strip()
+
+
+# Backward-compat: the exact original (legacy, stage-agnostic) text, for
+# anything that still imports this name directly instead of calling
+# build_system_prompt_v1().
+SYSTEM_PROMPT_V1 = build_system_prompt_v1()

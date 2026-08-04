@@ -465,6 +465,61 @@ def _extract_regional_means(node: Optional[Dict[str, Any]], *path: str) -> Dict[
     return {item["area_name"]: item["mean"] for item in current if item.get("mean") is not None}
 
 
+# Real units for each cross-indicator criterion name -- used only to label
+# _indicator_evidence_objects's real values, not to compute anything new.
+_INDICATOR_CRITERION_UNITS = {
+    "rainfall_anomaly": "%",
+    "rainfall_percentile": "percentile",
+    "spi": "std dev",
+    "cdd_anomaly": "days",
+    "cwd_anomaly": "days",
+    "rx_anomaly": "mm",
+    "drought_probability": "%",
+    "wet_probability": "%",
+}
+
+
+def _indicator_real_value(name: str, values: Dict[str, Optional[float]]) -> Optional[float]:
+    """The real number behind one criterion name, in the same real units
+    _INDICATOR_CRITERION_UNITS labels it with -- not a new computation,
+    just resolving which of `values`' real entries a given criterion name
+    actually refers to.
+    """
+    if name == "rx_anomaly":
+        # wet_checks's "rx_anomaly" criterion is met if EITHER rx1day or
+        # rx5day anomaly is positive (see the rx_wet_met check below) -- no
+        # single real "rx_anomaly" value exists, so this reports whichever
+        # of the two real components has the larger real magnitude, rather
+        # than fabricating a combined figure.
+        candidates = [v for v in (values.get("rx1day_anomaly"), values.get("rx5day_anomaly")) if v is not None]
+        return max(candidates, key=abs) if candidates else None
+    value = values.get(name)
+    if name in ("drought_probability", "wet_probability") and value is not None:
+        # Stored as a real 0-1 fraction (same units as p_drought/p_wet's own
+        # regional means) -- reported as a real percentage here, matching
+        # this module's own _pct convention used everywhere else.
+        return value * 100
+    return value
+
+
+def _indicator_evidence_objects(names: List[str], values: Dict[str, Optional[float]]) -> List[Dict[str, Any]]:
+    """Real value + units for each matched criterion name, replacing a bare
+    indicator-name string (e.g. "rainfall_anomaly") with the actual real
+    number that was checked (e.g. {"indicator": "rainfall_anomaly", "value":
+    -47.2, "units": "%"}) -- so a consumer sees WHY the indicator supported
+    or contradicted the signal, not just that it did.
+    """
+    objects = []
+    for name in names:
+        value = _indicator_real_value(name, values)
+        objects.append({
+            "indicator": name,
+            "value": round(value, 2) if isinstance(value, (int, float)) else None,
+            "units": _INDICATOR_CRITERION_UNITS.get(name, ""),
+        })
+    return objects
+
+
 def _evaluate_area_signal(
     area_name: str,
     values: Dict[str, Optional[float]],
@@ -555,8 +610,8 @@ def _evaluate_area_signal(
         "area": area_name,
         "signal": signal,
         "agreement_score": round(agreement_score, 2),
-        "supporting_indicators": supporting,
-        "contradicting_indicators": contradicting,
+        "supporting_indicators": _indicator_evidence_objects(supporting, values),
+        "contradicting_indicators": _indicator_evidence_objects(contradicting, values),
         "confidence": confidence,
     }
 
@@ -703,6 +758,128 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
                 "confidence": finding.get("confidence") if finding else None,
             })
     return justifications
+
+
+# Step "Phase 3 #17" -- structured layer_by_layer_summary/indicator_by_
+# indicator_summary objects instead of free-text bullets, built from
+# already-computed evidence sections (national/regional stats, class_area_
+# pct) so Stage 1's real output and the deterministic fallback are never
+# shape-inconsistent with each other. "layer"/"indicator" uses the real
+# internal identifier (e.g. "h_dry_mean", "rainfall_total") already used as
+# this evidence dict's own keys, rather than inventing a second, parallel
+# semantic-name vocabulary that would need its own translation table.
+
+
+def _dominant_class(class_area_pct: Dict[str, float]) -> Optional[str]:
+    if not class_area_pct:
+        return None
+    return max(class_area_pct, key=class_area_pct.get)
+
+
+def _high_class_area_pct(class_area_pct: Dict[str, float]) -> Optional[float]:
+    """% of real area in the "high" + "very_high" classes -- a real,
+    already-computed quantity (class_area_pct itself), not a new statistic.
+    """
+    if not class_area_pct:
+        return None
+    return round(class_area_pct.get("high", 0.0) + class_area_pct.get("very_high", 0.0), 1)
+
+
+def _structured_summary_object(
+    key: str, key_field: str, entry: Dict[str, Any], national_signal: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Real, structured summary for one continuous layer/indicator (every
+    hazard/risk/climate-indicator entry except the 2 purely-categorical
+    layers, see _categorical_summary_object). highest_areas/lowest_areas
+    are always by real VALUE (highest = numerically largest, lowest =
+    numerically smallest) -- for a layer like SPI where drought interest is
+    the most NEGATIVE value, that's lowest_areas, not highest_areas; this
+    stays consistent rather than flipping direction per-indicator, so a
+    caller always knows which field to check.
+
+    `national_signal` lets a caller override the class-based dominant
+    signal (e.g. SPI's real McKee category, "severely_dry") when a more
+    specific real classification already exists for this indicator.
+    """
+    national = entry.get("national") or {}
+    regional = [item for item in (entry.get("regional") or []) if item.get("mean") is not None]
+    class_area_pct = entry.get("class_area_pct") or {}
+    ranked = sorted(regional, key=lambda item: item["mean"], reverse=True)
+
+    highest_areas = [item["area_name"] for item in ranked[:2]]
+    lowest_areas = [item["area_name"] for item in ranked[-2:]] if len(ranked) > 2 else []
+    national_mean = national.get("mean")
+    signal = national_signal or _dominant_class(class_area_pct)
+
+    parts = []
+    if signal:
+        parts.append(f"{signal.replace('_', ' ')} signal")
+    if national_mean is not None:
+        parts.append(f"national mean {round(national_mean, 3)}")
+    if highest_areas:
+        parts.append(f"highest in {', '.join(highest_areas)}")
+    if lowest_areas:
+        parts.append(f"lowest in {', '.join(lowest_areas)}")
+    interpretation = ("; ".join(parts) + ".") if parts else "No national summary was provided."
+
+    return {
+        key_field: key,
+        "national_signal": signal,
+        "national_mean": round(national_mean, 3) if isinstance(national_mean, (int, float)) else None,
+        "highest_areas": highest_areas,
+        "lowest_areas": lowest_areas,
+        "affected_area_pct": _high_class_area_pct(class_area_pct),
+        "interpretation": interpretation,
+        "confidence": "moderate" if national else "low",
+    }
+
+
+def _categorical_summary_object(key: str, entry: Dict[str, Any]) -> Dict[str, Any]:
+    """Real, structured summary for population_risk_class/population_
+    dominant_code -- no continuous national mean exists for these (the
+    pixel value already IS the class code), only real class_area_pct.
+    """
+    class_area_pct = entry.get("class_area_pct") or {}
+    dominant_class = _dominant_class(class_area_pct)
+    interpretation = (
+        f"{dominant_class.replace('_', ' ').title()} is the most common class nationally "
+        f"({class_area_pct.get(dominant_class, 0)}% of area)."
+        if dominant_class else "No class-area data available."
+    )
+    return {
+        "layer": key,
+        "national_signal": dominant_class,
+        "national_mean": None,
+        "highest_areas": [],
+        "lowest_areas": [],
+        "affected_area_pct": _high_class_area_pct(class_area_pct),
+        "interpretation": interpretation,
+        "confidence": "moderate" if class_area_pct else "low",
+    }
+
+
+def build_structured_layer_summaries(evidence: Dict[str, Any]) -> List[Dict[str, Any]]:
+    summaries = [
+        _structured_summary_object(layer_value, "layer", entry)
+        for layer_value, entry in (evidence.get("hazard_risk_layers") or {}).items()
+    ]
+    summaries += [
+        _categorical_summary_object(layer_value, entry)
+        for layer_value, entry in (evidence.get("categorical_layers") or {}).items()
+    ]
+    return summaries
+
+
+def build_structured_indicator_summaries(evidence: Dict[str, Any]) -> List[Dict[str, Any]]:
+    summaries = []
+    for indicator, entry in (evidence.get("climate_indicators") or {}).items():
+        # SPI has no class_area_pct (see INDICATORS_WITH_CLIMATOLOGY's
+        # docstring -- it's already standardized) -- its real McKee
+        # category (spi_category, computed when the evidence was built) is
+        # used as the national_signal instead of a quintile-derived class.
+        national_signal = entry.get("category") if indicator == "spi" else None
+        summaries.append(_structured_summary_object(indicator, "indicator", entry, national_signal=national_signal))
+    return summaries
 
 
 RISK_SCALE_LAYERS = {"population_r_drought", "population_r_wet"}
