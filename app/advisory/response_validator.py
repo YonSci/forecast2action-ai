@@ -267,6 +267,26 @@ def _check_modified_scores_evidence(report: Dict[str, Any], evidence: Dict[str, 
     return flags
 
 
+_PRIORITY_SCORE_MENTION_PATTERN = re.compile(r"\bpriority[_ ]score\b", re.IGNORECASE)
+
+
+def _check_priority_score_cited_evidence(report: Dict[str, Any]) -> List[str]:
+    """priority_score is an internal ranking composite (see
+    build_priority_area_justifications) with no standalone meaning to a
+    reader -- unlike risk_score (has a real Very low..Very high class),
+    hazard_probability, or vulnerability. build_stage2_prompt's
+    differentiator rules explicitly forbid citing it, but a free-tier model
+    doesn't always follow that instruction (confirmed live: Gemini Flash-
+    Lite repeatedly wrote "priority score (0.600)" despite the rule) --
+    detect-and-flag it the same way _check_modified_scores_evidence catches
+    fabricated numbers, rather than trusting compliance silently.
+    """
+    text = " ".join(_item_narrative_text(item) for item in report.get("priority_area_justification", []))
+    if _PRIORITY_SCORE_MENTION_PATTERN.search(text):
+        return ["Differentiator text cites priority_score, which the prompt explicitly forbids -- it has no standalone meaning to a reader; it should explain ranking via risk_score's class, hazard_probability, vulnerability, or exposure instead."]
+    return []
+
+
 def _check_forecast_vs_observed_evidence(report: Dict[str, Any]) -> List[str]:
     """Every staged report is inherently a forecast -- unlike validate_
     against_context's version of this check, this doesn't need an
@@ -300,6 +320,7 @@ def validate_against_evidence(
     violations: List[str] = []
     violations.extend(_check_invented_locations_evidence(report, evidence, top_admin_areas))
     violations.extend(_check_modified_scores_evidence(report, evidence))
+    violations.extend(_check_priority_score_cited_evidence(report))
     violations.extend(_check_forecast_vs_observed_evidence(report))
 
     metadata = report.setdefault("_metadata", {})

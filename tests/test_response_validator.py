@@ -28,7 +28,7 @@ def test_validate_against_evidence_does_not_flag_real_area_names_and_scores():
             "area": "Harari",
             "priority_score": 0.599,
             "risk_score": 23.6,
-            "differentiator": "Harari has the highest priority score of 0.599 and risk score of 23.6 nationally.",
+            "differentiator": "Harari has the highest hazard probability and risk score of 23.6 nationally.",
             "recommended_intervention_type": "Drought / water-security response",
         },
     ])
@@ -101,7 +101,7 @@ def test_validate_against_evidence_does_not_flag_sentence_initial_words_or_compo
             "area": "Harari",
             "priority_score": 0.599,
             "risk_score": 23.6,
-            "differentiator": "Distinguished by the highest priority score. Multi-hazard exposure compounds the risk. Enters a high-confidence drought regime.",
+            "differentiator": "Distinguished by the highest hazard probability. Multi-hazard exposure compounds the risk. Enters a high-confidence drought regime.",
             "recommended_intervention_type": "Multi-hazard agricultural and flood advisory",
         },
     ])
@@ -121,7 +121,7 @@ def test_validate_against_evidence_does_not_flag_real_season_names_or_cross_item
     report = _report([
         {
             "justification_id": "Harari::drought", "area": "Harari", "priority_score": 0.599, "risk_score": 23.6,
-            "differentiator": "Holds the highest priority score during the Kiremt season.",
+            "differentiator": "Holds the highest hazard probability during the Kiremt season.",
             "recommended_intervention_type": "Drought / water-security response",
         },
         {
@@ -134,6 +134,24 @@ def test_validate_against_evidence_does_not_flag_real_season_names_or_cross_item
     _, violations = validate_against_evidence(report, REAL_EVIDENCE)
 
     assert violations == []
+
+
+def test_validate_against_evidence_flags_priority_score_citation():
+    # priority_score is an internal ranking composite with no standalone
+    # meaning to a reader (unlike risk_score, which has a real class) --
+    # build_stage2_prompt's differentiator rules explicitly forbid citing
+    # it, but a free-tier model doesn't always comply (confirmed live).
+    report = _report([
+        {
+            "justification_id": "Harari::drought", "area": "Harari", "priority_score": 0.599, "risk_score": 23.6,
+            "differentiator": "Harari holds the highest drought priority score (0.600) nationally.",
+            "recommended_intervention_type": "Drought / water-security response",
+        },
+    ])
+
+    _, violations = validate_against_evidence(report, REAL_EVIDENCE)
+
+    assert any("priority_score" in v for v in violations)
 
 
 def test_validate_against_evidence_does_not_flag_real_risk_classes_or_indicator_vocabulary():
