@@ -216,6 +216,7 @@ def test_build_priority_area_justifications_extracts_real_fields_and_ranks_by_pr
     assert top["justification_id"] == "Region B::drought"
     assert top["priority_score"] == 0.9
     assert top["risk_score"] == 55.0
+    assert top["risk_class"] == "Moderate"  # real RISK_CLASS_BANDS classification of 55.0
     assert top["hazard_probability"] == 0.8
     assert top["vulnerability"] == 0.7
     assert top["population_exposed_pct"] == 62.3
@@ -228,6 +229,8 @@ def test_build_priority_area_justifications_extracts_real_fields_and_ranks_by_pr
     # must degrade to None/[] gracefully, not crash or fabricate a value.
     second = by_area["Region A"]
     assert second["rank"] == 2
+    assert second["risk_score"] == 20.0
+    assert second["risk_class"] == "Low"  # real RISK_CLASS_BANDS classification of 20.0 (lower band edge)
     assert second["population_exposed_pct"] is None
     assert second["roads_exposed_pct"] is None
     assert second["healthsites_exposed_pct"] is None

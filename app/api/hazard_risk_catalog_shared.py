@@ -40,6 +40,7 @@ __all__ = [
     "LAYER_BY_VALUE",
     "RISK_CLASS_BANDS",
     "RISK_CLASS_BY_CODE",
+    "classify_risk_score",
     "DOMINANT_HAZARD_CODE_THRESHOLD",
     "DOMINANT_HAZARD_CODE_BANDS",
     "DOMINANT_HAZARD_CODE_BY_CODE",
@@ -116,6 +117,25 @@ RISK_CLASS_BANDS = [
     {"code": 4, "label": "Very high", "range": (80.0, 100.0), "color": "#d73027"},
 ]
 RISK_CLASS_BY_CODE = {band["code"]: band for band in RISK_CLASS_BANDS}
+
+
+def classify_risk_score(score: Optional[float]) -> Optional[str]:
+    """Real label ("Very low".."Very high") for a 0-100 risk_score, using
+    the SAME RISK_CLASS_BANDS the LLM prompts are told to classify with
+    (see _risk_definition_block in app.api.report_stages) -- so a risk
+    score shown anywhere (LLM prose, the priority-area justification cards)
+    always resolves to the identical class, computed once, deterministically,
+    not re-derived or guessed per caller. Returns None for a missing score
+    rather than a default band, since "no data" and "Very low risk" are not
+    the same thing.
+    """
+    if score is None:
+        return None
+    for band in RISK_CLASS_BANDS:
+        low, high = band["range"]
+        if low <= score <= high:
+            return band["label"]
+    return None
 
 # dominant_code's 4-value scheme: 0 if neither R_drought nor R_wet exceeds
 # DOMINANT_HAZARD_CODE_THRESHOLD, 1 if only R_drought does (drought-dominated),

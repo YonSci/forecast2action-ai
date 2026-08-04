@@ -11,6 +11,21 @@
 // are real but noisier signal -- hidden here, not deleted from the
 // underlying data), and split into side-by-side Drought / Wet-Flood
 // columns for direct comparison, per request.
+//
+// priority score / risk score / hazard probability / vulnerability used to
+// render as bare, unexplained numbers here -- unlike the map/table view,
+// which already has a glossary (hazardRiskGlossary.js) for exactly these
+// metrics. Reusing that same glossary via title tooltips instead of writing
+// new copy, and showing risk_score's real classification (Very low..Very
+// high, computed deterministically server-side by classify_risk_score --
+// see app/api/hazard_risk_catalog_shared.py) inline, since that
+// classification previously only surfaced buried inside the LLM's
+// differentiator prose below, disconnected from the number it describes.
+import {
+  HAZARD_RISK_TERM_DEFINITIONS,
+  POPULATION_EXPOSED_DEFINITION,
+  PRIORITY_SCORE_DEFINITION,
+} from "../../constants/hazardRiskGlossary.js";
 
 function fnum(value, digits = 2) {
   if (value === null || value === undefined || Number.isNaN(value)) {
@@ -43,6 +58,10 @@ function formatIndicatorEvidence(indicators) {
 }
 
 function AreaCard({ item }) {
+  const riskDefKey = item.hazard_type === "wet" ? "population_r_wet" : "population_r_drought";
+  const probabilityDefKey = item.hazard_type === "wet" ? "p_wet" : "p_drought";
+  const vulnerabilityDefKey = item.hazard_type === "wet" ? "v_wet" : "v_drought";
+
   return (
     <div className="ai-priority-justification-item">
       <div className="ai-priority-justification-head">
@@ -54,12 +73,23 @@ function AreaCard({ item }) {
       </div>
 
       <div className="ai-priority-justification-stats">
-        <span>priority score {fnum(item.priority_score, 3)}</span>
-        <span>risk score {fnum(item.risk_score, 1)}</span>
-        <span>hazard probability {fnum(item.hazard_probability, 2)}</span>
-        <span>vulnerability {fnum(item.vulnerability, 2)}</span>
+        <span title={PRIORITY_SCORE_DEFINITION}>
+          priority score {fnum(item.priority_score, 3)}
+        </span>
+        <span title={HAZARD_RISK_TERM_DEFINITIONS[riskDefKey]}>
+          risk score {fnum(item.risk_score, 1)}
+          {item.risk_class ? ` (${item.risk_class})` : ""}
+        </span>
+        <span title={HAZARD_RISK_TERM_DEFINITIONS[probabilityDefKey]}>
+          hazard probability {fnum(item.hazard_probability, 2)}
+        </span>
+        <span title={HAZARD_RISK_TERM_DEFINITIONS[vulnerabilityDefKey]}>
+          vulnerability {fnum(item.vulnerability, 2)}
+        </span>
         {item.population_exposed_pct !== null && item.population_exposed_pct !== undefined && (
-          <span>{fnum(item.population_exposed_pct, 1)}% population exposed</span>
+          <span title={POPULATION_EXPOSED_DEFINITION}>
+            {fnum(item.population_exposed_pct, 1)}% population exposed
+          </span>
         )}
       </div>
 

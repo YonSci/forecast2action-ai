@@ -351,6 +351,13 @@
   color: var(--muted);
 }
 
+.ai-priority-justification-stats span {
+  /* Each stat has a real glossary definition in its title tooltip -- the
+     dotted underline is the discoverability cue that hovering explains it. */
+  border-bottom: 1px dotted currentColor;
+  cursor: help;
+}
+
 .ai-priority-supporting {
   font-size: 0.82rem;
   font-style: italic;

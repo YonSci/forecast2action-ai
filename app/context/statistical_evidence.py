@@ -23,7 +23,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.api.hazard_risk_catalog_shared import DOMINANT_HAZARD_CODE_BANDS, LAYER_BY_VALUE, RISK_CLASS_BANDS
+from app.api.hazard_risk_catalog_shared import (
+    DOMINANT_HAZARD_CODE_BANDS,
+    LAYER_BY_VALUE,
+    RISK_CLASS_BANDS,
+    classify_risk_score,
+)
 from app.api.hazard_risk_maps import find_map_record as find_hazard_risk_record
 from app.api.hazard_risk_maps import load_display_array as load_hazard_risk_display_array
 from app.api.hazard_risk_ranking import (
@@ -746,6 +751,13 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
                 "hazard_type": hazard_type,
                 "priority_score": item.get("priority_score"),
                 "risk_score": risk_by_area.get(area_name),
+                # Real, deterministic classification of risk_score (Very
+                # low..Very high) via the SAME RISK_CLASS_BANDS the LLM
+                # prompts are told to classify with -- computed once here,
+                # not re-derived from LLM prose, so the frontend can show a
+                # trustworthy class label next to the bare number without
+                # parsing free text.
+                "risk_class": classify_risk_score(risk_by_area.get(area_name)),
                 "hazard_probability": probability_by_area.get(area_name),
                 "vulnerability": vulnerability_by_area.get(area_name),
                 "population_exposed": exposure_item.get("exposed") if exposure_item else None,
