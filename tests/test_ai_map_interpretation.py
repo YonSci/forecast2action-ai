@@ -1,8 +1,50 @@
-from app.api.ai_map_interpretation import AIMapInterpretationRequest, fallback_report
+from app.api.ai_map_interpretation import AIMapInterpretationRequest, fallback_report, validate_stage_shape
 
 
 def _request():
     return AIMapInterpretationRequest()
+
+
+def test_validate_stage_shape_coerces_object_returned_for_a_string_field():
+    # Real, confirmed live bug: Stage 2's prompt asks executive_summary to
+    # "explicitly mention the forecast window, lead/horizon, report scope,
+    # valid period, and output language" -- a real Gemini response
+    # structured those as separate JSON keys instead of one flowing
+    # string. executive_summary is declared type: "string", but the old
+    # coercion only handled key-missing/None, never present-but-wrong-type,
+    # so the raw object reached the frontend and crashed React ("Objects
+    # are not valid as a React child (found: object with keys
+    # {forecast_window, lead_horizon, report_scope, valid_period,
+    # output_language, summary})").
+    schema = {"properties": {"executive_summary": {"type": "string"}}}
+    malformed = {
+        "executive_summary": {
+            "forecast_window": "Seasonal",
+            "lead_horizon": "Month 2",
+            "report_scope": "National (Ethiopia)",
+            "valid_period": "July 2026",
+            "output_language": "English",
+            "summary": "Drought risk remains elevated across southern lowlands this period.",
+        },
+    }
+
+    result = validate_stage_shape(malformed, schema)
+
+    assert isinstance(result["executive_summary"], str)
+    assert result["executive_summary"] == "Drought risk remains elevated across southern lowlands this period."
+
+
+def test_validate_stage_shape_coerces_object_without_a_summary_key_for_a_string_field():
+    # No "summary"/"description"/"text"/"value"/"label" sub-key present --
+    # must still degrade to a real, readable string, never a raw object.
+    schema = {"properties": {"executive_summary": {"type": "string"}}}
+    malformed = {"executive_summary": {"forecast_window": "Seasonal", "lead_horizon": "Month 2"}}
+
+    result = validate_stage_shape(malformed, schema)
+
+    assert isinstance(result["executive_summary"], str)
+    assert "Seasonal" in result["executive_summary"]
+    assert "Month 2" in result["executive_summary"]
 
 
 def test_fallback_report_layer_and_indicator_summaries_are_structured_objects_from_real_evidence():

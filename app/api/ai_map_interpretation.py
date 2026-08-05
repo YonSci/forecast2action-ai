@@ -849,8 +849,23 @@ def validate_stage_shape(data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[s
     for key, prop_schema in schema.get("properties", {}).items():
         prop_type = prop_schema.get("type")
         if prop_type == "string":
-            if key not in result or result[key] is None:
+            value = result.get(key)
+            if value is None:
                 result[key] = ""
+            elif not isinstance(value, str):
+                # Real providers sometimes return a structured object for a
+                # plain string field -- confirmed live: Gemini returned
+                # executive_summary as {"forecast_window": ..., "lead_
+                # horizon": ..., "report_scope": ..., "valid_period": ...,
+                # "output_language": ..., "summary": "..."} instead of one
+                # flowing string, after the Stage 2 prompt asked it to
+                # "explicitly mention" those exact facts -- the model
+                # structured them as separate keys rather than prose. This
+                # was ALREADY handled for array items (_coerce_to_display_
+                # text, below) but never for scalar string fields, so the
+                # raw object reached the frontend uncoerced and crashed
+                # React ("Objects are not valid as a React child").
+                result[key] = _coerce_to_display_text(value)
             continue
         if prop_type != "array":
             continue

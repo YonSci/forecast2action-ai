@@ -268,3 +268,5 @@ forecast2action_action_tracker_*.csv
 # so this was easy to miss against the *.shp/*.dbf/*.shx/*.prj rules above.
 !data/eth_shapefile/
 !data/eth_shapefile/**
+.vercel
+.env*
