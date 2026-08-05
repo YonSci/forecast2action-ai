@@ -99,6 +99,11 @@ function Platform() {
           <h2>AI-interpreted advisories</h2>
           <div className="lp-prose">
             <p>
+              This is context engineering in practice: an evidence-grounded
+              LLM pipeline with RAG-based action guidance, not a single
+              freeform prompt.
+            </p>
+            <p>
               A three-stage pipeline turns the numbers into language: Stage 1
               interprets the raw evidence, Stage 2 synthesizes an integrated
               risk narrative using a stronger model tier, and Stage 3 translates

@@ -156,6 +156,10 @@ function About() {
             </div>
             <div className="lp-feature-card">
               <h3 style={{ fontSize: "1.02rem" }}>AI &amp; language models</h3>
+              <p>
+                A context-engineered, evidence-grounded LLM pipeline with
+                RAG-based action guidance — not a single freeform prompt.
+              </p>
               <ul className="lp-tool-list">
                 <li>
                   <span className="lp-tool-name">Google Gemini</span>
