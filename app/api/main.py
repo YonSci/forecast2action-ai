@@ -112,7 +112,13 @@ allowed_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    # Vercel preview deploys, plus ANY local dev port -- confirmed real,
+    # recurring need: this machine runs several sibling forecast-dashboard
+    # projects that also default to 5173/5174/8000, so a hardcoded local
+    # port list collides more than it doesn't. Only matches localhost/
+    # 127.0.0.1 origins, so this doesn't widen what a real external origin
+    # can do -- production security is unchanged.
+    allow_origin_regex=r"https://.*\.vercel\.app|https?://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

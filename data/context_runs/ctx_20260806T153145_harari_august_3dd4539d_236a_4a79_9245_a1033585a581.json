@@ -1,0 +1,637 @@
+{
+  "context_id": "3dd4539d-236a-4a79-9245-a1033585a581",
+  "forecast": {
+    "forecast_scale": "subseasonal",
+    "lead": "",
+    "hazard_risk_period": "August",
+    "rank_by": "population_r_drought",
+    "admin_selection_mode": "top",
+    "top_n": 5,
+    "threshold": 33.951,
+    "evidence_status": "forecast_signal"
+  },
+  "geography": {
+    "country": "ethiopia",
+    "admin_level": "admin1",
+    "area_name": "Harari",
+    "region": "Harari",
+    "zone": "",
+    "woreda": "",
+    "region_id": "harari",
+    "zone_id": "",
+    "woreda_id": "",
+    "boundary_version": "eth_admin_boundary_pipeline_v1",
+    "boundary_feature": {
+      "type": "Feature",
+      "id": "admin1_harari_10",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              42.25632905000009,
+              9.252552392999974
+            ],
+            [
+              42.26225904300003,
+              9.243622383000059
+            ],
+            [
+              42.26871902400012,
+              9.229602386000124
+            ],
+            [
+              42.27203898800019,
+              9.21566739400015
+            ],
+            [
+              42.26471890300019,
+              9.197887447000141
+            ],
+            [
+              42.25944886800016,
+              9.19227247300006
+            ],
+            [
+              42.252908834000095,
+              9.18970249400013
+            ],
+            [
+              42.24602879800017,
+              9.187002520000021
+            ],
+            [
+              42.23371874200018,
+              9.185912564000091
+            ],
+            [
+              42.22078872800006,
+              9.196372594000138
+            ],
+            [
+              42.20848873300014,
+              9.21193260500013
+            ],
+            [
+              42.19745872100003,
+              9.219872631000044
+            ],
+            [
+              42.18214864700013,
+              9.216892684000129
+            ],
+            [
+              42.16571856500019,
+              9.21042275200017
+            ],
+            [
+              42.15422311900011,
+              9.20763602900007
+            ],
+            [
+              42.14855848700017,
+              9.206262811000158
+            ],
+            [
+              42.13726847500004,
+              9.215822830000036
+            ],
+            [
+              42.127348470000186,
+              9.226552852000054
+            ],
+            [
+              42.12061844500016,
+              9.228442867000183
+            ],
+            [
+              42.112408425000126,
+              9.230742891999967
+            ],
+            [
+              42.10924827600007,
+              9.229919157000097
+            ],
+            [
+              42.09084832500008,
+              9.225122967000118
+            ],
+            [
+              42.07368823800016,
+              9.220963026000106
+            ],
+            [
+              42.061332213000185,
+              9.226459058999978
+            ],
+            [
+              42.059738241000105,
+              9.237653048000084
+            ],
+            [
+              42.05915437800002,
+              9.24565095000014
+            ],
+            [
+              42.05887827800012,
+              9.249433034999981
+            ],
+            [
+              42.05927386800016,
+              9.253422760000149
+            ],
+            [
+              42.05948111000009,
+              9.255512896000084
+            ],
+            [
+              42.06050833800015,
+              9.265873009000074
+            ],
+            [
+              42.062912255000185,
+              9.27683740700013
+            ],
+            [
+              42.06467841700015,
+              9.28489296600003
+            ],
+            [
+              42.065076609000016,
+              9.286203166999996
+            ],
+            [
+              42.070468498000025,
+              9.303942920999987
+            ],
+            [
+              42.072726904000035,
+              9.307786282000109
+            ],
+            [
+              42.07695871800007,
+              9.314987995000138
+            ],
+            [
+              42.07760828200014,
+              9.316093425000076
+            ],
+            [
+              42.085227578000115,
+              9.329059962000144
+            ],
+            [
+              42.085258645000124,
+              9.329112833000124
+            ],
+            [
+              42.090379739000184,
+              9.33668212300006
+            ],
+            [
+              42.09422739600012,
+              9.34236919500006
+            ],
+            [
+              42.095483749000095,
+              9.344226162000155
+            ],
+            [
+              42.09570909800016,
+              9.344559242000173
+            ],
+            [
+              42.09612193800007,
+              9.345169451000118
+            ],
+            [
+              42.09962876600014,
+              9.350352751000003
+            ],
+            [
+              42.10870884799999,
+              9.364122698000074
+            ],
+            [
+              42.11422889800002,
+              9.372512669000173
+            ],
+            [
+              42.12914901400012,
+              9.388672600000064
+            ],
+            [
+              42.134855027000185,
+              9.38829370500008
+            ],
+            [
+              42.146619073000124,
+              9.387512541000092
+            ],
+            [
+              42.157469084000184,
+              9.376322525000091
+            ],
+            [
+              42.15794364700008,
+              9.375746300000117
+            ],
+            [
+              42.16857908200012,
+              9.362832511000022
+            ],
+            [
+              42.186329519000026,
+              9.361750109000127
+            ],
+            [
+              42.187439149,
+              9.361682445000042
+            ],
+            [
+              42.19818748000017,
+              9.366982157000166
+            ],
+            [
+              42.20477924300013,
+              9.370232378000026
+            ],
+            [
+              42.20792825900014,
+              9.371933928000146
+            ],
+            [
+              42.22187934700014,
+              9.379472308000004
+            ],
+            [
+              42.23051321600019,
+              9.382387523999967
+            ],
+            [
+              42.238079427000116,
+              9.38494224600015
+            ],
+            [
+              42.25299947600013,
+              9.383802192000132
+            ],
+            [
+              42.25786596800009,
+              9.37774702500019
+            ],
+            [
+              42.26126947700004,
+              9.373512185000095
+            ],
+            [
+              42.266139468000006,
+              9.365982177000035
+            ],
+            [
+              42.27031265900007,
+              9.361664396000094
+            ],
+            [
+              42.266218817000095,
+              9.352611265000178
+            ],
+            [
+              42.26460940600009,
+              9.349052209000035
+            ],
+            [
+              42.25851933300004,
+              9.334412256000121
+            ],
+            [
+              42.264969312000005,
+              9.32132225700019
+            ],
+            [
+              42.265057898000066,
+              9.32037485100011
+            ],
+            [
+              42.26604928300014,
+              9.309772269000064
+            ],
+            [
+              42.25990922200003,
+              9.298832306000179
+            ],
+            [
+              42.250309142000106,
+              9.28553235700008
+            ],
+            [
+              42.249349087000155,
+              9.270032382000068
+            ],
+            [
+              42.25364907300013,
+              9.261532387000102
+            ],
+            [
+              42.2553072340001,
+              9.255976266000062
+            ],
+            [
+              42.25632905000009,
+              9.252552392999974
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "admin1_harari_10",
+        "admin_level": "admin1",
+        "name": "Harari",
+        "region": "Harari",
+        "region_id": "harari",
+        "zone": "",
+        "zone_id": "",
+        "woreda": "",
+        "woreda_id": ""
+      }
+    }
+  },
+  "hazard_evidence": {
+    "layer_value": "population_r_drought",
+    "layer_label": "Drought Risk",
+    "hazard_type": "drought",
+    "category": "risk",
+    "units": "score",
+    "rank_value": 30.19397481282552,
+    "priority_score": 0.6,
+    "rank": 1,
+    "metrics": {
+      "population_r_drought": 30.19397481282552,
+      "cropland_total_normalized": 0.5735735694567362,
+      "livestock_cattle_normalized": 0.4764883617560069,
+      "built_up_normalized": 0.6869797284404436,
+      "roads_normalized": 0.660709818204244,
+      "population_r_wet": 0.0
+    },
+    "observed_ceiling": 56.58445358276367,
+    "drought_risk": {
+      "value": 30.19,
+      "level": "watch"
+    },
+    "wet_risk": {
+      "value": 0.0,
+      "level": "no_alert"
+    }
+  },
+  "impact": {
+    "population_total": 283029,
+    "population_exposed": 240168,
+    "population_exposed_pct": 84.9,
+    "area_total_km2": 2262.9,
+    "area_extent_km2": 754.0,
+    "area_extent_pct": 33.3,
+    "cropland_extent_pct": 33.3
+  },
+  "community": {
+    "feedback_signal": "no_ground_signal",
+    "total_reports": 0,
+    "by_severity": {},
+    "by_type": {},
+    "recent_reports": []
+  },
+  "operational": {
+    "audience": "disaster_manager",
+    "language": "en",
+    "requested_provider": "free_auto",
+    "requested_model": "auto"
+  },
+  "policy": {
+    "policy_id": "drought_ethiopia_v1",
+    "thresholds": {
+      "trigger": 0.8,
+      "warning": 0.6,
+      "watch": 0.35
+    },
+    "trigger_status": "watch",
+    "approval_rules_version": "v1"
+  },
+  "knowledge": {
+    "retrieved_items": [
+      {
+        "id": "drought_warning_any_001",
+        "hazard": "drought",
+        "risk_level": "warning",
+        "audience": "any",
+        "sector": "Preparedness",
+        "title": "Increase drought preparedness and monitoring",
+        "rationale": "Warning-level drought risk requires intensified monitoring and early preparedness before conditions become critical.",
+        "actions": [
+          "Increase monitoring of rainfall performance, water points, pasture condition and crop stress.",
+          "Brief local officers and community focal persons about the current warning level.",
+          "Prepare drought advisory messages for farmers, pastoralists and vulnerable households.",
+          "Collect community observations to confirm whether impacts are already emerging.",
+          "Review preparedness options for water, feed, veterinary and social protection support."
+        ],
+        "source_title": "Forecast2Action drought preparedness guide",
+        "source_note": "Prototype local knowledge item for drought warning-level preparedness.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "warning"
+        ],
+        "retrieval_score": 10.5,
+        "final_score": 10.9
+      },
+      {
+        "id": "drought_trigger_disaster_manager_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "disaster_manager",
+        "sector": "Disaster Risk Management",
+        "title": "Activate drought anticipatory action coordination",
+        "rationale": "Severe rainfall deficit and high exposure require immediate coordination before impacts worsen.",
+        "actions": [
+          "Activate a district drought coordination meeting with agriculture, water, livestock, health and disaster risk management offices.",
+          "Verify water-point status, pasture condition and livestock movement using local officers and community reports.",
+          "Prioritize high-exposure kebeles, wards or settlements for early action support.",
+          "Prepare early warning messages explaining expected impacts and recommended household-level preparedness actions.",
+          "Review contingency resources for water trucking, livestock feed support, veterinary outreach and targeted cash or voucher support."
+        ],
+        "source_title": "Forecast2Action drought anticipatory action guidance",
+        "source_note": "Prototype local knowledge item for drought trigger-level early action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 10.0,
+        "final_score": 10.4
+      },
+      {
+        "id": "drought_trigger_extension_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "extension_officer",
+        "sector": "Agriculture and Livestock Extension",
+        "title": "Provide drought advisory to farmers and pastoralists",
+        "rationale": "Farmers and pastoralists need practical guidance on water, pasture, crops and livestock management.",
+        "actions": [
+          "Advise communities to conserve water and protect remaining water sources.",
+          "Promote early livestock feed planning, fodder conservation and strategic herd movement where appropriate.",
+          "Monitor crop wilting, pasture degradation and livestock body condition during field visits.",
+          "Share drought-tolerant crop, forage and animal health messages through extension channels.",
+          "Report worsening field conditions to district coordination structures."
+        ],
+        "source_title": "Forecast2Action extension drought advisory guide",
+        "source_note": "Prototype local knowledge item for agriculture and livestock extension response.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 7.0,
+        "final_score": 7.4
+      },
+      {
+        "id": "drought_trigger_ngo_001",
+        "hazard": "drought",
+        "risk_level": "trigger",
+        "audience": "ngo_planner",
+        "sector": "Anticipatory Action and Humanitarian Planning",
+        "title": "Prepare anticipatory drought support package",
+        "rationale": "Trigger-level drought risk requires rapid planning for targeted support before losses escalate.",
+        "actions": [
+          "Review beneficiary targeting using exposure, vulnerability and community ground-truth reports.",
+          "Coordinate with local government to avoid duplication of early action support.",
+          "Pre-position or plan support for water access, livestock feed, animal health and household preparedness.",
+          "Use community reports to verify where field stress is already emerging.",
+          "Prepare monitoring indicators to track whether early actions are reducing impacts."
+        ],
+        "source_title": "Forecast2Action NGO drought early action guide",
+        "source_note": "Prototype local knowledge item for NGO anticipatory action planning.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "trigger"
+        ],
+        "retrieval_score": 7.0,
+        "final_score": 7.4
+      },
+      {
+        "id": "rainfall_watch_any_001",
+        "hazard": "rainfall_watch",
+        "risk_level": "watch",
+        "audience": "any",
+        "sector": "Monitoring",
+        "title": "Maintain close monitoring",
+        "rationale": "Watch-level risk does not yet justify activation but requires close monitoring and readiness.",
+        "actions": [
+          "Continue monitoring rainfall, forecast updates and local observations.",
+          "Prepare advisory messages in case the risk level increases.",
+          "Ask local officers and community focal persons to report early signs of impact.",
+          "Review preparedness plans for the most exposed communities.",
+          "Update the dashboard when new climate or community evidence becomes available."
+        ],
+        "source_title": "Forecast2Action watch-level monitoring guide",
+        "source_note": "Prototype local knowledge item for watch-level monitoring.",
+        "authority_status": "approved",
+        "approval_status": "not_required",
+        "version": "1.0.0",
+        "valid_from": "2025-01-01",
+        "valid_to": null,
+        "source_organization": "Forecast2Action AI",
+        "source_url": null,
+        "source_date": "2025-01-01",
+        "language": "en",
+        "tags": [],
+        "countries": [
+          "ethiopia"
+        ],
+        "regions": [],
+        "livelihood_zones": [],
+        "agroecological_zones": [],
+        "risk_levels": [
+          "watch"
+        ],
+        "retrieval_score": 1.0,
+        "final_score": 1.4
+      }
+    ],
+    "retrieval_mode": "keyword_metadata"
+  },
+  "provenance": {
+    "context_id": "3dd4539d-236a-4a79-9245-a1033585a581",
+    "context_version": "v1",
+    "created_at": "2026-08-06T15:31:45.280947+00:00",
+    "prompt_version": "v1",
+    "context_fingerprint": "937b4eb10139f352f3aa22b4e1e64c0133e5220ce602b9c1a90f172bd0433be8",
+    "ai_provider": "free_auto",
+    "ai_model": "auto",
+    "source_endpoints": [
+      "app.api.hazard_risk_ranking.compute_district_ranking",
+      "app.api.community_reports_store.summarize_reports",
+      "app.decision.policy_engine.load_policy_for_hazard",
+      "app.retrieval.hybrid_retriever.retrieve"
+    ]
+  },
+  "quality_score": 0.85,
+  "quality_flags": [
+    "no_community_reports"
+  ]
+}
