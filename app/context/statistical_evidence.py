@@ -383,6 +383,14 @@ def departure_from_climatology(indicator: str, period: str, admin_level: str = "
             np.nan,
         )
     national_pct_anomaly = area_weighted_statistics(pct_anomaly_arr, forecast_transform)
+    # Real regional %-anomaly, same per-pixel array as national_pct_anomaly
+    # above, just aggregated per-region instead of nationally -- confirmed
+    # missing (only the national %-anomaly existed) and confused with
+    # regional_anomaly's absolute mm figures downstream (e.g. Harari's real
+    # -62.29 mm regional_anomaly was being labeled "%" in priority-area
+    # evidence -- see _INDICATOR_CRITERION_UNITS/build_cross_indicator_
+    # findings). Now both real figures exist per region, correctly labeled.
+    regional_pct_anomaly = region_statistics(pct_anomaly_arr, anomaly_transform, admin_level)
 
     return {
         "indicator": indicator,
@@ -390,6 +398,7 @@ def departure_from_climatology(indicator: str, period: str, admin_level: str = "
         "national_anomaly": national_anomaly,
         "national_pct_anomaly": {"mean": national_pct_anomaly.get("mean"), "median": national_pct_anomaly.get("median")},
         "regional_anomaly": regional_anomaly,
+        "regional_pct_anomaly": regional_pct_anomaly,
         "top_positive_anomalies": _top_n_regions(regional_anomaly, "mean", 5, reverse=True),
         "top_negative_anomalies": _top_n_regions(regional_anomaly, "mean", 5, reverse=False),
         "departure_available": True,
@@ -473,15 +482,42 @@ def _extract_regional_means(node: Optional[Dict[str, Any]], *path: str) -> Dict[
 # Real units for each cross-indicator criterion name -- used only to label
 # _indicator_evidence_objects's real values, not to compute anything new.
 _INDICATOR_CRITERION_UNITS = {
-    "rainfall_anomaly": "%",
+    # Confirmed real bug, fixed: this criterion's real value (see
+    # build_cross_indicator_findings) comes from departure.national_anomaly/
+    # regional_anomaly, which are absolute millimetres (e.g. Harari's real
+    # regional mean is -62.29 mm), not a percentage -- it was mislabeled
+    # "%" for every area in every priority-area evidence object. The real
+    # percentage counterpart is now separately available and attached as
+    # this criterion's value_pct/units_pct -- see _indicator_evidence_objects.
+    "rainfall_anomaly": "mm",
     "rainfall_percentile": "percentile",
     "spi": "std dev",
     "cdd_anomaly": "days",
     "cwd_anomaly": "days",
-    "rx_anomaly": "mm",
+    # "rx_anomaly" deliberately absent -- it's not a real field name, only
+    # a criterion label; see _indicator_evidence_objects' rx_anomaly
+    # special-case, which reports the real rx1day_anomaly/rx5day_anomaly
+    # name+value directly instead of looking it up here.
     "drought_probability": "%",
     "wet_probability": "%",
 }
+
+
+def _resolve_rx_anomaly(values: Dict[str, Optional[float]]) -> Tuple[Optional[str], Optional[float]]:
+    """Real (indicator name, value) pair for whichever of rx1day_anomaly/
+    rx5day_anomaly has the larger real magnitude. Confirmed real ambiguity,
+    fixed: wet_checks's "rx_anomaly" criterion is met if EITHER rx1day or
+    rx5day anomaly is positive (they represent different hazard mechanisms
+    -- 1-day burst intensity vs 5-day accumulation -- deliberately checked
+    together, not combined into a real number of their own) -- reporting
+    it back to a consumer as a bare "rx_anomaly" value gave no way to tell
+    which of the two real indicators it actually was. Returns (None, None)
+    when neither is available.
+    """
+    candidates = [(n, values.get(n)) for n in ("rx1day_anomaly", "rx5day_anomaly") if values.get(n) is not None]
+    if not candidates:
+        return None, None
+    return max(candidates, key=lambda pair: abs(pair[1]))
 
 
 def _indicator_real_value(name: str, values: Dict[str, Optional[float]]) -> Optional[float]:
@@ -491,13 +527,7 @@ def _indicator_real_value(name: str, values: Dict[str, Optional[float]]) -> Opti
     actually refers to.
     """
     if name == "rx_anomaly":
-        # wet_checks's "rx_anomaly" criterion is met if EITHER rx1day or
-        # rx5day anomaly is positive (see the rx_wet_met check below) -- no
-        # single real "rx_anomaly" value exists, so this reports whichever
-        # of the two real components has the larger real magnitude, rather
-        # than fabricating a combined figure.
-        candidates = [v for v in (values.get("rx1day_anomaly"), values.get("rx5day_anomaly")) if v is not None]
-        return max(candidates, key=abs) if candidates else None
+        return _resolve_rx_anomaly(values)[1]
     value = values.get(name)
     if name in ("drought_probability", "wet_probability") and value is not None:
         # Stored as a real 0-1 fraction (same units as p_drought/p_wet's own
@@ -511,17 +541,48 @@ def _indicator_evidence_objects(names: List[str], values: Dict[str, Optional[flo
     """Real value + units for each matched criterion name, replacing a bare
     indicator-name string (e.g. "rainfall_anomaly") with the actual real
     number that was checked (e.g. {"indicator": "rainfall_anomaly", "value":
-    -47.2, "units": "%"}) -- so a consumer sees WHY the indicator supported
+    -28.27, "units": "mm"}) -- so a consumer sees WHY the indicator supported
     or contradicted the signal, not just that it did.
+
+    "rainfall_anomaly" additionally carries value_pct/units_pct -- the real
+    percentage-anomaly counterpart (see build_cross_indicator_findings'
+    "rainfall_anomaly_pct" values entry) -- rather than a second, separately
+    scored criterion, since its sign is identical to the mm figure and
+    scoring both would double-count one real signal as two.
+
+    "rx_anomaly" is never reported under that name -- it's not a real
+    field anywhere in the evidence, only a criterion label meaning "rx1day
+    OR rx5day anomaly is positive" (see _resolve_rx_anomaly). The object's
+    "indicator" is the REAL name (rx1day_anomaly or rx5day_anomaly) of
+    whichever one actually has the larger magnitude, and both real
+    components are attached as rx1day_anomaly/rx5day_anomaly sibling
+    fields so a consumer can see which mechanism actually drove it.
     """
     objects = []
     for name in names:
+        if name == "rx_anomaly":
+            resolved_name, value = _resolve_rx_anomaly(values)
+            rx1day = values.get("rx1day_anomaly")
+            rx5day = values.get("rx5day_anomaly")
+            objects.append({
+                "indicator": resolved_name or "rx_anomaly",
+                "value": round(value, 2) if isinstance(value, (int, float)) else None,
+                "units": "mm",
+                "rx1day_anomaly": round(rx1day, 2) if isinstance(rx1day, (int, float)) else None,
+                "rx5day_anomaly": round(rx5day, 2) if isinstance(rx5day, (int, float)) else None,
+            })
+            continue
         value = _indicator_real_value(name, values)
-        objects.append({
+        obj = {
             "indicator": name,
             "value": round(value, 2) if isinstance(value, (int, float)) else None,
             "units": _INDICATOR_CRITERION_UNITS.get(name, ""),
-        })
+        }
+        if name == "rainfall_anomaly":
+            pct_value = values.get("rainfall_anomaly_pct")
+            obj["value_pct"] = round(pct_value, 2) if isinstance(pct_value, (int, float)) else None
+            obj["units_pct"] = "%"
+        objects.append(obj)
     return objects
 
 
@@ -568,24 +629,33 @@ def _evaluate_area_signal(
         "wet_probability": checked("wet_probability", lambda v: v > p_wet_threshold),
     }
 
-    def score(checks: Dict[str, Optional[bool]]) -> Tuple[float, int, int, List[str]]:
+    def score(checks: Dict[str, Optional[bool]]) -> Tuple[float, int, int, List[str], List[str]]:
         available = [name for name, met in checks.items() if met is not None]
+        missing = [name for name, met in checks.items() if met is None]
         met = [name for name in available if checks[name]]
         fraction = (len(met) / len(available)) if available else 0.0
-        return fraction, len(met), len(available), met
+        return fraction, len(met), len(available), met, missing
 
-    drought_fraction, drought_met_n, drought_available_n, drought_met_names = score(drought_checks)
-    wet_fraction, wet_met_n, wet_available_n, wet_met_names = score(wet_checks)
+    drought_fraction, drought_met_n, drought_available_n, drought_met_names, drought_missing = score(drought_checks)
+    wet_fraction, wet_met_n, wet_available_n, wet_met_names, wet_missing = score(wet_checks)
 
+    # Confirmed real gap, fixed: a real 0.6 fraction (e.g. 3 of 5 drought
+    # indicators met, zero contradicting) used to fall into the SAME
+    # "no_clear_signal" bucket as a genuinely weak/empty case, just
+    # because 0.6 is below CROSS_INDICATOR_STRONG_THRESHOLD (0.8) -- with
+    # no category for "real, meaningful partial agreement, not yet
+    # strong". partial_drought/partial_wet close that gap using the SAME
+    # CROSS_INDICATOR_MIXED_THRESHOLD (0.4) boundary "mixed" already uses,
+    # not a new invented cutoff.
     if drought_fraction >= CROSS_INDICATOR_STRONG_THRESHOLD and drought_fraction > wet_fraction:
         signal = "strong_drought"
         agreement_score = drought_fraction
-        supporting, contradicting = drought_met_names, wet_met_names
+        supporting, contradicting, missing = drought_met_names, wet_met_names, drought_missing
         available_n = drought_available_n
     elif wet_fraction >= CROSS_INDICATOR_STRONG_THRESHOLD and wet_fraction > drought_fraction:
         signal = "strong_wet"
         agreement_score = wet_fraction
-        supporting, contradicting = wet_met_names, drought_met_names
+        supporting, contradicting, missing = wet_met_names, drought_met_names, wet_missing
         available_n = wet_available_n
     elif drought_fraction >= CROSS_INDICATOR_MIXED_THRESHOLD and wet_fraction >= CROSS_INDICATOR_MIXED_THRESHOLD:
         # Genuine disagreement -- both directions have real support.
@@ -595,13 +665,30 @@ def _evaluate_area_signal(
         dominant_is_drought = drought_fraction >= wet_fraction
         supporting = drought_met_names if dominant_is_drought else wet_met_names
         contradicting = wet_met_names if dominant_is_drought else drought_met_names
+        missing = drought_missing if dominant_is_drought else wet_missing
         available_n = min(drought_available_n, wet_available_n)
+    elif drought_fraction >= CROSS_INDICATOR_MIXED_THRESHOLD and wet_fraction < CROSS_INDICATOR_MIXED_THRESHOLD:
+        # Real, meaningful drought-side agreement, but not yet at the
+        # "strong" bar, with a genuinely weak (not ambiguous) wet side.
+        signal = "partial_drought"
+        agreement_score = drought_fraction
+        supporting, contradicting, missing = drought_met_names, wet_met_names, drought_missing
+        available_n = drought_available_n
+    elif wet_fraction >= CROSS_INDICATOR_MIXED_THRESHOLD and drought_fraction < CROSS_INDICATOR_MIXED_THRESHOLD:
+        signal = "partial_wet"
+        agreement_score = wet_fraction
+        supporting, contradicting, missing = wet_met_names, drought_met_names, wet_missing
+        available_n = wet_available_n
     else:
+        # Both directions genuinely weak (< CROSS_INDICATOR_MIXED_THRESHOLD)
+        # or no real data available at all -- a true absence of signal,
+        # not merely "not yet strong".
         signal = "no_clear_signal"
         dominant_is_drought = drought_fraction >= wet_fraction
         agreement_score = drought_fraction if dominant_is_drought else wet_fraction
         supporting = drought_met_names if dominant_is_drought else wet_met_names
         contradicting = []
+        missing = drought_missing if dominant_is_drought else wet_missing
         available_n = max(drought_available_n, wet_available_n)
 
     if agreement_score >= CROSS_INDICATOR_STRONG_THRESHOLD and available_n >= 4:
@@ -617,6 +704,11 @@ def _evaluate_area_signal(
         "agreement_score": round(agreement_score, 2),
         "supporting_indicators": _indicator_evidence_objects(supporting, values),
         "contradicting_indicators": _indicator_evidence_objects(contradicting, values),
+        # Real, deterministic list of indicator names with no real data
+        # for this area (not "didn't meet the threshold" -- genuinely
+        # None) -- confirmed real gap: these were previously invisible,
+        # silently lowering confidence with no way for a reader to see WHY.
+        "missing_indicators": missing,
         "confidence": confidence,
     }
 
@@ -644,6 +736,12 @@ def build_cross_indicator_findings(evidence: Dict[str, Any], period: str) -> Lis
 
     national_values = {
         "rainfall_anomaly": national_value(climate, "rainfall_total", "departure", "national_anomaly", "mean"),
+        # Real percentage-anomaly counterpart to rainfall_anomaly above (mm)
+        # -- not used for the drought/wet boolean checks below (its sign is
+        # identical to the mm figure, so it would double-count the same
+        # signal if scored separately), only attached as extra context onto
+        # the same criterion's evidence object -- see _indicator_real_value.
+        "rainfall_anomaly_pct": national_value(climate, "rainfall_total", "departure", "national_pct_anomaly", "mean"),
         "rainfall_percentile": national_value(climate, "rainfall_percentile", "national", "mean"),
         "spi": national_value(climate, "spi", "national", "mean"),
         "cdd_anomaly": national_value(climate, "cdd", "departure", "national_anomaly", "mean"),
@@ -658,6 +756,7 @@ def build_cross_indicator_findings(evidence: Dict[str, Any], period: str) -> Lis
 
     regional_maps = {
         "rainfall_anomaly": _extract_regional_means(climate.get("rainfall_total"), "departure", "regional_anomaly"),
+        "rainfall_anomaly_pct": _extract_regional_means(climate.get("rainfall_total"), "departure", "regional_pct_anomaly"),
         "rainfall_percentile": _extract_regional_means(climate.get("rainfall_percentile"), "regional"),
         "spi": _extract_regional_means(climate.get("spi"), "regional"),
         "cdd_anomaly": _extract_regional_means(climate.get("cdd"), "departure", "regional_anomaly"),
@@ -701,8 +800,63 @@ def _regional_means(layer_entry: Optional[Dict[str, Any]]) -> Dict[str, float]:
     return {item["area_name"]: item["mean"] for item in layer_entry.get("regional", []) if item.get("mean") is not None}
 
 
+# Real, defensible-but-judgment-based cutoff (not an upstream-confirmed
+# scientific threshold, unlike RISK_CLASS_BANDS -- there is no such thing
+# for "how many 0.25 deg cells is enough" -- stated plainly as a threshold
+# choice, not a fabricated authoritative one) below which a region's real
+# valid_cell_count is small enough that its area-weighted statistics are a
+# much coarser estimate than a large region's -- confirmed real cases:
+# Harari (3 cells), Addis Ababa (4), Dire Dawa (9), all ~27.6 km resolution.
+LOW_SAMPLE_CELL_COUNT_THRESHOLD = 10
+
+
+def _regional_valid_counts(layer_entry: Optional[Dict[str, Any]]) -> Dict[str, int]:
+    if not layer_entry:
+        return {}
+    return {
+        item["area_name"]: item["valid_count"]
+        for item in layer_entry.get("regional", [])
+        if item.get("valid_count") is not None
+    }
+
+
 def _cross_indicator_lookup(findings: List[Dict[str, Any]], area_name: str) -> Optional[Dict[str, Any]]:
     return next((item for item in findings if item.get("area") == area_name), None)
+
+
+def _action_status(risk_class: Optional[str], cross_indicator_signal: Optional[str], hazard_type: str) -> str:
+    """Real, deterministic actionability tier -- distinct from `rank`,
+    which is always exactly the top PRIORITY_AREA_TOP_N per hazard type
+    even when nothing in that top-N is operationally significant.
+    Confirmed real gap: an area ranked in the wet-hazard top 5 was always
+    given a full "Flood / wet-hazard mitigation response" recommendation
+    regardless of real signal strength -- including areas with risk_score
+    in the real Very low class, hazard_probability near the operational
+    threshold's low end, and cross_indicator_signal showing no_clear_signal
+    or even the OPPOSITE hazard's strong signal (a real area ranked #2 for
+    wet risk while its own cross-indicator evidence said strong_drought).
+    Rank alone was standing in for actionability.
+
+    One of "action" (High/Very high risk_class), "preparedness" (Moderate
+    risk_class, or Low risk_class with real cross-indicator agreement),
+    "monitor_only" (Low/Very low risk_class with real agreement but low
+    magnitude), or "not_actionable" (Very low/unknown risk_class AND no
+    real cross-indicator agreement for this area's own hazard_type) -- a
+    real signal never gets silently dropped, but it also never gets
+    inflated into a full response recommendation it doesn't support.
+    """
+    # partial_{hazard_type} is real, meaningful agreement (>= CROSS_
+    # INDICATOR_MIXED_THRESHOLD, just not yet "strong") -- must count the
+    # same as strong_{hazard_type}/mixed here, or a real partial signal
+    # would be silently treated as if it disagreed entirely.
+    signal_agrees = cross_indicator_signal in (f"strong_{hazard_type}", f"partial_{hazard_type}", "mixed")
+    if risk_class in ("High", "Very high"):
+        return "action"
+    if risk_class == "Moderate":
+        return "action" if signal_agrees else "preparedness"
+    if risk_class == "Low":
+        return "preparedness" if signal_agrees else "monitor_only"
+    return "monitor_only" if signal_agrees else "not_actionable"
 
 
 def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PRIORITY_AREA_TOP_N) -> List[Dict[str, Any]]:
@@ -719,6 +873,13 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
         probability_by_area = _regional_means(hazard_risk_layers.get(RANK_BY_TO_PROBABILITY_LAYER[rank_by]))
         risk_by_area = _regional_means(hazard_risk_layers.get(rank_by))
         vulnerability_by_area = _regional_means(hazard_risk_layers.get(RANK_BY_TO_VULNERABILITY_LAYER[rank_by]))
+        # Real per-region valid 0.25 deg cell counts for this risk layer --
+        # see LOW_SAMPLE_CELL_COUNT_THRESHOLD's docstring for the confirmed
+        # real cases (Harari 3 cells, Addis Ababa 4, Dire Dawa 9) this
+        # exists to flag: "data completeness is robust" used to be the
+        # only real signal reaching a reader, conflating a real but small
+        # sample size with genuine confidence.
+        valid_count_by_area = _regional_valid_counts(hazard_risk_layers.get(rank_by))
         exposure_by_area = {
             item["area_name"]: item
             for item in exposure.get(rank_by, {}).get("population_exposed_by_region", [])
@@ -737,6 +898,16 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
             item["area_name"]: item
             for item in exposure.get(rank_by, {}).get("healthsites_exposed_by_region", [])
         }
+        # Confirmed real gap, fixed: cropland_exposed_by_region was already
+        # being computed above (see the exposure-computation loop) but
+        # never actually extracted into this justification object -- so it
+        # never reached Stage 2/3 or the frontend at all, despite being
+        # arguably more operationally relevant than road exposure for a
+        # rainfed-agriculture farmer advisory.
+        cropland_exposure_by_area = {
+            item["area_name"]: item
+            for item in exposure.get(rank_by, {}).get("cropland_exposed_by_region", [])
+        }
 
         for rank, item in enumerate(ranking[:top_n], start=1):
             area_name = item.get("area_name")
@@ -744,6 +915,10 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
             exposure_item = exposure_by_area.get(area_name)
             roads_item = roads_exposure_by_area.get(area_name)
             healthsites_item = healthsites_exposure_by_area.get(area_name)
+            cropland_item = cropland_exposure_by_area.get(area_name)
+            risk_class = classify_risk_score(risk_by_area.get(area_name))
+            cross_indicator_signal = finding.get("signal") if finding else None
+            valid_cell_count = valid_count_by_area.get(area_name)
             justifications.append({
                 "justification_id": f"{area_name}::{hazard_type}",
                 "rank": rank,
@@ -757,17 +932,38 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
                 # not re-derived from LLM prose, so the frontend can show a
                 # trustworthy class label next to the bare number without
                 # parsing free text.
-                "risk_class": classify_risk_score(risk_by_area.get(area_name)),
+                "risk_class": risk_class,
+                # Real, deterministic actionability tier -- see
+                # _action_status's docstring for the confirmed real bug
+                # this fixes (rank alone was standing in for actionability,
+                # forcing a full mitigation-response recommendation onto
+                # areas with Very low risk_score and no real cross-
+                # indicator agreement for their own hazard_type).
+                "action_status": _action_status(risk_class, cross_indicator_signal, hazard_type),
                 "hazard_probability": probability_by_area.get(area_name),
                 "vulnerability": vulnerability_by_area.get(area_name),
                 "population_exposed": exposure_item.get("exposed") if exposure_item else None,
                 "population_exposed_pct": exposure_item.get("exposed_pct") if exposure_item else None,
                 "roads_exposed_pct": roads_item.get("exposed_pct") if roads_item else None,
                 "healthsites_exposed_pct": healthsites_item.get("exposed_pct") if healthsites_item else None,
+                "cropland_exposed_pct": cropland_item.get("exposed_pct") if cropland_item else None,
                 "supporting_indicators": finding.get("supporting_indicators", []) if finding else [],
                 "contradicting_indicators": finding.get("contradicting_indicators", []) if finding else [],
-                "cross_indicator_signal": finding.get("signal") if finding else None,
+                "cross_indicator_signal": cross_indicator_signal,
                 "confidence": finding.get("confidence") if finding else None,
+                # Real, server-generated data-quality signal -- distinct
+                # from `confidence` above, which reflects cross-indicator
+                # AGREEMENT, not sample size. valid_cell_count is the real
+                # number of 0.25 deg (~27.6 km) grid cells this area's
+                # statistics were computed from; low_sample_size_warning is
+                # a real, deterministic flag (see LOW_SAMPLE_CELL_COUNT_
+                # THRESHOLD) so the LLM/UI never has to guess or invent
+                # "data completeness is robust" -- it summarizes a real
+                # number instead.
+                "valid_cell_count": valid_cell_count,
+                "low_sample_size_warning": (
+                    valid_cell_count is not None and valid_cell_count < LOW_SAMPLE_CELL_COUNT_THRESHOLD
+                ),
             })
     return justifications
 
@@ -823,6 +1019,25 @@ def _structured_summary_object(
     national_mean = national.get("mean")
     signal = national_signal or _dominant_class(class_area_pct)
 
+    # Confirmed real gap: national_signal ("High"/"Very low"/etc) for
+    # hazard/probability/vulnerability layers comes from classify_by_
+    # quintiles' SELF-REFERENTIAL quintiles (this period's own national
+    # distribution -- entry["class_scheme"] already documents this
+    # honestly, e.g. "quintiles_of_current_period"), NOT a real fixed
+    # scientific threshold the way risk_score's RISK_CLASS_BANDS or SPI's
+    # McKee categories are -- but that distinction was being silently
+    # dropped here, leaving a reader unable to tell "High" apart from a
+    # real absolute severity claim. No real absolute threshold exists for
+    # hazard probability/intensity/vulnerability anywhere in this
+    # project's data catalog (unlike risk_score/SPI) -- inventing one here
+    # would be the same class of fabrication this fix is meant to remove,
+    # so the honest fix is to surface the real method and real breakpoints
+    # instead, not invent a fake absolute scale.
+    classification_method = entry.get("class_scheme") or (
+        "risk_class_bands (real, fixed, upstream-defined 0-100 scale)" if national_signal else None
+    )
+    class_breakpoints = entry.get("class_breakpoints")
+
     parts = []
     if signal:
         parts.append(f"{signal.replace('_', ' ')} signal")
@@ -841,6 +1056,8 @@ def _structured_summary_object(
         "highest_areas": highest_areas,
         "lowest_areas": lowest_areas,
         "affected_area_pct": _high_class_area_pct(class_area_pct),
+        "classification_method": classification_method,
+        "classification_breakpoints": [round(v, 4) for v in class_breakpoints] if class_breakpoints else None,
         "interpretation": interpretation,
         "confidence": "moderate" if national else "low",
     }
@@ -865,14 +1082,65 @@ def _categorical_summary_object(key: str, entry: Dict[str, Any]) -> Dict[str, An
         "highest_areas": [],
         "lowest_areas": [],
         "affected_area_pct": _high_class_area_pct(class_area_pct),
+        # Always real, fixed, upstream-defined bands (RISK_CLASS_BANDS or
+        # DOMINANT_HAZARD_CODE_BANDS) -- the pixel value already IS the
+        # class code for these 2 categorical layers, never quintile-derived.
+        "classification_method": "fixed_class_codes (real, upstream-defined -- the raster's pixel value already IS the class)",
+        "classification_breakpoints": None,
         "interpretation": interpretation,
         "confidence": "moderate" if class_area_pct else "low",
     }
 
 
+def _population_exposure_layer_summary(entry: Dict[str, Any], evidence: Dict[str, Any]) -> Dict[str, Any]:
+    """Real, purpose-built summary for population_normalized -- confirmed
+    real schema mismatch, fixed: this layer used to be forced through
+    _structured_summary_object exactly like a hazard/climate signal, which
+    produced things like national_signal: "low" (a self-referential
+    quintile of population DENSITY, not a hazard severity claim -- a
+    meaningless "signal" for population) and, before the Stage 1 merge fix
+    existed, an LLM-hallucinated "national_mean: 103,776,516" (a real
+    population TOTAL, not a mean of anything). Population is exposure
+    context, not a climate/hazard signal, so it gets its own real fields
+    instead: total_population and real drought/wet exposed population
+    counts + percentages, summed from the same real WorldPop-derived
+    per-region exposure evidence build_priority_area_justifications uses.
+    """
+    exposure = evidence.get("exposure", {})
+
+    def exposure_totals(rank_by: str) -> Dict[str, Any]:
+        regions = exposure.get(rank_by, {}).get("population_exposed_by_region", [])
+        total_population = sum(item.get("total") or 0 for item in regions)
+        exposed_population = sum(item.get("exposed") or 0 for item in regions)
+        exposed_pct = round(exposed_population / total_population * 100, 1) if total_population else None
+        return round(total_population), round(exposed_population), exposed_pct
+
+    drought_total, drought_exposed, drought_exposed_pct = exposure_totals("population_r_drought")
+    wet_total, wet_exposed, wet_exposed_pct = exposure_totals("population_r_wet")
+    total_population = max(drought_total, wet_total) or None
+
+    parts = [f"total population {total_population:,}"] if total_population else []
+    parts.append(f"{drought_exposed:,} ({drought_exposed_pct}%) exposed to drought hazard" if drought_exposed_pct is not None else "no drought exposure data")
+    parts.append(f"{wet_exposed:,} ({wet_exposed_pct}%) exposed to wet hazard" if wet_exposed_pct is not None else "no wet exposure data")
+
+    return {
+        "layer": "population_normalized",
+        "total_population": total_population,
+        "drought_exposed_population": drought_exposed or None,
+        "drought_exposed_pct": drought_exposed_pct,
+        "wet_exposed_population": wet_exposed or None,
+        "wet_exposed_pct": wet_exposed_pct,
+        "classification_method": "population_exposure (not a hazard/climate signal -- no national_signal or national_mean applies)",
+        "interpretation": "; ".join(parts) + ".",
+        "confidence": "moderate" if total_population else "low",
+    }
+
+
 def build_structured_layer_summaries(evidence: Dict[str, Any]) -> List[Dict[str, Any]]:
     summaries = [
-        _structured_summary_object(layer_value, "layer", entry)
+        _population_exposure_layer_summary(entry, evidence)
+        if layer_value == "population_normalized"
+        else _structured_summary_object(layer_value, "layer", entry)
         for layer_value, entry in (evidence.get("hazard_risk_layers") or {}).items()
     ]
     summaries += [
@@ -946,8 +1214,17 @@ def build_forecast_metadata(period: str, admin_level: str = "admin1") -> Dict[st
         "administrative_level": f"national + region ({admin_level})",
         "population_reference_year": 2020,
         "population_source": "WorldPop Ethiopia 2020 population count, 1km",
+        # Confirmed real gap, fixed: the forecast's own valid_year (real,
+        # computed above) can be many years ahead of these static reference
+        # datasets -- "data completeness is robust" was previously the
+        # only real signal reaching a reader, which conflates SPATIAL
+        # completeness (real cell coverage) with TEMPORAL currency (how
+        # old the underlying population/livestock counts are). Both real
+        # numbers now travel together so a reader/LLM can distinguish them.
+        "population_temporal_lag_years": (valid_year - 2020) if valid_year else None,
         "livestock_reference_year": 2015,
         "livestock_source": "FAO/Harvard Dataverse Gridded Livestock of the World v4 (2015)",
+        "livestock_temporal_lag_years": (valid_year - 2015) if valid_year else None,
     }
 
 

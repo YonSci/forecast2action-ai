@@ -488,6 +488,63 @@
   margin-top: 0;
 }
 
+/* Real structured advisory bullets (area/action/trigger/evidence/
+   confidence -- see AdvisoryBullet.jsx / _ADVISORY_ITEM_SCHEMA). Each
+   bullet's real area/trigger/evidence/confidence render as small tags
+   under the action text, not just a plain sentence. */
+.ai-advisory-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.ai-advisory-action {
+  line-height: 1.55;
+}
+
+.ai-advisory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-advisory-tag {
+  font-size: 0.7rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: var(--navy);
+}
+
+.ai-advisory-tag.ai-advisory-area {
+  background: #ecfdf5;
+  color: #027a48;
+  font-weight: 600;
+}
+
+.ai-advisory-tag.ai-advisory-trigger {
+  text-transform: capitalize;
+}
+
+.ai-advisory-tag.ai-advisory-evidence {
+  background: var(--panel-alt, #f3f4f6);
+  color: var(--muted);
+  font-family: var(--mono, monospace);
+}
+
+.ai-advisory-tag.ai-advisory-confidence {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: transparent;
+  color: var(--muted);
+  padding-left: 0;
+}
+
+.ai-advisory-tag.confidence-low {
+  color: #b45309;
+}
+
 
 /* v11 AI provider/model selector */
 .ai-provider-selectors {
@@ -848,6 +905,28 @@
 }
 
 /* ---- Messaging cards: SMS + WhatsApp ---- */
+/* One group per real actionable area (see sms_messages) -- the label row
+   above each SMS/WhatsApp pair names which real area/hazard/audience it's
+   for, since there's no longer exactly one national pair. */
+.ai-messaging-group {
+  margin-bottom: 22px;
+}
+
+.ai-messaging-group-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.ai-messaging-empty {
+  font-size: 0.88rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .ai-messaging-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

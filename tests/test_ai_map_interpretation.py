@@ -1,8 +1,52 @@
+from app.api import ai_map_interpretation as aim
 from app.api.ai_map_interpretation import AIMapInterpretationRequest, fallback_report, validate_stage_shape
 
 
 def _request():
     return AIMapInterpretationRequest()
+
+
+def test_retrieve_guidance_penalizes_non_actionable_hazard_when_evidence_given(monkeypatch):
+    # Confirmed real bug, fixed: the query used to be built entirely from
+    # dashboard UI state, not the real national signal -- flood/wet-hazard
+    # guidance could be retrieved and reach Stage 3 even when the real
+    # national wet signal was completely insignificant (every wet-ranked
+    # area not_actionable). Real action_status (see build_priority_area_
+    # justifications) must now penalize an off-topic document.
+    monkeypatch.setattr(
+        aim,
+        "read_knowledge_base_documents",
+        lambda: [
+            {"title": "Flood Early Action", "path": "flood.md", "text": "Guidance for flood and wet hazard response, water levels."},
+            {"title": "Drought Early Action", "path": "drought.md", "text": "Guidance for drought response, water conservation."},
+        ],
+    )
+    evidence = {
+        "priority_area_justifications": [
+            {"hazard_type": "drought", "action_status": "action"},
+            {"hazard_type": "wet", "action_status": "not_actionable"},
+        ],
+    }
+
+    results = aim.retrieve_guidance(_request(), evidence=evidence, limit=5)
+    titles = [item["title"] for item in results]
+
+    assert "Drought Early Action" in titles
+    assert "Flood Early Action" not in titles
+
+
+def test_retrieve_guidance_without_evidence_keeps_old_behavior(monkeypatch):
+    # Backward compatible: no evidence given (e.g. a caller that hasn't
+    # been updated yet) -- no actionability penalty applied at all.
+    monkeypatch.setattr(
+        aim,
+        "read_knowledge_base_documents",
+        lambda: [{"title": "Flood Early Action", "path": "flood.md", "text": "Guidance for flood and wet hazard response."}],
+    )
+
+    results = aim.retrieve_guidance(_request(), limit=5)
+
+    assert len(results) == 1
 
 
 def test_validate_stage_shape_coerces_object_returned_for_a_string_field():
@@ -100,15 +144,27 @@ def test_fallback_report_handles_missing_evidence_gracefully():
     assert report["_metadata"]["ai_engine"] == "rule_based_fallback"
 
 
+_EVIDENCE_WITH_ONE_ACTIONABLE_AREA = {
+    "priority_area_justifications": [
+        {
+            "justification_id": "Afar::drought", "area": "Afar", "rank": 1, "hazard_type": "drought",
+            "risk_score": 65.0, "risk_class": "High", "action_status": "action",
+            "hazard_probability": 0.8, "confidence": "high", "supporting_indicators": [],
+        },
+    ],
+}
+
+
 def test_fallback_report_english_request_has_no_mismatch_note():
     # target_language defaults to "en" -- the fallback's real English content
     # matches what was requested, so no mismatch disclosure is needed.
-    report = fallback_report(_request(), retrieved_guidance=[], evidence=None)
+    report = fallback_report(_request(), retrieved_guidance=[], evidence=_EVIDENCE_WITH_ONE_ACTIONABLE_AREA)
 
     assert report["_metadata"]["content_language_code"] == "en"
     assert report["_metadata"]["target_language_code"] == "en"
     assert "shown in English" not in report["executive_summary"]
-    assert "[EN fallback" not in report["sms_summary"]
+    assert len(report["sms_messages"]) == 1
+    assert "[EN fallback" not in report["sms_messages"][0]["message"]
     assert not any("shown in English" in note for note in report["data_quality_notes"])
 
 
@@ -120,10 +176,10 @@ def test_fallback_report_non_english_request_discloses_it_is_actually_english():
     request = _request()
     request.target_language = "am"
 
-    report = fallback_report(request, retrieved_guidance=[], evidence=None)
+    report = fallback_report(request, retrieved_guidance=[], evidence=_EVIDENCE_WITH_ONE_ACTIONABLE_AREA)
 
     assert report["_metadata"]["target_language_code"] == "am"
     assert report["_metadata"]["content_language_code"] == "en"
     assert "shown in English, not Amharic" in report["executive_summary"]
     assert any("shown in English, not Amharic" in note for note in report["data_quality_notes"])
-    assert report["sms_summary"].startswith("[EN fallback -- translation unavailable] ")
+    assert report["sms_messages"][0]["message"].startswith("[EN fallback] ")

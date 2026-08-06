@@ -36,7 +36,12 @@ from app.api.hazard_risk_catalog_shared import RISK_CLASS_BANDS
 from app.api.hazard_risk_maps import find_map_record as find_hazard_risk_record
 from app.api.seasonal_raster_maps import find_map_record as find_seasonal_record
 from app.context.community_context import build_community_evidence_by_region
-from app.context.statistical_evidence import PRIORITY_AREA_TOP_N, build_national_region_evidence
+from app.context.statistical_evidence import (
+    PRIORITY_AREA_TOP_N,
+    build_national_region_evidence,
+    build_structured_indicator_summaries,
+    build_structured_layer_summaries,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +76,7 @@ CURATED_STAGE1_COMBINED_LAYER = "population_dominant_code"
 # IS already the standardized signal.
 CURATED_STAGE1_CLIMATE_INDICATORS = [("rainfall_total", "anomaly"), ("spi", "forecast"), ("cdd", "anomaly")]
 
-_SIGNIFICANT_WET_SIGNALS = {"strong_wet", "mixed"}
+_SIGNIFICANT_WET_SIGNALS = {"strong_wet", "partial_wet", "mixed"}
 
 
 def _wet_signal_is_significant(evidence: Dict[str, Any]) -> bool:
@@ -128,27 +133,43 @@ def select_curated_stage1_images(
     return selected[:STAGE1_IMAGE_CAP]
 
 
-def _required_layers_list(evidence: Dict[str, Any]) -> List[str]:
-    """The real layer labels this evidence actually contains -- so Stage
-    1's task instruction can say EXACTLY which/how many layer bullets are
-    required, instead of a hardcoded 5-item list ("Hazard / Risk Score /
-    Hazard Probability / Exposure / Vulnerability") that undercounted the
-    real 11 distinct entries this evidence engine computes (drought AND
-    wet versions of hazard/probability/vulnerability/risk, plus population
-    exposure and 2 categorical layers) -- a confirmed real mismatch between
-    Stage 1's task text and the evidence it was actually given.
+def _merge_structured_summaries(
+    deterministic: List[Dict[str, Any]], narrative: List[Dict[str, Any]], key_field: str,
+) -> List[Dict[str, Any]]:
+    """Combines the real, deterministic structured summary object
+    (national_signal/national_mean/highest_areas/lowest_areas/
+    affected_area_pct/confidence -- see build_structured_layer_summaries/
+    build_structured_indicator_summaries) with ONLY the LLM's own
+    interpretation sentence, matched by key_field's real value. Always
+    returns one entry per deterministic item, in order -- a missing/
+    mismatched/empty narrative entry (LLM error, wrong key echoed back,
+    fallback path) degrades to the deterministic object's own template
+    interpretation (already grounded in the real numbers, see
+    _structured_summary_object) rather than a blank string.
+
+    This is the Stage 1 equivalent of _merge_priority_area_justifications.
+    Confirmed live and real, not theoretical: before this merge existed,
+    Stage 1's LLM output returned national_mean: 42.61 for a layer whose
+    real, deterministic national mean was 3.409 (a ~12x error), used its
+    own invented label ("Drought Risk") instead of the real layer
+    identifier, and reclassified national_signal from the real "very_low"
+    to "Moderate" -- proving prompt instructions alone ("do not modify
+    computed values") cannot prevent this; the LLM must not be capable of
+    returning these fields at all.
     """
-    labels = [
-        entry["layer_label"]
-        for entry in (evidence.get("hazard_risk_layers") or {}).values()
-        if entry.get("layer_label")
-    ]
-    labels += [
-        entry["layer_label"]
-        for entry in (evidence.get("categorical_layers") or {}).values()
-        if entry.get("layer_label")
-    ]
-    return labels
+    narrative_by_key = {
+        item.get(key_field): item for item in narrative if isinstance(item, dict) and item.get(key_field)
+    }
+    merged = []
+    for entry in deterministic:
+        narrative_entry = narrative_by_key.get(entry[key_field], {})
+        interpretation = narrative_entry.get("interpretation")
+        merged.append({
+            **entry,
+            "interpretation": interpretation if isinstance(interpretation, str) and interpretation.strip() else entry["interpretation"],
+        })
+    return merged
+
 
 # Every staged report evaluates ALL real ranked areas nationwide -- there is
 # no code path today where a dashboard-selected area actually narrows Stage
@@ -322,9 +343,24 @@ def build_stage1_prompt(
     # region's total/exposed (real WorldPop people counts) -- a real risk
     # of the model citing a fabricated-sounding "hectares exposed" number
     # that was never actually computed anywhere in this pipeline.
-    required_layers = _required_layers_list(evidence)
+    # Confirmed real, live bug (not theoretical): asking the LLM to
+    # reproduce national_signal/national_mean/highest_areas/lowest_areas/
+    # affected_area_pct/confidence itself -- even with "do not modify
+    # computed values" stated explicitly -- let a real Gemini response
+    # return national_mean: 42.61 for a layer whose real, deterministic
+    # value was 3.409 (a ~12x error), reclassify national_signal from the
+    # real "very_low" to "Moderate", and use an invented layer label
+    # instead of the real identifier. These fields are now computed here,
+    # by Python, from the exact same real evidence -- never by the model --
+    # and _merge_structured_summaries (below, after this stage's real
+    # response comes back) keeps them authoritative regardless of what the
+    # model returns. The model is only ever asked for interpretation text.
+    real_layer_summaries = _round_floats(build_structured_layer_summaries(evidence))
+    real_indicator_summaries = _round_floats(build_structured_indicator_summaries(evidence))
+
     evidence_for_stage1 = {
-        "required_layers": required_layers,
+        "real_layer_summaries": real_layer_summaries,
+        "real_indicator_summaries": real_indicator_summaries,
         "population_exposure_summary": _national_population_exposure_summary(evidence),
         "risk_definition": _risk_definition_block(),
         **{key: value for key, value in evidence.items() if key not in ("priority_scores", "exposure")},
@@ -336,9 +372,13 @@ def build_stage1_prompt(
 This is Stage 1 of a 3-stage report pipeline: EVIDENCE INTERPRETATION. Only interpret the given evidence layer by layer and indicator by indicator, and flag data-quality/uncertainty issues. Do not write an executive summary, do not decide or explain priority areas, and do not produce advisories -- those happen in later stages you are not performing.
 
 TASK:
-1. Provide layer_by_layer_summary as an array with exactly ONE object per entry in required_layers below (echo each real layer identifier back as "layer") -- do not omit any of them, and do not add layers not listed. Each object must have exactly these keys: layer (echoed back), national_signal (a short real classification, e.g. "high"/"moderate"/a real class label -- never invented), national_mean (the real national mean, or null if not applicable to this layer), highest_areas (array of the real area names with the highest values), lowest_areas (real area names with the lowest values), affected_area_pct (real % of area in the high/very-high classes, or null), interpretation (1-2 plain-language sentences grounded ONLY in the real numbers already given for this specific layer -- do not restate every number, explain what they mean), confidence ("high"/"moderate"/"low", reflecting real data completeness for this layer, not a guess). For the population_normalized entry specifically, ground the interpretation in the real population_exposure_summary figures (exposed population count and %) given separately below, not just the normalized index. For any risk-score layer, classify national_mean using risk_definition's real classes in the interpretation.
-2. Provide indicator_by_indicator_summary in the SAME object shape (key "indicator" instead of "layer") with exactly one entry per climate indicator (Rainfall Total / SPI / CDD / CWD / Rx1day / Rx5day / Rainfall Percentile). Where an indicator's "departure" section is present, ground the interpretation in the real anomaly (absolute and/or %) against climatology, not just the forecast value alone. For SPI specifically, national_signal must be its real category (e.g. "severely_dry"), not an invented label.
-3. Provide data_quality_notes flagging any uncertainty or low cross-indicator agreement visible in the evidence below. Only flag a climatology departure as unavailable where the evidence actually shows "departure_available": false -- do not claim data is missing when a real departure is present.
+1. Provide layer_by_layer_summary as an array with exactly ONE object per entry in real_layer_summaries below, each with EXACTLY 2 keys: "layer" (echo that entry's real "layer" value back EXACTLY -- do not invent, relabel, or use its human-readable name) and "interpretation" (1-2 plain-language sentences explaining what that entry already shows -- do not restate every number, explain what they mean, and do not state a different number, class, or area name than what is given for that entry). Do not omit any entry, and do not add layers not listed. The population_normalized entry is population EXPOSURE, not a hazard/climate signal -- it has no national_signal/national_mean/highest_areas/lowest_areas; ground its interpretation ONLY in its own real total_population/drought_exposed_population/drought_exposed_pct/wet_exposed_population/wet_exposed_pct fields, and never describe it as "high"/"low" the way a hazard layer is described. For any risk-score layer, its national_signal already IS the real risk_definition class -- reference it, do not reclassify it yourself.
+2. Provide indicator_by_indicator_summary in the SAME 2-key shape (key "indicator" instead of "layer") for every entry in real_indicator_summaries below. Where an indicator's real anomaly figures are shown in its entry, ground the interpretation in that real departure, not the forecast value alone.
+3. Provide data_quality_notes flagging any uncertainty or low cross-indicator agreement visible in the evidence below. Only flag a climatology departure as unavailable where the evidence actually shows "departure_available": false -- do not claim data is missing when a real departure is present. Also flag forecast_metadata's real population_temporal_lag_years/livestock_temporal_lag_years explicitly whenever either is 3+ years -- population/livestock exposure figures are computed from real but temporally static datasets (a fixed reference year), not updated for the current forecast year, and a reader needs that distinction even when spatial data completeness is otherwise good.
+
+You do not compute, reclassify, or invent national_signal, national_mean, highest_areas, lowest_areas, affected_area_pct, or confidence for any entry in real_layer_summaries/real_indicator_summaries -- those are already real, authoritative values and are used exactly as given regardless of what you return for them. Your only job for each entry is its interpretation sentence, and it must not contradict the real values already given for that entry.
+
+Each entry's real classification_method tells you whether its national_signal is an ABSOLUTE severity claim or a RELATIVE one -- phrase your interpretation accordingly: "risk_class_bands"/"fixed_class_codes" are real, fixed, upstream-defined scales (an absolute claim like "High" is accurate as stated); "quintiles_of_current_period" or "quintiles_of_real_climatology" mean the class is this period's own distribution split into fifths (phrase it relatively, e.g. "one of the highest nationally this period", not as an absolute severity claim, since no universal threshold defines what counts as objectively "high" hazard probability or vulnerability in this pipeline).
 
 A curated set of real map images is attached (drought-side hazard/probability/risk maps always; wet-side equivalents only when the real national cross-indicator signal shows they matter this period; rainfall/CDD shown as their real anomaly against climatology, not just the raw forecast). Per this app's own SOURCE HIERARCHY rule, use them only to verify spatial form -- every number you cite must come from the evidence below, never estimated from image colors.
 
@@ -406,14 +446,16 @@ TASK:
 1. Provide executive_summary per the requirement above.
 2. Provide national_spatial_overview for Ethiopia-wide patterns, grounded in Stage 1's summaries.
 3. Provide compound_hazard_interpretation explaining where multiple indicators agree or disagree (drought vs. wet signals), using the real cross-indicator agreement data above.
-4. Provide priority_area_justification as an array with ONE entry per justification_id listed in "REAL, ALREADY-COMPUTED PRIORITY AREAS" above (echo the exact justification_id back, do not invent new ones or skip any). Each entry must have exactly these 3 keys: justification_id, differentiator, recommended_intervention_type (a short category, e.g. "Drought / water-security response" or "Flood / wet-hazard mitigation response").
+4. Provide priority_area_justification as an array with ONE entry per justification_id listed in "REAL, ALREADY-COMPUTED PRIORITY AREAS" above (echo the exact justification_id back, do not invent new ones or skip any). Each entry must have exactly these 3 keys: justification_id, differentiator, recommended_intervention_type. Each area's real, already-computed action_status tells you how strong recommended_intervention_type should sound -- do not give every top-5-ranked area a full response label regardless of real signal strength: action_status "action" -> a real response category (e.g. "Drought / water-security response"); "preparedness" -> a preparedness-framed category (e.g. "Drought preparedness monitoring"); "monitor_only" or "not_actionable" -> state plainly that this area is ranked but not currently actionable (e.g. "Monitoring only -- not currently actionable this period"), and your differentiator must say WHY (e.g. real risk_score in the Very low class, and/or cross_indicator_signal not agreeing with this area's own hazard_type) rather than inventing an operational response the real numbers don't support. It is normal and expected for some or all areas within one hazard type to be not_actionable in a given period -- do not treat a top-5 rank as proof that real action is warranted.
 
 DIFFERENTIATOR RULES (this is the most commonly violated rule -- follow it exactly):
 - NEVER cite priority_score. It is an internal ranking composite with no standalone meaning to a reader -- stating "priority score 0.6" explains nothing. Explain the ranking using the REAL, independently-meaningful drivers instead: risk_score's class (from the classification above), hazard_probability, vulnerability, exposure, or specific indicator values.
 - Do NOT restate numbers the reader already sees elsewhere (risk_score, hazard_probability, vulnerability, population_exposed_pct are already shown separately) -- reference them in WORDS ("the highest hazard probability among drought areas"), not by repeating the digits.
-- BAD (restates numbers, cites priority_score): "Harari holds the highest drought priority score (0.600) and risk score (30.188, Low) nationally, defined by a 1.00 hazard probability, an extreme SPI of -4.47 std dev..."
-- GOOD (explains WHY in plain language, no restated numbers): "Harari ranks first for drought because it has the highest hazard probability of any drought area and the most severe SPI deficit, despite its risk score falling in the Low class -- exposure and health-site coverage here are exceptionally high, which is why it still leads the ranking."
+- BAD (restates numbers, cites priority_score): "Area A holds the highest drought priority score (0.600) and risk score (30.188, Low) nationally, defined by a 1.00 hazard probability, an extreme SPI of -4.47 std dev..."
+- GOOD (explains WHY in plain language, no restated numbers): "Area A ranks first for drought despite its risk score falling in the Low class, because its exposed population share and health-site coverage are the highest of any drought area this period -- that combination of scale and infrastructure exposure is what keeps it at the top of the ranking even though its risk score alone looks moderate."
+- Area A/Area B above are abstract placeholders, not real area names -- do not copy this specific claim into your own answer. Real areas differ every period in which factor actually drives their rank (highest hazard probability for one, highest exposure for another, most severe SPI deficit for a third); state whichever real driver(s) the REAL numbers given to you for THIS area actually show, never assume it must be hazard probability or any other single field.
 - When this area has real community reports above, mention whether they corroborate or contradict the forecast-based signal, naming the report count and type -- e.g. "consistent with 3 community reports of pasture stress"; when it has none, do not claim ground-truth confirmation.
+- When this area's real low_sample_size_warning is true, say so explicitly (e.g. "based on a small real sample of grid cells for this area, so treat this as a coarser estimate") -- do not describe data completeness as unqualifiedly robust for an area flagged this way, and never invent a data-quality claim for an area not flagged.
 
 Return only JSON with these keys: executive_summary, national_spatial_overview, compound_hazard_interpretation, priority_area_justification.""".strip()
 
@@ -460,6 +502,8 @@ def _action_evidence_packet(stage1_result: Dict[str, Any], stage2_result: Dict[s
             "population_exposed_pct": item.get("population_exposed_pct"),
             "roads_exposed_pct": item.get("roads_exposed_pct"),
             "healthsites_exposed_pct": item.get("healthsites_exposed_pct"),
+            "cropland_exposed_pct": item.get("cropland_exposed_pct"),
+            "low_sample_size_warning": item.get("low_sample_size_warning"),
             "cross_indicator_signal": item.get("cross_indicator_signal"),
             "supporting_indicators": item.get("supporting_indicators"),
             "ground_truth": _compact_community_reports(item.get("community_reports")),
@@ -491,10 +535,9 @@ def build_stage3_prompt(
     action_packet = _round_floats(_action_evidence_packet(stage1_result, stage2_result))
     retrieved_guidance_for_stage3 = _round_floats(retrieved_guidance)
 
-    user_prompt = f"""This is Stage 3 of a 3-stage report pipeline: ACTION TRANSLATION. Translate Stage 1 and Stage 2's validated findings into audience-specific advisories. Do not introduce new evidence, hazards, or areas that are not already present in the given findings.
+    user_prompt = f"""{_context_header(request)}
 
-OUTPUT LANGUAGE:
-{get_language_instruction(request.target_language)}
+This is Stage 3 of a 3-stage report pipeline: ACTION TRANSLATION. Translate Stage 1 and Stage 2's validated findings into audience-specific advisories. Do not introduce new evidence, hazards, or areas that are not already present in the given findings.
 
 AUDIENCE FOCUS:
 {request.audience_focus}
@@ -507,19 +550,20 @@ RETRIEVED EARLY-ACTION GUIDANCE (use to inform the actions below, not to introdu
 
 GROUNDING NOTES FOR THIS STAGE:
 - `vulnerability` in the findings above is a real FEWS NET IPC food-security-phase-derived index, not a generic composite score -- use it explicitly when a priority is food-security-linked.
-- `roads_exposed_pct`/`healthsites_exposed_pct` are the real share of road/health-facility infrastructure exposed to this hazard in that area -- use them for road-accessibility and health/sanitation triggers, not just population/exposure percentages.
-- Livestock mortality risk has no real measured rate available -- describe it only qualitatively (e.g. "elevated livestock mortality risk"), grounded in the real livestock exposure and hazard severity already given, never state a fabricated numeric rate.
+- `roads_exposed_pct`/`healthsites_exposed_pct`/`cropland_exposed_pct` are each the real share of a normalized 0-1 DENSITY index (road, health-facility, or cropland) that falls within this hazard's exposure threshold in that area -- NOT a real count of roads, facilities, or hectares (no real road-length, facility-count, or cropland-area dataset exists anywhere in this pipeline). Use them for road-accessibility, health/sanitation, and farming-livelihood triggers respectively, but never phrase them as "N of N facilities", "N km of road", or "N hectares of cropland" -- say "a high share of the area's road/health-facility/cropland density" instead, and treat a small area's percentage (e.g. Harari, Dire Dawa, Addis Ababa -- each covered by only a handful of raster cells) as a coarser estimate than a large region's. `cropland_exposed_pct` is the most operationally relevant of the three for farmer_advisory specifically -- ground rainfed-agriculture advice in it directly rather than only the generic hazard/risk numbers.
+- Livestock mortality risk has no real measured rate, and no real per-area livestock exposure metric exists in this pipeline at all (only a national GLW4 reference year/source, not a computed exposure figure) -- describe livestock risk only qualitatively (e.g. "elevated livestock mortality risk"), grounded in the real hazard severity/probability already given for that area, never state a fabricated livestock exposure number or mortality rate.
 - Do not recommend pre-positioning or immediate humanitarian action based on rainfall anomaly alone -- require it to be corroborated by real exposure, vulnerability, or hazard-probability values from the findings above.
 - Write conditional advice using the REAL numbers already given (e.g. "given a CDD anomaly of +N days and drought probability of X"), not an invented fixed agronomic threshold -- no such universal threshold exists in the supplied evidence.
 - Every area's livelihood_context is "not_available" -- no crop-type, crop-stage, or livestock-species-beyond-cattle data exists in this pipeline. Do not invent specific crops (e.g. "maize", "sorghum") or livestock species -- write farmer/agro-pastoral advice in terms of the real signals you do have (rainfall, drought/wet risk, livestock exposure generally), not fabricated agronomic specifics.
+- The evidence above comes from the forecast window/lead stated at the top (CONTEXT), not a short-range weather forecast -- for a Seasonal window, "immediate" bullets must be no-regret PREPARATION actions justified by the seasonal signal (e.g. "conserve water given this period's drought signal"), never phrased as predicting weather on specific days within the next 7 days, since no day-specific forecast was supplied. Only for a Subseasonal window (week-level lead) is day-specific framing within "immediate" appropriate.
 
 TASK:
-1. Provide farmer_advisory as an object with 3 keys -- immediate (next 7 days), near_term (next 2-4 weeks), preparedness (remainder of the forecast period) -- each a list of bullets for rainfed-agriculture farmers.
-2. Provide agro_pastoral_advisory in the SAME 3-key (immediate/near_term/preparedness) shape, for agro-pastoral / livestock-keeping communities specifically -- distinct guidance from farmer_advisory, not a repeat of the same bullets.
-3. Provide humanitarian_priorities as an object with 4 keys -- monitoring, preparedness, pre_positioning, immediate_action -- each a list of bullets, explicitly linked to the real triggers given (population exposed, vulnerability/food-security, road/health exposure, hazard probability, confidence).
-4. Provide a short sms_summary in the output language.
+1. Provide farmer_advisory as an object with 3 keys -- immediate (next 7 days), near_term (next 2-4 weeks), preparedness (remainder of the forecast period) -- each an ARRAY OF OBJECTS (not bare strings), one per distinct piece of advice, each with exactly these keys: "area" (array of the real area name(s) from the priority areas above this specific advice applies to -- never invented, never a generic national bullet with no real area attached), "action" (the advice itself, in plain language, for rainfed-agriculture farmers), "trigger" (that area's real cross_indicator_signal or hazard, e.g. "strong_drought"), "evidence" (array of that area's real supporting_indicators names), "confidence" (that area's real confidence value, echoed back).
+2. Provide agro_pastoral_advisory in the SAME object-per-bullet shape, for agro-pastoral / livestock-keeping communities specifically -- distinct guidance from farmer_advisory, not a repeat of the same bullets.
+3. Provide humanitarian_priorities as an object with 4 keys -- monitoring, preparedness, pre_positioning, immediate_action -- each in the SAME object-per-bullet shape as above (area/action/trigger/evidence/confidence), explicitly linked to the real triggers given (population exposed, vulnerability/food-security, road/health exposure, hazard probability, confidence).
+4. Provide sms_messages as an array of objects, one per REAL ACTIONABLE priority area (action_status "action" or "preparedness" ONLY -- never for a not_actionable/monitor_only area, and never invent an area not in the priority areas above), each with exactly these keys: "area" (the real area name), "audience" ("farmer", "agro_pastoral", "humanitarian", or "general"), "hazard" (that area's real hazard), "valid_period" (echo the real valid period from CONTEXT above), "confidence" (that area's real confidence), "message" (a short, real, actionable SMS text in the output language, grounded only in that area's real numbers -- do not restate every number, explain what they mean). It is normal and expected to return FEWER messages than the number of priority areas listed, or zero for one hazard type entirely, when nothing is really actionable this period -- do not pad this list to look complete.
 
-Return only JSON with these keys: farmer_advisory, agro_pastoral_advisory, humanitarian_priorities, sms_summary.""".strip()
+Return only JSON with these keys: farmer_advisory, agro_pastoral_advisory, humanitarian_priorities, sms_messages.""".strip()
 
     return system_prompt, user_prompt
 
@@ -569,6 +613,30 @@ def _merge_priority_area_justifications(
             "community_reports": community_evidence.get(entry.get("area"), _NO_COMMUNITY_REPORTS),
         })
     return merged
+
+
+def _finalize_sms_messages(
+    messages: List[Dict[str, Any]], priority_areas: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Real, server-side finalization for Stage 3's sms_messages. Unlike
+    layer summaries/priority areas, sms_messages has no fixed deterministic
+    per-slot merge target -- the model itself decides how many messages to
+    write and for which real areas, per build_stage3_prompt's task
+    instructions -- so this does two things instead of a 1:1 merge:
+    1. character_count is always computed here, never trusted from the
+       model -- there is exactly one real right answer (len(message)).
+    2. Any message whose "area" doesn't match a real priority area name is
+       dropped entirely, rather than letting an invented area reach an
+       end-user-facing SMS -- the one remaining safety net for this field.
+    """
+    real_area_names = {item.get("area") for item in priority_areas if item.get("area")}
+    finalized = []
+    for item in messages:
+        if not isinstance(item, dict) or item.get("area") not in real_area_names:
+            continue
+        message_text = item.get("message") or ""
+        finalized.append({**item, "character_count": len(message_text)})
+    return finalized
 
 
 def _base_report_fields(request: AIMapInterpretationRequest) -> Dict[str, Any]:
@@ -635,6 +703,18 @@ def run_staged_report_generation(
 
     system1, user1, images1 = build_stage1_prompt(request, evidence)
     stage1 = run_stage("stage1", STAGE1_SCHEMA, system1, user1, images1, model_tier="lite")
+    # layer_by_layer_summary/indicator_by_indicator_summary from run_stage
+    # are narrative-only (either real LLM output -- just {layer/indicator,
+    # interpretation} pairs now, see build_stage1_prompt -- or the
+    # deterministic fallback's own already-complete objects) -- always
+    # merge onto the real deterministic summaries before use, so the
+    # numbers/classes/area names shown are never LLM-authored.
+    stage1["layer_by_layer_summary"] = _merge_structured_summaries(
+        build_structured_layer_summaries(evidence), stage1.get("layer_by_layer_summary", []), "layer",
+    )
+    stage1["indicator_by_indicator_summary"] = _merge_structured_summaries(
+        build_structured_indicator_summaries(evidence), stage1.get("indicator_by_indicator_summary", []), "indicator",
+    )
 
     # Real, freshly-read (never cached) community ground-truth reports for
     # this period's real priority areas -- see build_community_evidence_by_
@@ -663,6 +743,13 @@ def run_staged_report_generation(
 
     system3, user3 = build_stage3_prompt(request, stage1, stage2, retrieved_guidance)
     stage3 = run_stage("stage3", STAGE3_SCHEMA, system3, user3, [], model_tier="lite")
+    # sms_messages has no deterministic per-slot merge target the way
+    # layer summaries/priority areas do (the model decides how many
+    # messages to write, for which areas) -- character_count is always
+    # computed here, never trusted from the model (there is exactly one
+    # real right answer), and any message for an area that isn't a real
+    # priority area is dropped rather than reaching an end-user-facing SMS.
+    stage3["sms_messages"] = _finalize_sms_messages(stage3.get("sms_messages", []), priority_areas)
 
     merged: Dict[str, Any] = {**_base_report_fields(request), **stage1, **stage2, **stage3}
     merged = validate_report_shape(merged)

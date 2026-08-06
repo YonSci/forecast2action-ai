@@ -14,8 +14,10 @@
     "administrative_level": "national + region (admin1)",
     "population_reference_year": 2020,
     "population_source": "WorldPop Ethiopia 2020 population count, 1km",
+    "population_temporal_lag_years": 6,
     "livestock_reference_year": 2015,
-    "livestock_source": "FAO/Harvard Dataverse Gridded Livestock of the World v4 (2015)"
+    "livestock_source": "FAO/Harvard Dataverse Gridded Livestock of the World v4 (2015)",
+    "livestock_temporal_lag_years": 11
   },
   "indicator_definitions": {
     "rainfall_total": {
@@ -444,6 +446,173 @@
             "mean": -40.04590017222893,
             "median": -37.482791502878456,
             "std": 8.34772665662076,
+            "area_km2": 30463.932762986402,
+            "valid_count": 41
+          }
+        ],
+        "regional_pct_anomaly": [
+          {
+            "area_name": "Tigray",
+            "region": "Tigray",
+            "min": -36.68251419067383,
+            "max": -11.99278450012207,
+            "mean": -24.171383604523236,
+            "median": -24.141943996633355,
+            "std": 6.97896939529136,
+            "area_km2": 22245.656816684703,
+            "valid_count": 30
+          },
+          {
+            "area_name": "Afar",
+            "region": "Afar",
+            "min": -77.37842559814453,
+            "max": -19.659269332885742,
+            "mean": -54.562496240975406,
+            "median": -55.619341106731014,
+            "std": 11.378772694072365,
+            "area_km2": 79874.17053688469,
+            "valid_count": 107
+          },
+          {
+            "area_name": "Amhara",
+            "region": "Amhara",
+            "min": -53.11145782470703,
+            "max": 2.28007173538208,
+            "mean": -15.86937920945956,
+            "median": -12.840792045484264,
+            "std": 12.093535223381405,
+            "area_km2": 138455.40336462567,
+            "valid_count": 185
+          },
+          {
+            "area_name": "Oromia",
+            "region": "Oromia",
+            "min": -100.0,
+            "max": 14.184659957885742,
+            "mean": -43.816203517244986,
+            "median": -33.583707061840705,
+            "std": 39.05546206013608,
+            "area_km2": 263484.24022943643,
+            "valid_count": 348
+          },
+          {
+            "area_name": "Somali",
+            "region": "Somali",
+            "min": -100.0,
+            "max": -27.10775375366211,
+            "mean": -91.73688399080825,
+            "median": -100.0,
+            "std": 14.674445387014686,
+            "area_km2": 330564.09326142597,
+            "valid_count": 436
+          },
+          {
+            "area_name": "Benishangul-Gumuz",
+            "region": "Benishangul-Gumuz",
+            "min": -25.978708267211914,
+            "max": 5.245365619659424,
+            "mean": -6.8660715426389896,
+            "median": -6.231597085449014,
+            "std": 7.001235606394205,
+            "area_km2": 68386.6889691655,
+            "valid_count": 91
+          },
+          {
+            "area_name": "Central Ethiopia",
+            "region": "Central Ethiopia",
+            "min": -39.18419647216797,
+            "max": -2.4101381301879883,
+            "mean": -17.94955396877353,
+            "median": -14.13811642001109,
+            "std": 11.121887059161512,
+            "area_km2": 20435.174659158907,
+            "valid_count": 27
+          },
+          {
+            "area_name": "South Ethiopia",
+            "region": "South Ethiopia",
+            "min": -99.82288360595703,
+            "max": -40.547603607177734,
+            "mean": -85.34649105934572,
+            "median": -89.05524071506333,
+            "std": 13.228068755402703,
+            "area_km2": 48664.340138416,
+            "valid_count": 64
+          },
+          {
+            "area_name": "South West Ethiopia",
+            "region": "South West Ethiopia",
+            "min": -87.996826171875,
+            "max": -7.112231254577637,
+            "mean": -55.34475068628592,
+            "median": -59.52874950945796,
+            "std": 20.77149068759243,
+            "area_km2": 49320.61011881166,
+            "valid_count": 65
+          },
+          {
+            "area_name": "Gambela",
+            "region": "Gambela",
+            "min": -65.42967224121094,
+            "max": -21.663639068603516,
+            "mean": -38.53862953950573,
+            "median": -38.23309848047549,
+            "std": 10.233170922388283,
+            "area_km2": 37863.48742303796,
+            "valid_count": 50
+          },
+          {
+            "area_name": "Harari",
+            "region": "Harari",
+            "min": -76.41597747802734,
+            "max": -69.07205963134766,
+            "mean": -73.07426869569144,
+            "median": -73.73287928715126,
+            "std": 3.033829701875151,
+            "area_km2": 2262.941182748573,
+            "valid_count": 3
+          },
+          {
+            "area_name": "Addis Ababa",
+            "region": "Addis Ababa",
+            "min": -0.1726214587688446,
+            "max": 3.861157178878784,
+            "mean": 1.4432446883730206,
+            "median": 1.0421504974208164,
+            "std": 1.6767753613269512,
+            "area_km2": 3019.0127213818587,
+            "valid_count": 4
+          },
+          {
+            "area_name": "Dire Dawa",
+            "region": "Dire Dawa",
+            "min": -74.57421875,
+            "max": -60.33710861206055,
+            "mean": -65.05493615360889,
+            "median": -62.892792728324196,
+            "std": 4.228018296630381,
+            "area_km2": 6781.1765589962415,
+            "valid_count": 9
+          },
+          {
+            "area_name": "Sidama",
+            "region": "Sidama",
+            "min": -77.083984375,
+            "max": -29.367259979248047,
+            "mean": -51.02902965276047,
+            "median": -49.485055833685216,
+            "std": 11.515876394167599,
+            "area_km2": 13662.885044313052,
+            "valid_count": 18
+          },
+          {
+            "area_name": "Contested",
+            "region": "Contested",
+            "min": -45.505069732666016,
+            "max": -8.57923698425293,
+            "mean": -16.601698494346568,
+            "median": -13.79843354902575,
+            "std": 7.812377269571062,
             "area_km2": 30463.932762986402,
             "valid_count": 41
           }
@@ -1132,6 +1301,173 @@
             "valid_count": 41
           }
         ],
+        "regional_pct_anomaly": [
+          {
+            "area_name": "Tigray",
+            "region": "Tigray",
+            "min": 8.00000286102295,
+            "max": 61.040008544921875,
+            "mean": 35.5713099665132,
+            "median": 37.15133883425559,
+            "std": 11.772893520978853,
+            "area_km2": 22245.656816684703,
+            "valid_count": 30
+          },
+          {
+            "area_name": "Afar",
+            "region": "Afar",
+            "min": 14.641098976135254,
+            "max": 94.52632141113281,
+            "mean": 62.411700023894255,
+            "median": 68.39619182670295,
+            "std": 20.816896697088435,
+            "area_km2": 79874.17053688469,
+            "valid_count": 107
+          },
+          {
+            "area_name": "Amhara",
+            "region": "Amhara",
+            "min": -16.132598876953125,
+            "max": 84.41177368164062,
+            "mean": 24.448507339238454,
+            "median": 22.076901142362747,
+            "std": 22.15726598837012,
+            "area_km2": 138455.40336462567,
+            "valid_count": 185
+          },
+          {
+            "area_name": "Oromia",
+            "region": "Oromia",
+            "min": -16.551725387573242,
+            "max": 102.97486877441406,
+            "mean": 33.50665924407916,
+            "median": 34.47987143334771,
+            "std": 26.557906173201825,
+            "area_km2": 263484.24022943643,
+            "valid_count": 348
+          },
+          {
+            "area_name": "Somali",
+            "region": "Somali",
+            "min": -3.7362630367279053,
+            "max": 93.44828033447266,
+            "mean": 17.169291375574822,
+            "median": 3.1596613771018998,
+            "std": 25.65523346660535,
+            "area_km2": 330564.09326142597,
+            "valid_count": 436
+          },
+          {
+            "area_name": "Benishangul-Gumuz",
+            "region": "Benishangul-Gumuz",
+            "min": -6.66666841506958,
+            "max": 60.93150329589844,
+            "mean": 22.761553150384923,
+            "median": 22.96207852837921,
+            "std": 16.067659285927437,
+            "area_km2": 68386.6889691655,
+            "valid_count": 91
+          },
+          {
+            "area_name": "Central Ethiopia",
+            "region": "Central Ethiopia",
+            "min": 3.3846120834350586,
+            "max": 54.5882453918457,
+            "mean": 25.517628711628845,
+            "median": 22.933446636240223,
+            "std": 14.234687790530339,
+            "area_km2": 20435.174659158907,
+            "valid_count": 27
+          },
+          {
+            "area_name": "South Ethiopia",
+            "region": "South Ethiopia",
+            "min": 45.53276443481445,
+            "max": 101.79725646972656,
+            "mean": 71.37513078847623,
+            "median": 69.56589568606927,
+            "std": 14.461599649705974,
+            "area_km2": 48664.340138416,
+            "valid_count": 64
+          },
+          {
+            "area_name": "South West Ethiopia",
+            "region": "South West Ethiopia",
+            "min": 9.043478012084961,
+            "max": 110.66122436523438,
+            "mean": 68.82757080679274,
+            "median": 71.61560608555817,
+            "std": 20.45760424167831,
+            "area_km2": 49320.61011881166,
+            "valid_count": 65
+          },
+          {
+            "area_name": "Gambela",
+            "region": "Gambela",
+            "min": 21.297298431396484,
+            "max": 108.322265625,
+            "mean": 71.7128813065399,
+            "median": 73.30627945945638,
+            "std": 18.910340798035215,
+            "area_km2": 37863.48742303796,
+            "valid_count": 50
+          },
+          {
+            "area_name": "Harari",
+            "region": "Harari",
+            "min": 84.55555725097656,
+            "max": 93.30337524414062,
+            "mean": 88.64084085768113,
+            "median": 88.06565499935526,
+            "std": 3.5940649191362506,
+            "area_km2": 2262.941182748573,
+            "valid_count": 3
+          },
+          {
+            "area_name": "Addis Ababa",
+            "region": "Addis Ababa",
+            "min": -1.8048763275146484,
+            "max": 18.18604850769043,
+            "mean": 8.83242461680455,
+            "median": 9.473819732666016,
+            "std": 7.11646057853951,
+            "area_km2": 3019.0127213818587,
+            "valid_count": 4
+          },
+          {
+            "area_name": "Dire Dawa",
+            "region": "Dire Dawa",
+            "min": 54.972373962402344,
+            "max": 100.61674499511719,
+            "mean": 87.39547521208607,
+            "median": 94.1218461246542,
+            "std": 13.765919610602989,
+            "area_km2": 6781.1765589962415,
+            "valid_count": 9
+          },
+          {
+            "area_name": "Sidama",
+            "region": "Sidama",
+            "min": 23.61017417907715,
+            "max": 61.73378372192383,
+            "mean": 43.45867922501356,
+            "median": 41.80268867871316,
+            "std": 11.862633977251777,
+            "area_km2": 13662.885044313052,
+            "valid_count": 18
+          },
+          {
+            "area_name": "Contested",
+            "region": "Contested",
+            "min": -6.5214009284973145,
+            "max": 61.33332824707031,
+            "mean": 35.571250732671785,
+            "median": 40.84315264691027,
+            "std": 17.922760937177397,
+            "area_km2": 30463.932762986402,
+            "valid_count": 41
+          }
+        ],
         "top_positive_anomalies": [
           {
             "area_name": "South Ethiopia",
@@ -1628,6 +1964,173 @@
             "mean": -1.3474517390780238,
             "median": -1.3531711813618577,
             "std": 0.8222030764296235,
+            "area_km2": 30463.932762986402,
+            "valid_count": 41
+          }
+        ],
+        "regional_pct_anomaly": [
+          {
+            "area_name": "Tigray",
+            "region": "Tigray",
+            "min": -16.19046974182129,
+            "max": 8.12765121459961,
+            "mean": -3.585107862725941,
+            "median": -3.5979007462244192,
+            "std": 7.254767261259834,
+            "area_km2": 22245.656816684703,
+            "valid_count": 30
+          },
+          {
+            "area_name": "Afar",
+            "region": "Afar",
+            "min": -21.333335876464844,
+            "max": 23.951215744018555,
+            "mean": -4.605055973499124,
+            "median": -5.714829578537128,
+            "std": 8.112358928878505,
+            "area_km2": 79874.17053688469,
+            "valid_count": 107
+          },
+          {
+            "area_name": "Amhara",
+            "region": "Amhara",
+            "min": -37.85401153564453,
+            "max": 6.173915863037109,
+            "mean": -16.305158339402183,
+            "median": -17.253437754657448,
+            "std": 9.482286347653778,
+            "area_km2": 138455.40336462567,
+            "valid_count": 185
+          },
+          {
+            "area_name": "Oromia",
+            "region": "Oromia",
+            "min": -100.0,
+            "max": 12.588241577148438,
+            "mean": -30.641642037451827,
+            "median": -22.393103342682682,
+            "std": 20.97081860343981,
+            "area_km2": 262725.5717242791,
+            "valid_count": 347
+          },
+          {
+            "area_name": "Somali",
+            "region": "Somali",
+            "min": -100.0,
+            "max": 163.99998474121094,
+            "mean": -59.37608240938183,
+            "median": -56.0,
+            "std": 32.92109535680541,
+            "area_km2": 266070.65023415606,
+            "valid_count": 351
+          },
+          {
+            "area_name": "Benishangul-Gumuz",
+            "region": "Benishangul-Gumuz",
+            "min": -29.685232162475586,
+            "max": 3.3531949520111084,
+            "mean": -10.883765506794488,
+            "median": -10.676529379694578,
+            "std": 5.840680000205703,
+            "area_km2": 68386.6889691655,
+            "valid_count": 91
+          },
+          {
+            "area_name": "Central Ethiopia",
+            "region": "Central Ethiopia",
+            "min": -31.46153450012207,
+            "max": -1.6470574140548706,
+            "mean": -14.441296910333197,
+            "median": -12.30628118848758,
+            "std": 7.716812905282388,
+            "area_km2": 20435.174659158907,
+            "valid_count": 27
+          },
+          {
+            "area_name": "South Ethiopia",
+            "region": "South Ethiopia",
+            "min": -75.55555725097656,
+            "max": -29.90345001220703,
+            "mean": -51.48791809561309,
+            "median": -50.61546260474986,
+            "std": 12.217169695542916,
+            "area_km2": 48664.340138416,
+            "valid_count": 64
+          },
+          {
+            "area_name": "South West Ethiopia",
+            "region": "South West Ethiopia",
+            "min": -48.437503814697266,
+            "max": -9.434982299804688,
+            "mean": -28.381223119143694,
+            "median": -28.85851989672954,
+            "std": 8.502832302883949,
+            "area_km2": 49320.61011881166,
+            "valid_count": 65
+          },
+          {
+            "area_name": "Gambela",
+            "region": "Gambela",
+            "min": -31.317075729370117,
+            "max": -9.197452545166016,
+            "mean": -19.511535552485437,
+            "median": -18.95810583664897,
+            "std": 6.217491435678198,
+            "area_km2": 37863.48742303796,
+            "valid_count": 50
+          },
+          {
+            "area_name": "Harari",
+            "region": "Harari",
+            "min": -37.47368240356445,
+            "max": -36.2247200012207,
+            "mean": -36.92737613493659,
+            "median": -37.08380883467842,
+            "std": 0.5217676191682509,
+            "area_km2": 2262.941182748573,
+            "valid_count": 3
+          },
+          {
+            "area_name": "Addis Ababa",
+            "region": "Addis Ababa",
+            "min": -11.504222869873047,
+            "max": -4.906804084777832,
+            "mean": -7.143364584818262,
+            "median": -6.081949472427368,
+            "std": 2.562849752042081,
+            "area_km2": 3019.0127213818587,
+            "valid_count": 4
+          },
+          {
+            "area_name": "Dire Dawa",
+            "region": "Dire Dawa",
+            "min": -35.53488540649414,
+            "max": -30.586204528808594,
+            "mean": -33.183582915855176,
+            "median": -32.67974585503532,
+            "std": 1.6875190087494638,
+            "area_km2": 6781.1765589962415,
+            "valid_count": 9
+          },
+          {
+            "area_name": "Sidama",
+            "region": "Sidama",
+            "min": -50.5,
+            "max": -11.2786865234375,
+            "mean": -30.874047331980066,
+            "median": -30.93301764594812,
+            "std": 10.197210792486539,
+            "area_km2": 13662.885044313052,
+            "valid_count": 18
+          },
+          {
+            "area_name": "Contested",
+            "region": "Contested",
+            "min": -30.85714340209961,
+            "max": 6.936708927154541,
+            "mean": -13.600318235785993,
+            "median": -14.468246684467033,
+            "std": 7.645451939889906,
             "area_km2": 30463.932762986402,
             "valid_count": 41
           }
@@ -2132,6 +2635,173 @@
             "valid_count": 41
           }
         ],
+        "regional_pct_anomaly": [
+          {
+            "area_name": "Tigray",
+            "region": "Tigray",
+            "min": -24.181121826171875,
+            "max": -6.588389873504639,
+            "mean": -16.702100999012824,
+            "median": -17.10561825808297,
+            "std": 3.840166700079228,
+            "area_km2": 22245.656816684703,
+            "valid_count": 30
+          },
+          {
+            "area_name": "Afar",
+            "region": "Afar",
+            "min": -48.760894775390625,
+            "max": -6.218363285064697,
+            "mean": -31.46443657185796,
+            "median": -31.423168573916538,
+            "std": 7.954552818025959,
+            "area_km2": 79874.17053688469,
+            "valid_count": 107
+          },
+          {
+            "area_name": "Amhara",
+            "region": "Amhara",
+            "min": -20.56789207458496,
+            "max": 5.726154327392578,
+            "mean": -7.772773417941887,
+            "median": -8.598285011353187,
+            "std": 5.083298421955637,
+            "area_km2": 138455.40336462567,
+            "valid_count": 185
+          },
+          {
+            "area_name": "Oromia",
+            "region": "Oromia",
+            "min": -85.80162811279297,
+            "max": 12.930459976196289,
+            "mean": -29.83894070917085,
+            "median": -23.88497380389971,
+            "std": 30.86917362896823,
+            "area_km2": 263484.24022943643,
+            "valid_count": 348
+          },
+          {
+            "area_name": "Somali",
+            "region": "Somali",
+            "min": -100.0,
+            "max": 9.150847434997559,
+            "mean": -63.24808872182235,
+            "median": -65.43534142535079,
+            "std": 21.511544790662974,
+            "area_km2": 330564.09326142597,
+            "valid_count": 436
+          },
+          {
+            "area_name": "Benishangul-Gumuz",
+            "region": "Benishangul-Gumuz",
+            "min": -15.167737007141113,
+            "max": 13.35571575164795,
+            "mean": -4.892648699085532,
+            "median": -5.428181462222441,
+            "std": 6.307598578257179,
+            "area_km2": 68386.6889691655,
+            "valid_count": 91
+          },
+          {
+            "area_name": "Central Ethiopia",
+            "region": "Central Ethiopia",
+            "min": -26.087596893310547,
+            "max": 4.367072105407715,
+            "mean": -13.061324047333384,
+            "median": -14.119549863084188,
+            "std": 9.26541629735608,
+            "area_km2": 20435.174659158907,
+            "valid_count": 27
+          },
+          {
+            "area_name": "South Ethiopia",
+            "region": "South Ethiopia",
+            "min": -84.09087371826172,
+            "max": -26.51737403869629,
+            "mean": -62.33188992230025,
+            "median": -64.83426952553985,
+            "std": 14.70941730671469,
+            "area_km2": 48664.340138416,
+            "valid_count": 64
+          },
+          {
+            "area_name": "South West Ethiopia",
+            "region": "South West Ethiopia",
+            "min": -59.48985290527344,
+            "max": -2.0830721855163574,
+            "mean": -35.1031835462916,
+            "median": -37.65256637903617,
+            "std": 15.409314355150093,
+            "area_km2": 49320.61011881166,
+            "valid_count": 65
+          },
+          {
+            "area_name": "Gambela",
+            "region": "Gambela",
+            "min": -37.707454681396484,
+            "max": -9.197113990783691,
+            "mean": -16.835964963853144,
+            "median": -14.842315655014529,
+            "std": 5.915125525138887,
+            "area_km2": 37863.48742303796,
+            "valid_count": 50
+          },
+          {
+            "area_name": "Harari",
+            "region": "Harari",
+            "min": -45.03965377807617,
+            "max": -42.46022415161133,
+            "mean": -43.33816463131973,
+            "median": -42.51488937530847,
+            "std": 1.2035484016088585,
+            "area_km2": 2262.941182748573,
+            "valid_count": 3
+          },
+          {
+            "area_name": "Addis Ababa",
+            "region": "Addis Ababa",
+            "min": 1.6222862005233765,
+            "max": 4.860961437225342,
+            "mean": 2.8890939703378398,
+            "median": 2.537030229519155,
+            "std": 1.2017283003881458,
+            "area_km2": 3019.0127213818587,
+            "valid_count": 4
+          },
+          {
+            "area_name": "Dire Dawa",
+            "region": "Dire Dawa",
+            "min": -47.35843276977539,
+            "max": -34.52381896972656,
+            "mean": -39.67341600288142,
+            "median": -39.282229764659874,
+            "std": 3.8344554950116336,
+            "area_km2": 6781.1765589962415,
+            "valid_count": 9
+          },
+          {
+            "area_name": "Sidama",
+            "region": "Sidama",
+            "min": -57.04502868652344,
+            "max": -17.76974868774414,
+            "mean": -28.564001000790405,
+            "median": -24.995931677924393,
+            "std": 10.804266674673048,
+            "area_km2": 13662.885044313052,
+            "valid_count": 18
+          },
+          {
+            "area_name": "Contested",
+            "region": "Contested",
+            "min": -20.196247100830078,
+            "max": -6.585065841674805,
+            "mean": -12.53872627814311,
+            "median": -12.210500427409537,
+            "std": 3.2811408068808285,
+            "area_km2": 30463.932762986402,
+            "valid_count": 41
+          }
+        ],
         "top_positive_anomalies": [
           {
             "area_name": "Addis Ababa",
@@ -2632,6 +3302,173 @@
             "valid_count": 41
           }
         ],
+        "regional_pct_anomaly": [
+          {
+            "area_name": "Tigray",
+            "region": "Tigray",
+            "min": -19.711490631103516,
+            "max": -5.564881801605225,
+            "mean": -10.971339348690986,
+            "median": -10.74883415772886,
+            "std": 2.8879588195671313,
+            "area_km2": 22245.656816684703,
+            "valid_count": 30
+          },
+          {
+            "area_name": "Afar",
+            "region": "Afar",
+            "min": -42.31399154663086,
+            "max": -0.9328853487968445,
+            "mean": -25.64572902400536,
+            "median": -26.028105494457545,
+            "std": 6.75429007044676,
+            "area_km2": 79874.17053688469,
+            "valid_count": 107
+          },
+          {
+            "area_name": "Amhara",
+            "region": "Amhara",
+            "min": -22.401775360107422,
+            "max": 16.938072204589844,
+            "mean": -3.310303160682108,
+            "median": -3.4862686765756328,
+            "std": 8.596593085599707,
+            "area_km2": 138455.40336462567,
+            "valid_count": 185
+          },
+          {
+            "area_name": "Oromia",
+            "region": "Oromia",
+            "min": -86.34042358398438,
+            "max": 21.557796478271484,
+            "mean": -27.557832095081025,
+            "median": -22.405872844736983,
+            "std": 34.61222162714588,
+            "area_km2": 263484.24022943643,
+            "valid_count": 348
+          },
+          {
+            "area_name": "Somali",
+            "region": "Somali",
+            "min": -100.0,
+            "max": 1.2555333375930786,
+            "mean": -63.05954926238568,
+            "median": -63.051426235725195,
+            "std": 22.702660070637133,
+            "area_km2": 330564.09326142597,
+            "valid_count": 436
+          },
+          {
+            "area_name": "Benishangul-Gumuz",
+            "region": "Benishangul-Gumuz",
+            "min": -14.395679473876953,
+            "max": 15.998075485229492,
+            "mean": -0.6368510764038517,
+            "median": -2.81520683138223,
+            "std": 7.375240692820144,
+            "area_km2": 68386.6889691655,
+            "valid_count": 91
+          },
+          {
+            "area_name": "Central Ethiopia",
+            "region": "Central Ethiopia",
+            "min": -27.01030158996582,
+            "max": 13.564424514770508,
+            "mean": -4.600001103836164,
+            "median": -2.3834220666750134,
+            "std": 12.96462494904934,
+            "area_km2": 20435.174659158907,
+            "valid_count": 27
+          },
+          {
+            "area_name": "South Ethiopia",
+            "region": "South Ethiopia",
+            "min": -85.47770690917969,
+            "max": -28.133731842041016,
+            "mean": -66.16692804732138,
+            "median": -67.36340213563504,
+            "std": 13.042442683174698,
+            "area_km2": 48664.340138416,
+            "valid_count": 64
+          },
+          {
+            "area_name": "South West Ethiopia",
+            "region": "South West Ethiopia",
+            "min": -64.36640930175781,
+            "max": 5.89271354675293,
+            "mean": -35.16450820516879,
+            "median": -38.49602463125657,
+            "std": 19.48162683431333,
+            "area_km2": 49320.61011881166,
+            "valid_count": 65
+          },
+          {
+            "area_name": "Gambela",
+            "region": "Gambela",
+            "min": -43.90352249145508,
+            "max": -6.196902751922607,
+            "mean": -17.4646541209423,
+            "median": -15.97241623112981,
+            "std": 8.679545753061792,
+            "area_km2": 37863.48742303796,
+            "valid_count": 50
+          },
+          {
+            "area_name": "Harari",
+            "region": "Harari",
+            "min": -49.05265808105469,
+            "max": -42.60660934448242,
+            "mean": -46.82839351333769,
+            "median": -48.82299572411204,
+            "std": 2.9856656492564073,
+            "area_km2": 2262.941182748573,
+            "valid_count": 3
+          },
+          {
+            "area_name": "Addis Ababa",
+            "region": "Addis Ababa",
+            "min": 7.574535846710205,
+            "max": 11.757447242736816,
+            "mean": 9.411055122948286,
+            "median": 9.156294822692871,
+            "std": 1.5150768468584825,
+            "area_km2": 3019.0127213818587,
+            "valid_count": 4
+          },
+          {
+            "area_name": "Dire Dawa",
+            "region": "Dire Dawa",
+            "min": -47.025726318359375,
+            "max": -36.60841751098633,
+            "mean": -40.84982000127866,
+            "median": -40.45626055884334,
+            "std": 3.438578742566813,
+            "area_km2": 6781.1765589962415,
+            "valid_count": 9
+          },
+          {
+            "area_name": "Sidama",
+            "region": "Sidama",
+            "min": -65.0481948852539,
+            "max": -14.069173812866211,
+            "mean": -35.03918704395447,
+            "median": -32.91593738116986,
+            "std": 13.400283001049662,
+            "area_km2": 13662.885044313052,
+            "valid_count": 18
+          },
+          {
+            "area_name": "Contested",
+            "region": "Contested",
+            "min": -24.14872169494629,
+            "max": 3.838955879211426,
+            "mean": -8.918708178809055,
+            "median": -8.093841432342778,
+            "std": 6.393670304694071,
+            "area_km2": 30463.932762986402,
+            "valid_count": 41
+          }
+        ],
         "top_positive_anomalies": [
           {
             "area_name": "Addis Ababa",
@@ -3128,6 +3965,173 @@
             "mean": -15.193607256999016,
             "median": -13.95139288420571,
             "std": 3.5127529668575668,
+            "area_km2": 30463.932762986402,
+            "valid_count": 41
+          }
+        ],
+        "regional_pct_anomaly": [
+          {
+            "area_name": "Tigray",
+            "region": "Tigray",
+            "min": -100.0,
+            "max": -89.31896209716797,
+            "mean": -94.51762931687965,
+            "median": -94.71612574814893,
+            "std": 2.91399564352182,
+            "area_km2": 22245.656816684703,
+            "valid_count": 30
+          },
+          {
+            "area_name": "Afar",
+            "region": "Afar",
+            "min": -100.0,
+            "max": -57.07526397705078,
+            "mean": -88.76300343003894,
+            "median": -89.88087228754773,
+            "std": 7.854829157696621,
+            "area_km2": 79874.17053688469,
+            "valid_count": 107
+          },
+          {
+            "area_name": "Amhara",
+            "region": "Amhara",
+            "min": -98.19577026367188,
+            "max": -76.77323150634766,
+            "mean": -90.95770245383824,
+            "median": -92.03147518296731,
+            "std": 4.3797490422392915,
+            "area_km2": 138455.40336462567,
+            "valid_count": 185
+          },
+          {
+            "area_name": "Oromia",
+            "region": "Oromia",
+            "min": -100.0,
+            "max": 59167.3359375,
+            "mean": 181.30554711861913,
+            "median": -94.60199609239214,
+            "std": 3600.8533277583892,
+            "area_km2": 263484.24022943643,
+            "valid_count": 348
+          },
+          {
+            "area_name": "Somali",
+            "region": "Somali",
+            "min": -100.0,
+            "max": 805743.5,
+            "mean": 39225.604316705896,
+            "median": 5605.6451488800285,
+            "std": 95144.75450120778,
+            "area_km2": 330564.09326142597,
+            "valid_count": 436
+          },
+          {
+            "area_name": "Benishangul-Gumuz",
+            "region": "Benishangul-Gumuz",
+            "min": -96.82391357421875,
+            "max": -76.27606201171875,
+            "mean": -86.35941965064242,
+            "median": -86.61473397921482,
+            "std": 4.5906783417814,
+            "area_km2": 68386.6889691655,
+            "valid_count": 91
+          },
+          {
+            "area_name": "Central Ethiopia",
+            "region": "Central Ethiopia",
+            "min": -98.66748046875,
+            "max": -84.69493103027344,
+            "mean": -91.11907160861698,
+            "median": -90.80850596434104,
+            "std": 4.179010729190892,
+            "area_km2": 20435.174659158907,
+            "valid_count": 27
+          },
+          {
+            "area_name": "South Ethiopia",
+            "region": "South Ethiopia",
+            "min": -100.0,
+            "max": -91.71842956542969,
+            "mean": -99.65882707259846,
+            "median": -100.0,
+            "std": 1.299156976478954,
+            "area_km2": 48664.340138416,
+            "valid_count": 64
+          },
+          {
+            "area_name": "South West Ethiopia",
+            "region": "South West Ethiopia",
+            "min": -100.0,
+            "max": -87.97069549560547,
+            "mean": -98.8456290603914,
+            "median": -100.0,
+            "std": 2.117955449869715,
+            "area_km2": 49320.61011881166,
+            "valid_count": 65
+          },
+          {
+            "area_name": "Gambela",
+            "region": "Gambela",
+            "min": -100.0,
+            "max": -94.7898178100586,
+            "mean": -98.70088124402173,
+            "median": -98.81113781064008,
+            "std": 1.4527183919801832,
+            "area_km2": 37863.48742303796,
+            "valid_count": 50
+          },
+          {
+            "area_name": "Harari",
+            "region": "Harari",
+            "min": -100.0,
+            "max": -96.77999114990234,
+            "mean": -98.9271721411993,
+            "median": -100.0,
+            "std": 1.5177468778919196,
+            "area_km2": 2262.941182748573,
+            "valid_count": 3
+          },
+          {
+            "area_name": "Addis Ababa",
+            "region": "Addis Ababa",
+            "min": -88.006591796875,
+            "max": -75.46150970458984,
+            "mean": -81.34368644492547,
+            "median": -80.95315606567723,
+            "std": 5.052100870853541,
+            "area_km2": 3019.0127213818587,
+            "valid_count": 4
+          },
+          {
+            "area_name": "Dire Dawa",
+            "region": "Dire Dawa",
+            "min": -98.14330291748047,
+            "max": -89.8700180053711,
+            "mean": -96.21061735853155,
+            "median": -96.84637709837173,
+            "std": 2.3592290334098664,
+            "area_km2": 6781.1765589962415,
+            "valid_count": 9
+          },
+          {
+            "area_name": "Sidama",
+            "region": "Sidama",
+            "min": -100.0,
+            "max": -94.4383316040039,
+            "mean": -96.80837613440748,
+            "median": -96.80895970954401,
+            "std": 1.7820827187925268,
+            "area_km2": 13662.885044313052,
+            "valid_count": 18
+          },
+          {
+            "area_name": "Contested",
+            "region": "Contested",
+            "min": -97.25582885742188,
+            "max": -87.69367218017578,
+            "mean": -91.89528466595007,
+            "median": -92.14971289688265,
+            "std": 2.3984820396701005,
             "area_km2": 30463.932762986402,
             "valid_count": 41
           }
@@ -6292,13 +7296,15 @@
   "cross_indicator_findings": [
     {
       "area": "National",
-      "signal": "no_clear_signal",
+      "signal": "partial_drought",
       "agreement_score": 0.6,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -28.27,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -53.74,
+          "units_pct": "%"
         },
         {
           "indicator": "spi",
@@ -6312,6 +7318,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "medium"
     },
     {
@@ -6322,15 +7329,20 @@
         {
           "indicator": "rainfall_anomaly",
           "value": 4.04,
-          "units": "%"
+          "units": "mm",
+          "value_pct": 1.44,
+          "units_pct": "%"
         },
         {
-          "indicator": "rx_anomaly",
+          "indicator": "rx5day_anomaly",
           "value": 7.92,
-          "units": "mm"
+          "units": "mm",
+          "rx1day_anomaly": 1.0,
+          "rx5day_anomaly": 7.92
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "low"
     },
     {
@@ -6341,7 +7353,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -30.07,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -54.56,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6365,17 +7379,20 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
       "area": "Amhara",
-      "signal": "no_clear_signal",
+      "signal": "partial_drought",
       "agreement_score": 0.4,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -41.87,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -15.87,
+          "units_pct": "%"
         },
         {
           "indicator": "cdd_anomaly",
@@ -6384,17 +7401,20 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "medium"
     },
     {
       "area": "Benishangul-Gumuz",
-      "signal": "no_clear_signal",
+      "signal": "partial_drought",
       "agreement_score": 0.4,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -15.69,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -6.87,
+          "units_pct": "%"
         },
         {
           "indicator": "cdd_anomaly",
@@ -6403,17 +7423,20 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "medium"
     },
     {
       "area": "Central Ethiopia",
-      "signal": "no_clear_signal",
+      "signal": "partial_drought",
       "agreement_score": 0.6,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -33.66,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -17.95,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6427,17 +7450,20 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "medium"
     },
     {
       "area": "Contested",
-      "signal": "no_clear_signal",
+      "signal": "partial_drought",
       "agreement_score": 0.4,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -40.05,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -16.6,
+          "units_pct": "%"
         },
         {
           "indicator": "cdd_anomaly",
@@ -6446,6 +7472,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "medium"
     },
     {
@@ -6456,7 +7483,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -66.25,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -65.05,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6480,6 +7509,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
@@ -6490,7 +7520,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -79.02,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -38.54,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6514,6 +7546,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
@@ -6524,7 +7557,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -62.29,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -73.07,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6548,6 +7583,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
@@ -6558,7 +7594,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -20.67,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -43.82,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6577,6 +7615,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
@@ -6587,7 +7626,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -53.98,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -51.03,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6611,17 +7652,20 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
       "area": "Somali",
-      "signal": "no_clear_signal",
+      "signal": "partial_drought",
       "agreement_score": 0.4,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -6.97,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -91.74,
+          "units_pct": "%"
         },
         {
           "indicator": "cdd_anomaly",
@@ -6630,6 +7674,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "medium"
     },
     {
@@ -6640,7 +7685,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -55.0,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -85.35,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6664,6 +7711,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
@@ -6674,7 +7722,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -91.35,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -55.34,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6698,6 +7748,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     },
     {
@@ -6708,7 +7759,9 @@
         {
           "indicator": "rainfall_anomaly",
           "value": -49.98,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -24.17,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6727,6 +7780,7 @@
         }
       ],
       "contradicting_indicators": [],
+      "missing_indicators": [],
       "confidence": "high"
     }
   ],
@@ -6739,17 +7793,21 @@
       "priority_score": 0.599,
       "risk_score": 23.622421100410826,
       "risk_class": "Low",
+      "action_status": "preparedness",
       "hazard_probability": 0.7866635135254696,
       "vulnerability": 0.5507091671037463,
       "population_exposed": 240167.69826507568,
       "population_exposed_pct": 84.86,
       "roads_exposed_pct": 35.97,
       "healthsites_exposed_pct": 100.0,
+      "cropland_exposed_pct": 30.72,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -62.29,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -73.07,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6774,7 +7832,9 @@
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "strong_drought",
-      "confidence": "high"
+      "confidence": "high",
+      "valid_cell_count": 3,
+      "low_sample_size_warning": true
     },
     {
       "justification_id": "Dire Dawa::drought",
@@ -6784,17 +7844,21 @@
       "priority_score": 0.48,
       "risk_score": 16.812663291529855,
       "risk_class": "Very low",
+      "action_status": "monitor_only",
       "hazard_probability": 0.6844539351356834,
       "vulnerability": 0.48735645618147916,
       "population_exposed": 29732.69007873535,
       "population_exposed_pct": 6.05,
       "roads_exposed_pct": 56.85,
       "healthsites_exposed_pct": 50.0,
+      "cropland_exposed_pct": 88.34,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -66.25,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -65.05,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6819,7 +7883,9 @@
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "strong_drought",
-      "confidence": "high"
+      "confidence": "high",
+      "valid_cell_count": 9,
+      "low_sample_size_warning": true
     },
     {
       "justification_id": "Sidama::drought",
@@ -6829,17 +7895,21 @@
       "priority_score": 0.379,
       "risk_score": 15.348782304706448,
       "risk_class": "Very low",
+      "action_status": "monitor_only",
       "hazard_probability": 0.6333622669972998,
       "vulnerability": 0.4140649135763825,
       "population_exposed": 246338.50736999512,
       "population_exposed_pct": 5.21,
       "roads_exposed_pct": 6.68,
       "healthsites_exposed_pct": 0.0,
+      "cropland_exposed_pct": 3.7,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -53.98,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -51.03,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6864,7 +7934,9 @@
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "strong_drought",
-      "confidence": "high"
+      "confidence": "high",
+      "valid_cell_count": 18,
+      "low_sample_size_warning": false
     },
     {
       "justification_id": "South Ethiopia::drought",
@@ -6874,17 +7946,21 @@
       "priority_score": 0.353,
       "risk_score": 10.764572806840006,
       "risk_class": "Very low",
+      "action_status": "monitor_only",
       "hazard_probability": 0.8369390463455991,
       "vulnerability": 0.5043805156474587,
       "population_exposed": 1100404.3485745788,
       "population_exposed_pct": 14.54,
       "roads_exposed_pct": 17.62,
       "healthsites_exposed_pct": 8.33,
+      "cropland_exposed_pct": 9.5,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -55.0,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -85.35,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6909,7 +7985,9 @@
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "strong_drought",
-      "confidence": "high"
+      "confidence": "high",
+      "valid_cell_count": 64,
+      "low_sample_size_warning": false
     },
     {
       "justification_id": "Central Ethiopia::drought",
@@ -6919,17 +7997,21 @@
       "priority_score": 0.252,
       "risk_score": 10.038830696166784,
       "risk_class": "Very low",
+      "action_status": "monitor_only",
       "hazard_probability": 0.43266855851351904,
       "vulnerability": 0.43612827357551714,
       "population_exposed": 0.0,
       "population_exposed_pct": 0.0,
       "roads_exposed_pct": 0.0,
       "healthsites_exposed_pct": 0.0,
+      "cropland_exposed_pct": 0.0,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -33.66,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -17.95,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -6943,8 +8025,10 @@
         }
       ],
       "contradicting_indicators": [],
-      "cross_indicator_signal": "no_clear_signal",
-      "confidence": "medium"
+      "cross_indicator_signal": "partial_drought",
+      "confidence": "medium",
+      "valid_cell_count": 27,
+      "low_sample_size_warning": false
     },
     {
       "justification_id": "Addis Ababa::wet",
@@ -6954,27 +8038,35 @@
       "priority_score": 0.387,
       "risk_score": 4.799504727808873,
       "risk_class": "Very low",
+      "action_status": "not_actionable",
       "hazard_probability": 0.22000690964234873,
       "vulnerability": 0.5876405596829465,
       "population_exposed": 585447.6091308594,
       "population_exposed_pct": 16.2,
       "roads_exposed_pct": 25.0,
       "healthsites_exposed_pct": 25.0,
+      "cropland_exposed_pct": 27.88,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": 4.04,
-          "units": "%"
+          "units": "mm",
+          "value_pct": 1.44,
+          "units_pct": "%"
         },
         {
-          "indicator": "rx_anomaly",
+          "indicator": "rx5day_anomaly",
           "value": 7.92,
-          "units": "mm"
+          "units": "mm",
+          "rx1day_anomaly": 1.0,
+          "rx5day_anomaly": 7.92
         }
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "no_clear_signal",
-      "confidence": "low"
+      "confidence": "low",
+      "valid_cell_count": 4,
+      "low_sample_size_warning": true
     },
     {
       "justification_id": "Oromia::wet",
@@ -6984,17 +8076,21 @@
       "priority_score": 0.311,
       "risk_score": 1.5300425215102573,
       "risk_class": "Very low",
+      "action_status": "not_actionable",
       "hazard_probability": 0.10654966869064889,
       "vulnerability": 0.5602807057444024,
       "population_exposed": 1806832.90716964,
       "population_exposed_pct": 4.59,
       "roads_exposed_pct": 4.03,
       "healthsites_exposed_pct": 3.03,
+      "cropland_exposed_pct": 5.81,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -20.67,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -43.82,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -7014,7 +8110,9 @@
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "strong_drought",
-      "confidence": "high"
+      "confidence": "high",
+      "valid_cell_count": 348,
+      "low_sample_size_warning": false
     },
     {
       "justification_id": "Amhara::wet",
@@ -7024,17 +8122,21 @@
       "priority_score": 0.254,
       "risk_score": 1.8662415377328205,
       "risk_class": "Very low",
+      "action_status": "not_actionable",
       "hazard_probability": 0.12628170741714512,
       "vulnerability": 0.5277600138700023,
       "population_exposed": 677194.6878031492,
       "population_exposed_pct": 3.04,
       "roads_exposed_pct": 2.42,
       "healthsites_exposed_pct": 0.0,
+      "cropland_exposed_pct": 2.93,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -41.87,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -15.87,
+          "units_pct": "%"
         },
         {
           "indicator": "cdd_anomaly",
@@ -7043,8 +8145,10 @@
         }
       ],
       "contradicting_indicators": [],
-      "cross_indicator_signal": "no_clear_signal",
-      "confidence": "medium"
+      "cross_indicator_signal": "partial_drought",
+      "confidence": "medium",
+      "valid_cell_count": 181,
+      "low_sample_size_warning": false
     },
     {
       "justification_id": "Central Ethiopia::wet",
@@ -7054,17 +8158,21 @@
       "priority_score": 0.216,
       "risk_score": 2.053249550686859,
       "risk_class": "Very low",
+      "action_status": "not_actionable",
       "hazard_probability": 0.10806278414083545,
       "vulnerability": 0.5534718338280078,
       "population_exposed": 0.0,
       "population_exposed_pct": 0.0,
       "roads_exposed_pct": 0.0,
       "healthsites_exposed_pct": 0.0,
+      "cropland_exposed_pct": 0.0,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -33.66,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -17.95,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -7078,8 +8186,10 @@
         }
       ],
       "contradicting_indicators": [],
-      "cross_indicator_signal": "no_clear_signal",
-      "confidence": "medium"
+      "cross_indicator_signal": "partial_drought",
+      "confidence": "medium",
+      "valid_cell_count": 27,
+      "low_sample_size_warning": false
     },
     {
       "justification_id": "Tigray::wet",
@@ -7089,17 +8199,21 @@
       "priority_score": 0.186,
       "risk_score": 2.0408219604877815,
       "risk_class": "Very low",
+      "action_status": "not_actionable",
       "hazard_probability": 0.15204949511771698,
       "vulnerability": 0.49488120819617937,
       "population_exposed": 0.0,
       "population_exposed_pct": 0.0,
       "roads_exposed_pct": 0.0,
       "healthsites_exposed_pct": 0.0,
+      "cropland_exposed_pct": 0.0,
       "supporting_indicators": [
         {
           "indicator": "rainfall_anomaly",
           "value": -49.98,
-          "units": "%"
+          "units": "mm",
+          "value_pct": -24.17,
+          "units_pct": "%"
         },
         {
           "indicator": "rainfall_percentile",
@@ -7119,7 +8233,9 @@
       ],
       "contradicting_indicators": [],
       "cross_indicator_signal": "strong_drought",
-      "confidence": "high"
+      "confidence": "high",
+      "valid_cell_count": 30,
+      "low_sample_size_warning": false
     }
   ]
 }

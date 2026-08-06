@@ -530,22 +530,42 @@ function formatStructuredSummaryForCopy(items, keyField) {
   });
 }
 
+function formatAdvisoryBulletForCopy(item) {
+  if (typeof item === "string") {
+    return `  - ${item}`;
+  }
+  const areas = Array.isArray(item.area) ? item.area.filter(Boolean).join(", ") : item.area;
+  const tags = [areas, item.trigger, item.confidence ? `${item.confidence} confidence` : null]
+    .filter(Boolean)
+    .join(" · ");
+  return `  - ${item.action}${tags ? ` (${tags})` : ""}`;
+}
+
 function formatStructuredAdvisory(data, labels) {
   if (!data) {
     return [];
   }
   if (Array.isArray(data)) {
-    return data.map((item) => `- ${item}`);
+    return data.map((item) => formatAdvisoryBulletForCopy(item));
   }
   const lines = [];
   for (const key of Object.keys(labels)) {
     const items = data[key];
     if (Array.isArray(items) && items.length > 0) {
       lines.push(`  ${labels[key]}:`);
-      lines.push(...items.map((item) => `  - ${item}`));
+      lines.push(...items.map((item) => formatAdvisoryBulletForCopy(item)));
     }
   }
   return lines;
+}
+
+function formatSmsMessagesForCopy(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return ["(no actionable areas this period)"];
+  }
+  return messages.map(
+    (item) => `- [${item.area} · ${item.hazard} · ${item.audience}] ${item.message}`,
+  );
 }
 
 const TIMESCALE_LABELS_FOR_COPY = {
@@ -584,7 +604,7 @@ function copyReport(report) {
     "Why priority areas were selected (high-confidence areas only)",
     ...highConfidencePriority.map(
       (item) =>
-        `- #${item.rank} ${item.area} (${item.hazard_type}): priority score ${item.priority_score}, risk score ${item.risk_score}, hazard probability ${item.hazard_probability}, vulnerability ${item.vulnerability}. ${item.differentiator || ""} ${item.recommended_intervention_type ? `Recommended: ${item.recommended_intervention_type}` : ""}`,
+        `- #${item.rank} ${item.area} (${item.hazard_type}): risk score ${item.risk_score} (${item.risk_class || "unclassified"}), hazard probability ${item.hazard_probability}, vulnerability ${item.vulnerability}, action status: ${item.action_status || "unknown"}. ${item.differentiator || ""} ${item.recommended_intervention_type ? `Recommended: ${item.recommended_intervention_type}` : ""}`,
     ),
     "",
     "Farmer advisory",
@@ -599,8 +619,8 @@ function copyReport(report) {
     "Executive summary",
     report.executive_summary || "",
     "",
-    "SMS summary",
-    report.sms_summary || "",
+    "SMS messages (real actionable areas only)",
+    ...formatSmsMessagesForCopy(report.sms_messages),
   ];
 
   navigator.clipboard?.writeText(lines.join("\n"));
@@ -1176,10 +1196,36 @@ function AIMapInterpretation({
             <p>{report.executive_summary}</p>
           </div>
 
-          <div className="ai-messaging-row">
-            <SmsMessageCard text={report.sms_summary} />
-            <WhatsAppMessageCard text={report.sms_summary} />
-          </div>
+          {/* One real message per real actionable priority area (see
+              _finalize_sms_messages in app/api/report_stages.py) -- not a
+              single national message, since the strongest real signals
+              are highly localized and a national message risks being
+              either too vague to act on or misleading for areas it
+              didn't really apply to. */}
+          {Array.isArray(report.sms_messages) && report.sms_messages.length > 0 ? (
+            report.sms_messages.map((item, index) => (
+              <div className="ai-messaging-group" key={`${item.area}-${item.hazard}-${index}`}>
+                <div className="ai-messaging-group-label">
+                  <strong>{item.area}</strong>
+                  <span className="ai-advisory-tag ai-advisory-trigger">{item.hazard}</span>
+                  <span className="ai-advisory-tag">{item.audience}</span>
+                  {item.confidence && (
+                    <span className={`ai-advisory-tag ai-advisory-confidence confidence-${item.confidence}`}>
+                      {item.confidence} confidence
+                    </span>
+                  )}
+                </div>
+                <div className="ai-messaging-row">
+                  <SmsMessageCard text={item.message} />
+                  <WhatsAppMessageCard text={item.message} />
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="ai-messaging-empty">
+              No area was actionable enough this period to warrant an SMS alert.
+            </p>
+          )}
         </div>
       )}
     </section>

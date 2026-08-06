@@ -4,8 +4,14 @@
 // step 7 item 7. Tolerates the old flat-array shape too (e.g. a stale
 // cached report from before this change) by falling back to a single
 // unlabeled section. Collapsed by default, same as TimescaledAdvisoryList.
+//
+// Each bullet is now itself a real structured object (area/action/
+// trigger/evidence/confidence -- see _ADVISORY_ITEM_SCHEMA in
+// app/api/ai_map_interpretation.py) -- see TimescaledAdvisoryList's
+// AdvisoryBullet for the same rendering, reused here.
 
 import { useState } from "react";
+import AdvisoryBullet from "./AdvisoryBullet.jsx";
 
 const CATEGORY_LABELS = {
   monitoring: "Monitoring",
@@ -68,7 +74,7 @@ function CategorizedHumanitarianList({ priorities, defaultOpen = false }) {
           {isFlat ? (
             <ul>
               {priorities.map((item, index) => (
-                <li key={index}>{item}</li>
+                <AdvisoryBullet item={item} key={index} />
               ))}
             </ul>
           ) : (
@@ -78,7 +84,7 @@ function CategorizedHumanitarianList({ priorities, defaultOpen = false }) {
                   <span className="ai-timescale-label">{CATEGORY_LABELS[key]}</span>
                   <ul>
                     {priorities[key].map((item, index) => (
-                      <li key={index}>{item}</li>
+                      <AdvisoryBullet item={item} key={index} />
                     ))}
                   </ul>
                 </div>

@@ -5,8 +5,14 @@
 // stale cached report from before this change) by falling back to a
 // single unlabeled section. Collapsed by default so these longer sections
 // don't dominate the page -- the user expands only the ones they need.
+//
+// Each bullet is now itself a real structured object (area/action/
+// trigger/evidence/confidence -- see _ADVISORY_ITEM_SCHEMA in
+// app/api/ai_map_interpretation.py), not a bare string -- see
+// AdvisoryBullet.jsx (shared with CategorizedHumanitarianList).
 
 import { useState } from "react";
+import AdvisoryBullet from "./AdvisoryBullet.jsx";
 
 const TIMESCALE_LABELS = {
   immediate: "Immediate (next 7 days)",
@@ -68,7 +74,7 @@ function TimescaledAdvisoryList({ title, advisory, defaultOpen = false }) {
           {isFlat ? (
             <ul>
               {advisory.map((item, index) => (
-                <li key={index}>{item}</li>
+                <AdvisoryBullet item={item} key={index} />
               ))}
             </ul>
           ) : (
@@ -77,7 +83,7 @@ function TimescaledAdvisoryList({ title, advisory, defaultOpen = false }) {
                 <span className="ai-timescale-label">{TIMESCALE_LABELS[key]}</span>
                 <ul>
                   {advisory[key].map((item, index) => (
-                    <li key={index}>{item}</li>
+                    <AdvisoryBullet item={item} key={index} />
                   ))}
                 </ul>
               </div>

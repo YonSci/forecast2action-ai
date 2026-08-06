@@ -36,7 +36,7 @@ TEXT_FIELDS = [
     "executive_summary", "national_spatial_overview", "layer_by_layer_summary",
     "indicator_by_indicator_summary", "compound_hazard_interpretation", "data_quality_notes",
     "priority_area_justification", "farmer_advisory", "agro_pastoral_advisory",
-    "humanitarian_priorities", "sms_summary",
+    "humanitarian_priorities", "sms_messages",
 ]
 
 
@@ -78,7 +78,10 @@ def _item_narrative_text(item: Any) -> str:
     if isinstance(item, str):
         return item
     if isinstance(item, dict):
-        narrative_keys = ("differentiator", "recommended_intervention_type", "interpretation")
+        # "action" is the new structured advisory-bullet shape's real text
+        # (see _ADVISORY_ITEM_SCHEMA); "message" is sms_messages' real SMS
+        # text -- both were confirmed silently unscanned before being added.
+        narrative_keys = ("differentiator", "recommended_intervention_type", "interpretation", "action", "message")
         return _join_sentences([item[key] for key in narrative_keys if item.get(key)])
     return str(item)
 

@@ -246,23 +246,64 @@ class AIMapInterpretationRequest(BaseModel):
 # object shape, step 7 item 5). validate_stage_shape only coerces
 # declared "array"/"string" properties -- an "object" property is passed
 # through untouched, so no coercion-logic changes are needed for this.
+#
+# Each bullet is itself a real structured object, not a bare string --
+# confirmed real gap this closes: a farmer_advisory bullet used to be
+# free-form prose with no way to tell WHICH real area it applied to, WHAT
+# real evidence justified it, or HOW confident that evidence was, making
+# it impossible to render, filter, or validate programmatically. `area`
+# ties every bullet back to a real priority area (never invented); this
+# schema is declared strictly (OpenAI's structured-output path enforces
+# it exactly, not just Gemini's looser JSON mode).
+_ADVISORY_ITEM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "area": {"type": "array", "items": {"type": "string"}},
+        "action": {"type": "string"},
+        "trigger": {"type": "string"},
+        "evidence": {"type": "array", "items": {"type": "string"}},
+        "confidence": {"type": "string"},
+    },
+    "required": ["area", "action", "trigger", "evidence", "confidence"],
+    "additionalProperties": False,
+}
+
 _TIMESCALED_ADVISORY_SCHEMA = {
     "type": "object",
     "properties": {
-        "immediate": {"type": "array", "items": {"type": "string"}},
-        "near_term": {"type": "array", "items": {"type": "string"}},
-        "preparedness": {"type": "array", "items": {"type": "string"}},
+        "immediate": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
+        "near_term": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
+        "preparedness": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
     },
 }
 
 _HUMANITARIAN_PRIORITIES_SCHEMA = {
     "type": "object",
     "properties": {
-        "monitoring": {"type": "array", "items": {"type": "string"}},
-        "preparedness": {"type": "array", "items": {"type": "string"}},
-        "pre_positioning": {"type": "array", "items": {"type": "string"}},
-        "immediate_action": {"type": "array", "items": {"type": "string"}},
+        "monitoring": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
+        "preparedness": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
+        "pre_positioning": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
+        "immediate_action": {"type": "array", "items": _ADVISORY_ITEM_SCHEMA},
     },
+}
+
+# character_count is deliberately NOT requested from the model -- it's
+# real, deterministic, and Python computes it exactly from the real
+# message text after generation (see _finalize_sms_messages); asking an
+# LLM to count characters is a needless source of a wrong number for
+# something with one unambiguous right answer.
+_SMS_ITEM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "area": {"type": "string"},
+        "audience": {"type": "string"},
+        "hazard": {"type": "string"},
+        "valid_period": {"type": "string"},
+        "confidence": {"type": "string"},
+        "message": {"type": "string"},
+    },
+    "required": ["area", "audience", "hazard", "valid_period", "confidence", "message"],
+    "additionalProperties": False,
 }
 
 
@@ -306,10 +347,22 @@ AI_MAP_REPORT_SCHEMA: Dict[str, Any] = {
 # property, so these can't be left "optional" the normal JSON-Schema way.
 # AI_MAP_REPORT_SCHEMA itself (v1, the default) is left completely
 # unchanged so old requests have zero regression risk.
+# sms_summary (v1's single national string) is dropped entirely here, not
+# just overridden -- the real field is sms_messages (array of real,
+# per-actionable-area objects, see _SMS_ITEM_SCHEMA) and leaving the old
+# key declared would default it to an unused "" stub on every real report
+# (validate_stage_shape defaults an undeclared-but-required string
+# property to "" -- see its own docstring) -- dead legacy cruft, not
+# backward compatibility, since nothing (frontend included) reads it.
+_V1_PROPERTIES_WITHOUT_SMS_SUMMARY = {
+    key: value for key, value in AI_MAP_REPORT_SCHEMA["properties"].items() if key != "sms_summary"
+}
+_V1_REQUIRED_WITHOUT_SMS_SUMMARY = [key for key in AI_MAP_REPORT_SCHEMA["required"] if key != "sms_summary"]
+
 AI_MAP_REPORT_SCHEMA_V2: Dict[str, Any] = {
     **AI_MAP_REPORT_SCHEMA,
     "properties": {
-        **AI_MAP_REPORT_SCHEMA["properties"],
+        **_V1_PROPERTIES_WITHOUT_SMS_SUMMARY,
         "structured_actions": {"type": "array", "items": {"type": "object"}},
         "uncertainty_note": {"type": "string"},
         "restricted_or_deferred_actions": {"type": "array", "items": {"type": "string"}},
@@ -325,6 +378,8 @@ AI_MAP_REPORT_SCHEMA_V2: Dict[str, Any] = {
         "farmer_advisory": _TIMESCALED_ADVISORY_SCHEMA,
         "agro_pastoral_advisory": _TIMESCALED_ADVISORY_SCHEMA,
         "humanitarian_priorities": _HUMANITARIAN_PRIORITIES_SCHEMA,
+        # Real, per-area messages -- see STAGE3_SCHEMA's sms_messages comment.
+        "sms_messages": {"type": "array", "items": _SMS_ITEM_SCHEMA},
         # Phase 3 #17 -- same reasoning as farmer_advisory above: overrides
         # v1's array<string> declaration so the final validation pass
         # leaves these real structured objects untouched instead of
@@ -333,13 +388,14 @@ AI_MAP_REPORT_SCHEMA_V2: Dict[str, Any] = {
         "indicator_by_indicator_summary": {"type": "array", "items": {"type": "object"}},
     },
     "required": [
-        *AI_MAP_REPORT_SCHEMA["required"],
+        *_V1_REQUIRED_WITHOUT_SMS_SUMMARY,
         "structured_actions",
         "uncertainty_note",
         "restricted_or_deferred_actions",
         "approval_requirements",
         "evidence_citations",
         "agro_pastoral_advisory",
+        "sms_messages",
     ],
 }
 
@@ -396,9 +452,13 @@ STAGE3_SCHEMA: Dict[str, Any] = {
         "farmer_advisory": _TIMESCALED_ADVISORY_SCHEMA,
         "agro_pastoral_advisory": _TIMESCALED_ADVISORY_SCHEMA,
         "humanitarian_priorities": _HUMANITARIAN_PRIORITIES_SCHEMA,
-        "sms_summary": {"type": "string"},
+        # Real, per-area messages instead of one national sms_summary --
+        # confirmed real gap: the strongest signals are highly localized,
+        # so a single national message was necessarily either too vague to
+        # act on or misleading for areas it didn't really apply to.
+        "sms_messages": {"type": "array", "items": _SMS_ITEM_SCHEMA},
     },
-    "required": ["farmer_advisory", "agro_pastoral_advisory", "humanitarian_priorities", "sms_summary"],
+    "required": ["farmer_advisory", "agro_pastoral_advisory", "humanitarian_priorities", "sms_messages"],
 }
 
 
@@ -646,10 +706,60 @@ def tokenize(text: str) -> List[str]:
     return re.findall(r"[a-zA-Z0-9_]+", text.lower())
 
 
-def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> List[Dict[str, str]]:
+def _is_off_topic_for_actionable_hazards(document: Dict[str, str], actionable_hazard_types: set) -> bool:
+    """True when a document's TITLE (a strong, deliberate signal -- not
+    just body-text keyword presence, which could false-positive on a
+    multi-hazard document that only mentions the other hazard in passing)
+    marks it as specific to one hazard type that isn't in the real
+    actionable set for this report. Confirmed real bug this fixes: this
+    project's knowledge base has exactly 5 real documents and retrieval's
+    own default limit is 5 -- a soft scoring penalty has ZERO practical
+    effect when every document already fits within the limit regardless of
+    score, so a genuinely off-topic document (e.g. flood guidance when the
+    real national wet signal is completely insignificant) must be
+    EXCLUDED outright, not merely ranked lower.
+    """
+    title_lower = document["title"].lower()
+    is_flood_specific = ("flood" in title_lower or "wet spell" in title_lower) and "drought" not in title_lower
+    is_drought_specific = "drought" in title_lower and "flood" not in title_lower and "wet" not in title_lower
+    if is_flood_specific and "wet" not in actionable_hazard_types:
+        return True
+    if is_drought_specific and "drought" not in actionable_hazard_types:
+        return True
+    return False
+
+
+def retrieve_guidance(
+    request: AIMapInterpretationRequest, evidence: Optional[Dict[str, Any]] = None, limit: int = 5,
+) -> List[Dict[str, str]]:
+    """Retrieves early-action guidance documents. `evidence` (the real,
+    already-computed national evidence -- see app.context.statistical_
+    evidence.build_national_region_evidence) is optional for backward
+    compatibility, but when given, real actionability (action_status --
+    see build_priority_area_justifications) excludes documents specific
+    to a hazard type that isn't actually actionable this period (see
+    _is_off_topic_for_actionable_hazards).
+
+    Confirmed real bug, fixed: without this, the query was built entirely
+    from dashboard UI state (request.forecast_selection.layer, map_
+    context.hazard_type, top_admin_areas) -- whatever happened to be on
+    screen -- not the real national signal. Flood/wet-hazard guidance
+    could be retrieved and reach Stage 3 even when the real national wet
+    signal was completely insignificant (every wet-ranked area not_
+    actionable), nudging even a "lite" model toward unwarranted flood
+    advice for a period with no real flood risk.
+    """
     documents = read_knowledge_base_documents()
     if not documents:
         return []
+
+    actionable_hazard_types: Optional[set] = None
+    if evidence is not None:
+        actionable_hazard_types = {
+            item.get("hazard_type")
+            for item in evidence.get("priority_area_justifications", [])
+            if item.get("action_status") in ("action", "preparedness")
+        }
 
     query_parts = [
         request.forecast_selection.layer,
@@ -676,6 +786,8 @@ def retrieve_guidance(request: AIMapInterpretationRequest, limit: int = 5) -> Li
     query_tokens = set(tokenize(" ".join(str(part) for part in query_parts if part)))
     scored = []
     for document in documents:
+        if actionable_hazard_types is not None and _is_off_topic_for_actionable_hazards(document, actionable_hazard_types):
+            continue
         doc_text = document["title"] + "\n" + document["text"]
         doc_tokens = set(tokenize(doc_text))
         overlap = len(query_tokens.intersection(doc_tokens))
@@ -903,9 +1015,20 @@ def _fallback_compound_hazard_interpretation(evidence: Optional[Dict[str, Any]])
     indicator_summaries use for the layer/indicator summaries above.
     """
     findings = (evidence or {}).get("cross_indicator_findings") or []
-    strong_drought = [f["area"] for f in findings if f.get("signal") == "strong_drought" and f.get("area") != "National"]
-    strong_wet = [f["area"] for f in findings if f.get("signal") == "strong_wet" and f.get("area") != "National"]
-    mixed = [f["area"] for f in findings if f.get("signal") == "mixed" and f.get("area") != "National"]
+
+    def areas_with(signal: str) -> List[str]:
+        return [f["area"] for f in findings if f.get("signal") == signal and f.get("area") != "National"]
+
+    strong_drought = areas_with("strong_drought")
+    strong_wet = areas_with("strong_wet")
+    # partial_drought/partial_wet -- real, meaningful (>= CROSS_INDICATOR_
+    # MIXED_THRESHOLD) agreement that isn't yet "strong" (see
+    # build_cross_indicator_findings) -- confirmed real gap: these used to
+    # be silently invisible in this fallback bullet list entirely, neither
+    # "strong" nor "mixed" nor mentioned in the final else case.
+    partial_drought = areas_with("partial_drought")
+    partial_wet = areas_with("partial_wet")
+    mixed = areas_with("mixed")
     if not findings:
         return ["No cross-indicator agreement data was available to summarize compound-hazard patterns."]
 
@@ -914,10 +1037,14 @@ def _fallback_compound_hazard_interpretation(evidence: Optional[Dict[str, Any]])
         lines.append(f"Areas where rainfall, SPI, CDD, and drought probability agree on a strong drought signal: {', '.join(strong_drought)}.")
     if strong_wet:
         lines.append(f"Areas where rainfall, SPI, CWD/Rx-day, and wet probability agree on a strong wetness signal: {', '.join(strong_wet)}.")
+    if partial_drought:
+        lines.append(f"Areas with real but not yet strong drought-indicator agreement (worth monitoring, not yet at the strong-signal bar): {', '.join(partial_drought)}.")
+    if partial_wet:
+        lines.append(f"Areas with real but not yet strong wet-indicator agreement (worth monitoring, not yet at the strong-signal bar): {', '.join(partial_wet)}.")
     if mixed:
         lines.append(f"Areas with genuinely mixed or contradicting indicators (review individually before acting): {', '.join(mixed)}.")
     if not lines:
-        lines.append("No area currently shows strong or mixed cross-indicator agreement; conditions are within the near-normal range nationally.")
+        lines.append("No area currently shows strong, partial, or mixed cross-indicator agreement; conditions are within the near-normal range nationally.")
     return lines
 
 
@@ -934,17 +1061,138 @@ def _fallback_priority_area_justification_narrative(evidence: Optional[Dict[str,
     narrative = []
     for item in justifications:
         hazard_label = "drought" if item.get("hazard_type") == "drought" else "wet/flood"
-        intervention = "Drought / water-security response" if item.get("hazard_type") == "drought" else "Flood / wet-hazard mitigation response"
+        action_status = item.get("action_status")
+        # Real, deterministic action_status decides the intervention label
+        # here exactly the same way build_stage2_prompt's DIFFERENTIATOR
+        # RULES instruct the real LLM to -- a not_actionable/monitor_only
+        # area must not get a full response label just because it's in
+        # the top-N ranking (see _action_status's own docstring).
+        if action_status == "action":
+            intervention = "Drought / water-security response" if item.get("hazard_type") == "drought" else "Flood / wet-hazard mitigation response"
+        elif action_status == "preparedness":
+            intervention = f"{hazard_label.title()} preparedness monitoring"
+        else:
+            intervention = "Monitoring only -- not currently actionable this period"
         narrative.append({
             "justification_id": item.get("justification_id"),
             "differentiator": (
-                f"Ranks #{item.get('rank')} nationally for {hazard_label} risk based on the real computed "
-                f"priority score ({format_number(item.get('priority_score'), 3)}), driven by a risk score of "
-                f"{format_number(item.get('risk_score'))} and hazard probability of {format_number(item.get('hazard_probability'), 3)}."
+                # Never cites priority_score (an internal ranking composite
+                # with no standalone reader meaning -- see build_stage2_
+                # prompt's DIFFERENTIATOR RULES, the same real ban applied
+                # here) -- explains the ranking via risk_class/hazard
+                # probability/action_status instead, exactly like the real
+                # LLM path is instructed to.
+                f"Ranks #{item.get('rank')} nationally for {hazard_label} risk, with a risk score of "
+                f"{format_number(item.get('risk_score'))} ({item.get('risk_class') or 'unclassified'}) and hazard "
+                f"probability of {format_number(item.get('hazard_probability'), 3)}."
+                + (f" Real data quality for this area is limited to {item.get('valid_cell_count')} grid cells -- treat as a coarser estimate." if item.get("low_sample_size_warning") else "")
             ),
             "recommended_intervention_type": intervention,
         })
     return narrative
+
+
+def _fallback_actionable_areas(evidence: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Real priority areas whose action_status is actually actionable
+    (action/preparedness) -- see build_priority_area_justifications --
+    the same real gate the LLM path is instructed to use, so the fallback
+    never invents advice or an SMS for an area with no real signal to
+    support it (confirmed real bug this class of gate fixes: all 5
+    wet-ranked areas resolving to not_actionable in a real period, yet
+    every one still getting a full response recommendation before).
+    """
+    justifications = (evidence or {}).get("priority_area_justifications") or []
+    return [item for item in justifications if item.get("action_status") in ("action", "preparedness")]
+
+
+def _fallback_advisory_item(area_entry: Dict[str, Any], action_text: str) -> Dict[str, Any]:
+    """One real, structured advisory bullet (see _ADVISORY_ITEM_SCHEMA) --
+    area/trigger/evidence/confidence are always the real values from the
+    deterministic priority-area object; only `action` is templated text,
+    matching the same shape the real LLM path is instructed to return.
+    """
+    supporting = area_entry.get("supporting_indicators") or []
+    return {
+        "area": [area_entry.get("area")],
+        "action": action_text,
+        "trigger": area_entry.get("cross_indicator_signal") or area_entry.get("hazard_type"),
+        "evidence": [item.get("indicator") for item in supporting if isinstance(item, dict) and item.get("indicator")],
+        "confidence": area_entry.get("confidence") or "low",
+    }
+
+
+def _fallback_timescaled_advisory(
+    actionable_areas: List[Dict[str, Any]], immediate_text: str, near_term_text: str, preparedness_text: str,
+) -> Dict[str, List[Dict[str, Any]]]:
+    return {
+        "immediate": [_fallback_advisory_item(area, immediate_text) for area in actionable_areas],
+        "near_term": [_fallback_advisory_item(area, near_term_text) for area in actionable_areas],
+        "preparedness": [_fallback_advisory_item(area, preparedness_text) for area in actionable_areas],
+    }
+
+
+def _fallback_humanitarian_priorities(evidence: Optional[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    """monitoring covers EVERY real priority area (even not_actionable ones
+    are worth watching); preparedness/pre_positioning/immediate_action are
+    real, deterministic tiers of action_status/confidence, each stricter
+    than the last -- never a flat top-N list treated as uniformly urgent.
+    """
+    justifications = (evidence or {}).get("priority_area_justifications") or []
+    actionable = [item for item in justifications if item.get("action_status") in ("action", "preparedness")]
+    ready = [item for item in justifications if item.get("action_status") == "action"]
+    urgent = [item for item in ready if item.get("confidence") == "high" and not item.get("low_sample_size_warning")]
+
+    return {
+        "monitoring": [
+            _fallback_advisory_item(area, "Use community ground-truth reports to confirm whether the forecast-based signal is becoming observed impact.")
+            for area in justifications
+        ],
+        "preparedness": [
+            _fallback_advisory_item(area, "Coordinate DRM, agriculture, livestock, water, and humanitarian actors around this area ahead of confirmed impact.")
+            for area in actionable
+        ],
+        "pre_positioning": [
+            _fallback_advisory_item(area, "Pre-position critical water, agriculture, livestock, and health resources for this area.")
+            for area in ready
+        ],
+        "immediate_action": [
+            _fallback_advisory_item(area, "Activate immediate humanitarian response coordination for this area given high-confidence, well-supported evidence.")
+            for area in urgent
+        ],
+    }
+
+
+def _fallback_sms_messages(
+    evidence: Optional[Dict[str, Any]], valid_period: str, language_mismatch_note: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Real, per-actionable-area SMS messages -- confirmed real gap this
+    fixes: a single national message was necessarily either too vague to
+    act on, or misleading for areas it didn't really apply to, since the
+    strongest real signals are highly localized. character_count is added
+    later by app.api.report_stages._finalize_sms_messages for the real
+    LLM path -- computed directly here since this function IS the
+    deterministic path. `language_mismatch_note` (see fallback_report)
+    prefixes every message honestly the same way it does for other fields,
+    rather than letting a non-English request silently look honored here.
+    """
+    messages = []
+    for area in _fallback_actionable_areas(evidence):
+        hazard_label = "drought" if area.get("hazard_type") == "drought" else "flooding/heavy rainfall"
+        message = (
+            ("[EN fallback] " if language_mismatch_note else "")
+            + f"EARLY WARNING: {area.get('area')}. Elevated {hazard_label} risk this period "
+            f"({area.get('risk_class') or 'see report'} risk class). Monitor local conditions and follow guidance from local authorities."
+        )
+        messages.append({
+            "area": area.get("area"),
+            "audience": "general",
+            "hazard": area.get("hazard_type"),
+            "valid_period": valid_period,
+            "confidence": area.get("confidence") or "low",
+            "message": message,
+            "character_count": len(message),
+        })
+    return messages
 
 
 def fallback_report(
@@ -1020,49 +1268,25 @@ def fallback_report(
         ],
         "compound_hazard_interpretation": _fallback_compound_hazard_interpretation(evidence),
         "priority_area_justification": _fallback_priority_area_justification_narrative(evidence),
-        # Step 7 items 6/7 -- structured by timescale/category (matches
-        # STAGE3_SCHEMA's real-LLM-path shape) so a fallback report is never
-        # shape-inconsistent with a real one, and the frontend never needs to
-        # branch on which path produced the report.
-        "farmer_advisory": {
-            "immediate": [
-                "Conserve available water and strengthen household or farm-level water storage.",
-                "Monitor pasture, crop stress, and local water availability daily.",
-            ],
-            "near_term": [
-                "Adjust planting and field activities according to rainfall onset, dry-spell risk, or wet-spell risk.",
-            ],
-            "preparedness": [
-                "Report emerging impacts to local extension, DRM, or community focal points.",
-            ],
-        },
-        "agro_pastoral_advisory": {
-            "immediate": [
-                "Prioritize water access and supplementary feed for breeding and lactating animals.",
-            ],
-            "near_term": [
-                "Monitor pasture and rangeland condition, and plan herd movement toward areas with better forage/water availability if local conditions deteriorate.",
-            ],
-            "preparedness": [
-                "Coordinate with local livestock extension and veterinary services on disease risk linked to drought stress or waterlogging.",
-                "Track livestock body condition and local market prices as an early indicator of herd stress.",
-            ],
-        },
-        "humanitarian_priorities": {
-            "monitoring": [
-                "Use community ground-truth reports to confirm whether forecast risk is becoming observed impact.",
-            ],
-            "preparedness": [
-                "Coordinate DRM, agriculture, livestock, water, and humanitarian actors around the highest-risk hotspots.",
-            ],
-            "pre_positioning": [],
-            "immediate_action": [],
-        },
-        "sms_summary": (
-            ("[EN fallback -- translation unavailable] " if language_mismatch_note else "")
-            + f"EARLY WARNING: {admin_scope}. {forecast_window} {lead} forecast. "
-            f"Monitor local climate conditions and follow guidance from local authorities."
+        # Real, structured, per-real-actionable-area objects (see
+        # _fallback_timescaled_advisory/_fallback_humanitarian_priorities)
+        # -- confirmed real gap this closes: generic national bullets with
+        # no real area attached, and every top-N area getting a full
+        # response recommendation regardless of real action_status.
+        "farmer_advisory": _fallback_timescaled_advisory(
+            _fallback_actionable_areas(evidence),
+            immediate_text="Conserve available water and strengthen household or farm-level water storage given this area's real risk signal.",
+            near_term_text="Adjust planting and field activities according to rainfall onset, dry-spell risk, or wet-spell risk for this area.",
+            preparedness_text="Report emerging impacts to local extension, DRM, or community focal points for this area.",
         ),
+        "agro_pastoral_advisory": _fallback_timescaled_advisory(
+            _fallback_actionable_areas(evidence),
+            immediate_text="Prioritize water access and supplementary feed for breeding and lactating animals in this area.",
+            near_term_text="Monitor pasture and rangeland condition in this area, and plan herd movement toward better forage/water availability if conditions deteriorate.",
+            preparedness_text="Coordinate with local livestock extension and veterinary services on disease risk linked to this area's real hazard signal.",
+        ),
+        "humanitarian_priorities": _fallback_humanitarian_priorities(evidence),
+        "sms_messages": _fallback_sms_messages(evidence, seasonal_period, language_mismatch_note),
         "_metadata": {
             "ai_engine": "rule_based_fallback",
             "provider": None,
@@ -1844,7 +2068,22 @@ async def generate_ai_map_interpretation(request: AIMapInterpretationRequest) ->
         if envelope:
             request = merge_envelope_into_request(envelope, request)
 
-    retrieved_guidance = retrieve_guidance(request)
+    # Real, deterministic national evidence -- cache-backed (cheap on a
+    # cache hit, which run_staged_report_generation's own internal call
+    # below will also hit) -- computed here specifically so retrieve_
+    # guidance can scope retrieval to real actionable hazard types instead
+    # of dashboard UI state (see retrieve_guidance's docstring).
+    try:
+        from app.context.statistical_evidence import build_national_region_evidence
+
+        evidence_for_retrieval = build_national_region_evidence(
+            resolve_report_period(request).lower(), admin_level="admin1", use_cache=True,
+        )
+    except Exception:
+        logger.exception("Failed to build evidence for retrieval scoping -- falling back to UI-state-only query")
+        evidence_for_retrieval = None
+
+    retrieved_guidance = retrieve_guidance(request, evidence=evidence_for_retrieval)
     try:
         from app.api.report_stages import run_staged_report_generation
 

@@ -89,7 +89,7 @@ def test_build_stage1_prompt_uses_curated_images_and_excludes_priority_scores(mo
     assert "Stage 1" in user_prompt
     assert "priority_scores" not in user_prompt
     assert "climate_indicators" in user_prompt
-    assert "required_layers" in user_prompt
+    assert "real_layer_summaries" in user_prompt
 
 
 def test_wet_signal_is_significant_only_for_strong_wet_or_mixed_national_signal():
@@ -99,23 +99,16 @@ def test_wet_signal_is_significant_only_for_strong_wet_or_mixed_national_signal(
     assert report_stages._wet_signal_is_significant(
         {"cross_indicator_findings": [{"area": "National", "signal": "mixed"}]},
     ) is True
+    # partial_wet is real, meaningful (>= CROSS_INDICATOR_MIXED_THRESHOLD)
+    # agreement -- must count as significant too, or a real partial wet
+    # signal would be silently excluded from the curated image set.
+    assert report_stages._wet_signal_is_significant(
+        {"cross_indicator_findings": [{"area": "National", "signal": "partial_wet"}]},
+    ) is True
     assert report_stages._wet_signal_is_significant(
         {"cross_indicator_findings": [{"area": "National", "signal": "strong_drought"}]},
     ) is False
     assert report_stages._wet_signal_is_significant({"cross_indicator_findings": []}) is False
-
-
-def test_required_layers_list_reflects_real_evidence_keys():
-    evidence = {
-        "hazard_risk_layers": {
-            "h_dry_mean": {"layer_label": "Drought Hazard (mean)"},
-            "population_r_drought": {"layer_label": "Drought Risk"},
-        },
-        "categorical_layers": {
-            "population_risk_class": {"layer_label": "Risk Class"},
-        },
-    }
-    assert report_stages._required_layers_list(evidence) == ["Drought Hazard (mean)", "Drought Risk", "Risk Class"]
 
 
 def test_select_curated_stage1_images_always_includes_drought_side_and_combined_layer(monkeypatch):
@@ -206,6 +199,18 @@ def test_build_stage1_prompt_adds_population_exposure_summary_and_risk_definitio
     # SPI's raw 1.123456789 mean must not appear in full precision.
     assert "1.123456789" not in user_prompt
     assert "1.123" in user_prompt
+
+
+def test_build_stage1_prompt_instructs_flagging_population_livestock_temporal_lag(monkeypatch):
+    # Confirmed real gap, fixed: population is WorldPop 2020, livestock is
+    # GLW4 2015, but a real forecast for e.g. 2026 could be 6/11 years
+    # ahead -- "data completeness is robust" alone conflates real spatial
+    # coverage with real temporal currency of these 2 static datasets.
+    monkeypatch.setattr(report_stages, "select_curated_stage1_images", lambda request, evidence, period: [])
+    _, user_prompt, _ = report_stages.build_stage1_prompt(_request(), {})
+
+    assert "population_temporal_lag_years" in user_prompt
+    assert "livestock_temporal_lag_years" in user_prompt
 
 
 def test_build_stage1_prompt_excludes_raw_exposure_totals_phase4(monkeypatch):
@@ -299,6 +304,24 @@ def test_build_stage2_prompt_includes_priority_area_justifications_and_cross_ind
     assert "pasture_stress" in user_prompt
 
 
+def test_build_stage2_prompt_differentiator_example_uses_placeholders_not_a_real_falsifiable_claim():
+    # Regression test: the prompt's own contrastive GOOD example once
+    # claimed, as a specific real fact, that "Harari... has the highest
+    # hazard probability of any drought area" -- real evidence showed
+    # South Ethiopia's hazard_probability (0.8369) was actually higher
+    # than Harari's (0.7867) that same period. A wrong "real-looking"
+    # example can actively teach the model to contradict its own evidence,
+    # and any hardcoded real claim risks going stale as data changes
+    # across periods regardless. The example must use abstract
+    # placeholders instead of a specific, verifiable real area/fact.
+    evidence = {"priority_area_justifications": [], "cross_indicator_findings": []}
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, {}, {})
+
+    assert "Harari" not in user_prompt
+    assert "Area A" in user_prompt
+    assert "abstract placeholders" in user_prompt
+
+
 def test_build_stage2_prompt_compacts_zero_report_community_evidence():
     evidence = {"priority_area_justifications": [], "cross_indicator_findings": []}
     stage1_result = {}
@@ -355,6 +378,8 @@ def test_action_evidence_packet_drops_differentiator_keeps_intervention_type_add
                 "population_exposed_pct": 6.1,
                 "roads_exposed_pct": 56.9,
                 "healthsites_exposed_pct": 50.0,
+                "cropland_exposed_pct": 61.2,
+                "low_sample_size_warning": True,
                 "cross_indicator_signal": "strong_drought",
                 "supporting_indicators": ["spi", "cdd_anomaly"],
                 "community_reports": report_stages._NO_COMMUNITY_REPORTS,
@@ -372,6 +397,12 @@ def test_action_evidence_packet_drops_differentiator_keeps_intervention_type_add
     assert area["hazard"] == "drought"
     assert area["risk_score"] == 16.81
     assert area["hazard_probability_pct"] == 68.4
+    # Confirmed real gap, fixed: cropland_exposed_pct was already computed
+    # deterministically but never made it into the Action Evidence Packet
+    # Stage 3 actually receives -- despite being the most operationally
+    # relevant exposure metric for the farmer_advisory audience.
+    assert area["cropland_exposed_pct"] == 61.2
+    assert area["low_sample_size_warning"] is True
     assert area["recommended_intervention_type"] == "Drought / water-security response"
     assert area["livelihood_context"] == "not_available"
     assert area["ground_truth"] == {"available": False}
@@ -405,6 +436,61 @@ def test_build_stage3_prompt_uses_compact_action_packet_not_full_stage1_stage2_d
     assert "should not appear in the prompt" not in user_prompt
     assert "not_available" in user_prompt
     assert "not invent specific crops" in user_prompt
+
+
+def test_build_stage2_prompt_ties_recommended_intervention_to_real_action_status():
+    # Regression test for the confirmed real bug: a wet-ranked area with
+    # Very low risk_score and cross-indicator evidence showing the
+    # OPPOSITE hazard's strong signal (real example: an area ranked #2 for
+    # wet risk while its own evidence said strong_drought) was still given
+    # a full "Flood / wet-hazard mitigation response" label just because
+    # it was in the top 5 -- rank alone was standing in for actionability.
+    evidence = {"priority_area_justifications": [], "cross_indicator_findings": []}
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, {}, {})
+
+    assert "action_status" in user_prompt
+    assert "not currently actionable" in user_prompt
+    assert "do not treat a top-5 rank as proof that real action is warranted" in user_prompt.lower()
+
+
+def test_build_stage3_prompt_does_not_overclaim_roads_healthsites_as_real_counts():
+    # Confirmed real issue: roads_exposed_pct/healthsites_exposed_pct come
+    # from a normalized 0-1 DENSITY index -- no real road-length or
+    # facility-count dataset exists anywhere in this pipeline -- but the
+    # old grounding note called them "the real share of road/health-
+    # facility infrastructure exposed", which reads as a literal count
+    # claim (e.g. "N of N facilities"). The note must say plainly this is
+    # a density index, not a count, and flag small-area imprecision.
+    _, user_prompt = report_stages.build_stage3_prompt(_request(), {}, {}, [])
+
+    assert "NOT a real count" in user_prompt
+    assert "never phrase them as" in user_prompt
+
+
+def test_build_stage2_prompt_instructs_using_real_low_sample_size_warning():
+    # Confirmed real gap, fixed: "data completeness is robust" used to be
+    # the only real signal reaching a reader, even for areas like Harari
+    # (3 cells) or Addis Ababa (4 cells) -- the model must now use the
+    # real, already-computed low_sample_size_warning flag explicitly.
+    evidence = {"priority_area_justifications": [], "cross_indicator_findings": []}
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, {}, {})
+
+    assert "low_sample_size_warning" in user_prompt
+    assert "coarser estimate" in user_prompt
+
+
+def test_build_stage3_prompt_does_not_claim_livestock_exposure_evidence_that_does_not_exist():
+    # Confirmed real contradiction: this grounding note used to say
+    # "grounded in the real livestock exposure... already given", but
+    # _action_evidence_packet's packet_areas has no livestock field at
+    # all -- only population/roads/healthsites exposure. Telling the model
+    # to ground its answer in evidence that was never actually supplied
+    # invites exactly the kind of unsupported claim this app's grounding
+    # rules exist to prevent.
+    _, user_prompt = report_stages.build_stage3_prompt(_request(), {}, {}, [])
+
+    assert "no real per-area livestock exposure metric exists" in user_prompt
+    assert "grounded in the real livestock exposure" not in user_prompt
 
 
 def test_merge_priority_area_justifications_matches_by_id_and_degrades_gracefully():
@@ -464,8 +550,25 @@ def test_build_stage3_prompt_references_prior_stages_and_agro_pastoral():
     assert "monitoring" in user_prompt and "pre_positioning" in user_prompt and "immediate_action" in user_prompt
     assert "FEWS NET IPC" in user_prompt
     assert "roads_exposed_pct" in user_prompt and "healthsites_exposed_pct" in user_prompt
-    assert "fabricated numeric rate" in user_prompt
+    assert "fabricated livestock exposure number or mortality rate" in user_prompt
     assert "rainfall anomaly alone" in user_prompt
+
+
+def test_build_stage3_prompt_includes_real_context_header_and_scale_aware_temporal_framing():
+    # Confirmed real gap, fixed: build_stage3_prompt never called
+    # _context_header (unlike Stage 1/2), so Stage 3 had no way to know
+    # whether this report's real forecast window/lead was Subseasonal
+    # (week-level, where "next 7 days" framing is genuinely accurate) or
+    # Seasonal (month-level, where day-specific "immediate" bullets would
+    # overstate a seasonal signal as a short-range weather forecast).
+    request = report_stages.AIMapInterpretationRequest(
+        forecast_selection={"forecastScale": "seasonal", "lead": "month_2"},
+    )
+    _, user_prompt = report_stages.build_stage3_prompt(request, {}, {}, [])
+
+    assert "CONTEXT:" in user_prompt
+    assert "Forecast window: Seasonal" in user_prompt
+    assert "never phrased as predicting weather on specific days" in user_prompt
 
 
 def test_stage_system_prompts_share_grounding_rules_but_differ_by_stage_role():
@@ -498,6 +601,61 @@ def test_stage_system_prompts_share_grounding_rules_but_differ_by_stage_role():
     assert "interpret Ethiopia-wide forecast map layers" not in system3
 
 
+def test_merge_structured_summaries_keeps_real_fields_and_takes_only_llm_interpretation():
+    # Regression test for the confirmed live bug: a real Gemini response
+    # once returned national_mean: 42.61 for a layer whose real,
+    # deterministic value was 3.409, used an invented label instead of the
+    # real "layer" identifier, and reclassified national_signal. This
+    # merge must make that impossible -- every field except interpretation
+    # always comes from `deterministic`, regardless of what `narrative`
+    # (the raw LLM response) claims for those same fields.
+    deterministic = [
+        {
+            "layer": "population_r_drought", "national_signal": "very_low", "national_mean": 3.409,
+            "highest_areas": ["Harari", "Dire Dawa"], "lowest_areas": ["Somali"], "affected_area_pct": 0.0,
+            "interpretation": "template interpretation", "confidence": "moderate",
+        },
+        {
+            "layer": "h_wet_mean", "national_signal": "low", "national_mean": 0.1,
+            "highest_areas": [], "lowest_areas": [], "affected_area_pct": 2.0,
+            "interpretation": "template interpretation 2", "confidence": "low",
+        },
+    ]
+    narrative = [
+        {
+            "layer": "population_r_drought", "interpretation": "real LLM interpretation",
+            # A real LLM attempting to also return these must not succeed --
+            # they are silently ignored, not merged over the real values.
+            "national_mean": 42.61, "national_signal": "Moderate", "affected_area_pct": 21.3,
+        },
+        {"layer": "does-not-exist", "interpretation": "should be ignored"},
+    ]
+
+    merged = report_stages._merge_structured_summaries(deterministic, narrative, "layer")
+    by_layer = {item["layer"]: item for item in merged}
+
+    assert len(merged) == 2  # always one entry per deterministic item, never dropped or duplicated
+    assert by_layer["population_r_drought"]["interpretation"] == "real LLM interpretation"
+    assert by_layer["population_r_drought"]["national_mean"] == 3.409  # real value, NOT the LLM's 42.61
+    assert by_layer["population_r_drought"]["national_signal"] == "very_low"  # real value, NOT "Moderate"
+    assert by_layer["population_r_drought"]["affected_area_pct"] == 0.0  # real value, NOT 21.3
+    assert by_layer["population_r_drought"]["highest_areas"] == ["Harari", "Dire Dawa"]
+
+    # No matching narrative entry -- degrades to the deterministic object's
+    # own template interpretation (already grounded in real numbers), not
+    # a blank string.
+    assert by_layer["h_wet_mean"]["interpretation"] == "template interpretation 2"
+
+
+def test_merge_structured_summaries_ignores_empty_or_blank_llm_interpretation():
+    deterministic = [{"layer": "spi", "interpretation": "template", "national_mean": -1.1}]
+    narrative = [{"layer": "spi", "interpretation": "   "}]
+
+    merged = report_stages._merge_structured_summaries(deterministic, narrative, "layer")
+
+    assert merged[0]["interpretation"] == "template"
+
+
 def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
     monkeypatch.setattr(
         report_stages,
@@ -507,6 +665,15 @@ def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
             "priority_area_justifications": [
                 {"justification_id": "Afar::drought", "area": "Afar", "rank": 1, "priority_score": 0.9},
             ],
+            # Real hazard_risk_layers entry -- so build_structured_layer_
+            # summaries has something real to merge Stage 1's interpretation
+            # onto; national_mean=0.5 is the value that must survive
+            # regardless of what the fake LLM response below tries to claim.
+            "hazard_risk_layers": {
+                "h_dry_mean": {"national": {"mean": 0.5}, "regional": [], "class_area_pct": {}},
+            },
+            "categorical_layers": {},
+            "climate_indicators": {},
         },
     )
     monkeypatch.setattr(
@@ -521,7 +688,15 @@ def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
     def fake_call(request, system_prompt, user_prompt, images, schema, model_tier="lite"):
         if schema is STAGE1_SCHEMA:
             return {
-                "layer_by_layer_summary": ["l1"],
+                # Real, current shape: the LLM only ever returns {layer,
+                # interpretation} -- never national_mean/national_signal/
+                # highest_areas/lowest_areas/affected_area_pct/confidence,
+                # which are merged in server-side from the deterministic
+                # evidence regardless of what's returned here. Also
+                # includes a fabricated national_mean to prove it's ignored.
+                "layer_by_layer_summary": [
+                    {"layer": "h_dry_mean", "interpretation": "custom interpretation from LLM", "national_mean": 999.0},
+                ],
                 "indicator_by_indicator_summary": ["i1"],
                 "data_quality_notes": ["d1"],
                 "_metadata": {"provider": "gemini", "model": "m"},
@@ -537,11 +712,19 @@ def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
                 "_metadata": {"provider": "gemini", "model": "m"},
             }
         if schema is STAGE3_SCHEMA:
+            advisory_item = {"area": ["Afar"], "action": "f1", "trigger": "strong_drought", "evidence": ["spi"], "confidence": "high"}
             return {
-                "farmer_advisory": {"immediate": ["f1"], "near_term": [], "preparedness": []},
-                "agro_pastoral_advisory": {"immediate": [], "near_term": ["a1"], "preparedness": []},
-                "humanitarian_priorities": {"monitoring": ["h1"], "preparedness": [], "pre_positioning": [], "immediate_action": []},
-                "sms_summary": "sms",
+                "farmer_advisory": {"immediate": [advisory_item], "near_term": [], "preparedness": []},
+                "agro_pastoral_advisory": {"immediate": [], "near_term": [{**advisory_item, "action": "a1"}], "preparedness": []},
+                "humanitarian_priorities": {"monitoring": [{**advisory_item, "action": "h1"}], "preparedness": [], "pre_positioning": [], "immediate_action": []},
+                # Afar matches a real priority area (in priority_area_
+                # justifications above) -- must survive _finalize_sms_
+                # messages' real-area filter. character_count is NOT
+                # provided here, proving it's always computed server-side.
+                "sms_messages": [
+                    {"area": "Afar", "audience": "general", "hazard": "drought", "valid_period": "July", "confidence": "high", "message": "sms"},
+                    {"area": "Invented Place", "audience": "general", "hazard": "drought", "valid_period": "July", "confidence": "high", "message": "should be dropped"},
+                ],
                 "_metadata": {"provider": "gemini", "model": "m"},
             }
         raise AssertionError("unexpected schema")
@@ -550,11 +733,24 @@ def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
 
     report = report_stages.run_staged_report_generation(_request(), [])
 
-    assert report["layer_by_layer_summary"] == ["l1"]
+    # The real, deterministic national_mean (0.5) survives regardless of
+    # what the LLM claimed (999.0) -- proves the merge, not the LLM, is
+    # authoritative for every field except interpretation.
+    layer_summary = report["layer_by_layer_summary"][0]
+    assert layer_summary["layer"] == "h_dry_mean"
+    assert layer_summary["national_mean"] == 0.5
+    assert layer_summary["interpretation"] == "custom interpretation from LLM"
     assert report["executive_summary"] == "exec"
-    assert report["agro_pastoral_advisory"] == {"immediate": [], "near_term": ["a1"], "preparedness": []}
-    assert report["humanitarian_priorities"]["monitoring"] == ["h1"]
-    assert report["sms_summary"] == "sms"
+    assert report["agro_pastoral_advisory"]["near_term"][0]["action"] == "a1"
+    assert report["agro_pastoral_advisory"]["near_term"][0]["area"] == ["Afar"]
+    assert report["humanitarian_priorities"]["monitoring"][0]["action"] == "h1"
+    # Real, server-side finalization: character_count is always computed
+    # (never trusted from the model), and the message for "Invented Place"
+    # (not a real priority area) is dropped entirely.
+    assert len(report["sms_messages"]) == 1
+    assert report["sms_messages"][0]["area"] == "Afar"
+    assert report["sms_messages"][0]["message"] == "sms"
+    assert report["sms_messages"][0]["character_count"] == len("sms")
     assert report["_metadata"]["ai_engine"] == "staged_workflow"
     assert report["_metadata"]["fallback_stages"] == []
     assert set(report["_metadata"]["stages"].keys()) == {"stage1", "stage2", "stage3"}
@@ -651,6 +847,11 @@ def test_run_staged_report_generation_falls_back_for_failed_stage_only(monkeypat
             "priority_area_justifications": [
                 {"justification_id": "Afar::drought", "area": "Afar", "rank": 1, "priority_score": 0.9, "hazard_type": "drought", "risk_score": 45.0, "hazard_probability": 0.7},
             ],
+            "hazard_risk_layers": {
+                "h_dry_mean": {"national": {"mean": 0.5}, "regional": [], "class_area_pct": {}},
+            },
+            "categorical_layers": {},
+            "climate_indicators": {},
         },
     )
     monkeypatch.setattr(report_stages, "build_community_evidence_by_region", lambda region_names: {})
@@ -659,7 +860,7 @@ def test_run_staged_report_generation_falls_back_for_failed_stage_only(monkeypat
     def fake_call(request, system_prompt, user_prompt, images, schema, model_tier="lite"):
         if schema is STAGE1_SCHEMA:
             return {
-                "layer_by_layer_summary": ["real-l1"],
+                "layer_by_layer_summary": [{"layer": "h_dry_mean", "interpretation": "real-l1"}],
                 "indicator_by_indicator_summary": ["real-i1"],
                 "data_quality_notes": ["real-d1"],
                 "_metadata": {"provider": "gemini", "model": "m"},
@@ -680,7 +881,8 @@ def test_run_staged_report_generation_falls_back_for_failed_stage_only(monkeypat
 
     report = report_stages.run_staged_report_generation(_request(), [])
 
-    assert report["layer_by_layer_summary"] == ["real-l1"]
+    assert report["layer_by_layer_summary"][0]["layer"] == "h_dry_mean"
+    assert report["layer_by_layer_summary"][0]["interpretation"] == "real-l1"
     assert report["farmer_advisory"] == {"immediate": ["real-f1"], "near_term": [], "preparedness": []}
     # Stage 2 failed -> deterministic fallback fields, not empty/missing.
     assert report["executive_summary"]

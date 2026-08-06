@@ -15,7 +15,7 @@ def _report(priority_area_justification, **extra_fields):
         "national_spatial_overview": [],
         "farmer_advisory": [],
         "humanitarian_priorities": [],
-        "sms_summary": "",
+        "sms_messages": [],
     }
     report.update(extra_fields)
     return report
@@ -207,6 +207,32 @@ def test_all_text_flattens_timescale_and_category_structured_advisory_fields():
     assert "conserve water now" in text
     assert "prepare for dry spell" in text
     assert "pre-position supplies" in text
+
+
+def test_all_text_extracts_action_from_structured_advisory_items_and_message_from_sms():
+    # Real current shape (see _ADVISORY_ITEM_SCHEMA/_SMS_ITEM_SCHEMA in
+    # app.api.ai_map_interpretation): each timescale/category bullet is now
+    # a real structured object {area, action, trigger, evidence,
+    # confidence}, not a bare string, and sms_messages is a top-level array
+    # of {area, audience, hazard, valid_period, confidence, message}
+    # objects, not a single sms_summary string. Confirmed real gap this
+    # closes: before "action"/"message" were added to _item_narrative_
+    # text's narrative_keys, this content was silently unscanned entirely.
+    report = _report(
+        [],
+        farmer_advisory={
+            "immediate": [{"area": ["Harari"], "action": "conserve water now", "trigger": "strong_drought", "evidence": ["spi"], "confidence": "high"}],
+            "near_term": [], "preparedness": [],
+        },
+        sms_messages=[
+            {"area": "Harari", "audience": "general", "hazard": "drought", "valid_period": "July 2026", "confidence": "high", "message": "early warning for Harari"},
+        ],
+    )
+
+    text = _all_text(report)
+
+    assert "conserve water now" in text
+    assert "early warning for Harari" in text
 
 
 def test_all_text_extracts_interpretation_from_structured_layer_and_indicator_summaries():
