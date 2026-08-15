@@ -13,11 +13,19 @@ repair (app.advisory.response_validator) to its replies before they reach
 the user.
 
 Scope, confirmed with the user before building this: grounded-only (not
-general knowledge), Gemini-only for v1 (no OpenRouter/OpenAI fallback yet
--- can be added later the same way report_stages/ai_map_interpretation
-already do it, once this is proven out), stateless per-request (the
-frontend holds conversation history and resends it, capped at
-MAX_HISTORY_TURNS -- no server-side session store for a v1).
+general knowledge), stateless per-request (the frontend holds conversation
+history and resends it, capped at MAX_HISTORY_TURNS -- no server-side
+session store for a v1).
+
+Provider fallback (see _chat_provider_attempts): tries Gemini's lite tier
+first, then plain OpenAI, then OpenRouter -- confirmed necessary, not
+theoretical: the deployed Render backend has GEMINI_API_KEY unset but
+OPENAI_API_KEY configured (per /api/ai/provider-status), so a Gemini-only
+first version of this endpoint returned 502 there on every real request
+even though report generation worked fine. Each provider's raw call is
+free-text/multi-turn, NOT the JSON-schema-mode calls app.api.
+ai_map_interpretation's own report-pipeline functions make, so this module
+has its own small set of raw-call primitives rather than reusing those.
 """
 
 from __future__ import annotations
@@ -178,6 +186,67 @@ def _call_gemini_chat_raw(model: str, system_prompt: str, history: List[Dict[str
     return (response.text or "").strip()
 
 
+def _call_openai_compatible_chat_raw(
+    *, api_key_env: str, base_url: Optional[str], model: str,
+    system_prompt: str, history: List[Dict[str, str]], user_message: str,
+) -> str:
+    """Free-text (not JSON-schema) multi-turn chat call, shared by plain
+    OpenAI and any OpenAI-compatible provider (OpenRouter) via base_url --
+    same client pattern app.api.ai_map_interpretation already uses for the
+    report pipeline, but that module's own callers are all JSON-schema-mode
+    only (report generation), so this is a separate, free-text primitive
+    rather than a reuse of those functions.
+    """
+    api_key = os.getenv(api_key_env)
+    if not api_key:
+        raise ProviderError(f"{api_key_env} is not set.")
+
+    try:
+        from openai import OpenAI
+    except Exception as exc:
+        raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
+
+    client = OpenAI(base_url=base_url, api_key=api_key) if base_url else OpenAI(api_key=api_key)
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for turn in history:
+        role = "assistant" if turn.get("role") == "assistant" else "user"
+        messages.append({"role": role, "content": turn.get("content", "")})
+    messages.append({"role": "user", "content": user_message})
+
+    response = client.responses.create(
+        model=model,
+        input=messages,
+        max_output_tokens=int(os.getenv("AI_CHAT_MAX_TOKENS", "1024")),
+    )
+    return (response.output_text or "").strip()
+
+
+# Ordered (provider_label, call) factories tried in turn -- mirrors the
+# same "try each configured provider, fall through to the next on any real
+# error" resilience already used by call_configured_ai_provider_for_stage
+# for the report pipeline. Confirmed real gap this closes: the deployed
+# Render backend has GEMINI_API_KEY unset but OPENAI_API_KEY configured
+# (see /api/ai/provider-status), so a Gemini-only chat assistant failed
+# there every time even though the rest of the AI pipeline works fine.
+def _chat_provider_attempts(system_prompt: str, history: List[Dict[str, str]], user_message: str):
+    for model in GEMINI_MODEL_TIERS["lite"]:
+        if model:
+            yield f"gemini:{model}", lambda m=model: _call_gemini_chat_raw(m, system_prompt, history, user_message)
+    openai_model = os.getenv("OPENAI_MAP_AI_MODEL", "gpt-5")
+    yield f"openai:{openai_model}", lambda: _call_openai_compatible_chat_raw(
+        api_key_env="OPENAI_API_KEY", base_url=None, model=openai_model,
+        system_prompt=system_prompt, history=history, user_message=user_message,
+    )
+    openrouter_model = os.getenv("OPENROUTER_AI_MODEL", "google/gemini-2.5-flash-lite")
+    yield f"openrouter:{openrouter_model}", lambda: _call_openai_compatible_chat_raw(
+        api_key_env="OPENROUTER_API_KEY",
+        base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+        model=openrouter_model,
+        system_prompt=system_prompt, history=history, user_message=user_message,
+    )
+
+
 @router.post("/message", response_model=DashboardChatResponse)
 def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
     if not payload.message.strip():
@@ -196,19 +265,18 @@ def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
     history = [turn.model_dump() for turn in payload.history[-MAX_HISTORY_TURNS:]]
 
     reply_text: Optional[str] = None
-    last_error: Optional[Exception] = None
-    for model in GEMINI_MODEL_TIERS["lite"]:
-        if not model:
-            continue
+    errors: List[str] = []
+    for provider_label, call in _chat_provider_attempts(system_prompt, history, payload.message):
         try:
-            reply_text = _call_gemini_chat_raw(model, system_prompt, history, payload.message)
-            break
-        except Exception as exc:  # noqa: BLE001 -- real provider errors vary by SDK/network, all equally "try next model"
-            last_error = exc
+            reply_text = call()
+            if reply_text:
+                break
+        except Exception as exc:  # noqa: BLE001 -- real provider errors vary by SDK/network, all equally "try next provider"
+            errors.append(f"{provider_label}: {exc}")
             continue
 
     if not reply_text:
-        raise HTTPException(status_code=502, detail=f"Chat assistant is unavailable right now: {last_error}")
+        raise HTTPException(status_code=502, detail=f"Chat assistant is unavailable right now: {' | '.join(errors)}")
 
     # Same deterministic forecast-safe-language repair the report pipeline
     # applies, reused directly rather than re-implemented -- a free-text
