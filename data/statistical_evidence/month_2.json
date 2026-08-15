@@ -680,7 +680,7 @@
         "cdd_anomaly",
         "drought_probability"
       ],
-      "confidence": "low"
+      "cross_indicator_confidence": "low"
     }
   ],
   "priority_area_justifications": []
