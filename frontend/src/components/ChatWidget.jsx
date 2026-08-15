@@ -4,6 +4,28 @@ import "../styles/chatWidget.css";
 
 const MAX_HISTORY_TURNS = 10;
 
+// Lightweight inline-markdown rendering for chat replies -- the model
+// naturally writes **bold** around key numbers/labels and `code` around
+// field names (both providers do this unprompted), but the bubble was
+// rendering that literally as asterisks/backticks instead of formatting
+// it. No markdown library dependency: just bold + inline code, split on a
+// single capturing regex so the surrounding plain text (and real newlines,
+// preserved by the bubble's own white-space: pre-wrap) passes through
+// untouched.
+const INLINE_MARKDOWN_PATTERN = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+
+function renderInlineMarkdown(text) {
+  return text.split(INLINE_MARKDOWN_PATTERN).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+}
+
 function IconChatBubble() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -115,7 +137,7 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage 
             )}
             {messages.map((message, index) => (
               <div key={index} className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}>
-                {message.content}
+                {renderInlineMarkdown(message.content)}
               </div>
             ))}
             {isSending && <div className="f2a-chat-bubble f2a-chat-bubble-assistant f2a-chat-typing">Thinking…</div>}
