@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminBoundarySelector from "../components/AdminBoundarySelector.jsx";
+import ChatWidget from "../components/ChatWidget.jsx";
 import DashboardHero from "../components/DashboardHero.jsx";
 import ForecastLayerMap from "../components/ForecastLayerMap.jsx";
 import AIMapInterpretation from "../components/AIMapInterpretation.jsx";
@@ -147,6 +148,11 @@ function Dashboard() {
         selectedPriorityArea={selectedPriorityArea}
         selectedLanguage={selectedLanguage}
         onLanguageChange={setSelectedLanguage}
+      />
+      <ChatWidget
+        forecastSelection={forecastSelection}
+        selectedPriorityArea={selectedPriorityArea}
+        selectedLanguage={selectedLanguage}
       />
     </main>
   );

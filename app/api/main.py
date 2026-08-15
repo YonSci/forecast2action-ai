@@ -34,6 +34,7 @@ from app.api.community_reports_store import (
     summarize_reports,
 )
 from app.api.context_api import router as context_router
+from app.api.dashboard_chat import router as dashboard_chat_router
 from app.api.decision_api import router as decision_router
 from app.api.hazard_risk_maps import router as hazard_risk_maps_router
 from app.api.hazard_risk_ranking import router as hazard_risk_ranking_router
@@ -87,6 +88,7 @@ app.include_router(hazard_risk_maps_router)
 app.include_router(hazard_risk_ranking_router)
 app.include_router(context_router)
 app.include_router(decision_router)
+app.include_router(dashboard_chat_router)
 
 
 @app.on_event("startup")
