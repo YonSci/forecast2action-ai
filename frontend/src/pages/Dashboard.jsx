@@ -57,6 +57,10 @@ function Dashboard() {
   });
   const [selectedPriorityArea, setSelectedPriorityArea] = useState(null);
   const [rankingContext, setRankingContext] = useState(null);
+  // Lifted from AIMapInterpretation (via onReportChange) so the chat
+  // assistant can see the real, already-generated report narrative once
+  // one exists, instead of only the raw evidence it recomputes itself.
+  const [aiReport, setAiReport] = useState(null);
   async function loadCommunityReports() {
     try {
       const response = await fetchJson("/api/community-reports");
@@ -148,11 +152,13 @@ function Dashboard() {
         selectedPriorityArea={selectedPriorityArea}
         selectedLanguage={selectedLanguage}
         onLanguageChange={setSelectedLanguage}
+        onReportChange={setAiReport}
       />
       <ChatWidget
         forecastSelection={forecastSelection}
         selectedPriorityArea={selectedPriorityArea}
         selectedLanguage={selectedLanguage}
+        aiReport={aiReport}
       />
     </main>
   );

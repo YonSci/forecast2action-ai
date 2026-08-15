@@ -105,6 +105,48 @@
   padding: 8px 2px;
 }
 
+.f2a-chat-empty p {
+  margin: 0 0 12px;
+}
+
+.f2a-chat-starters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.f2a-chat-starters button {
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #d9e3f2);
+  background: #ffffff;
+  color: var(--primary-2, #274a84);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.f2a-chat-starters button:hover:not(:disabled) {
+  border-color: var(--primary-2, #274a84);
+  transform: translateX(2px);
+}
+
+.f2a-chat-starters button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.f2a-chat-context-summary {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--line, #d9e3f2);
+  font-size: 0.72rem;
+  color: var(--muted, #60708c);
+  line-height: 1.4;
+}
+
 .f2a-chat-bubble {
   max-width: 86%;
   padding: 10px 13px;

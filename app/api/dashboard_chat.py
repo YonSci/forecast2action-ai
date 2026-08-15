@@ -47,6 +47,7 @@ from app.api.ai_map_interpretation import (
     normalize_language_code,
     resolve_report_period,
 )
+from app.context.community_context import build_community_evidence_by_region
 from app.context.statistical_evidence import (
     area_signal_counts,
     build_national_region_evidence,
@@ -79,6 +80,23 @@ class ChatTurn(BaseModel):
     content: str
 
 
+class ReportContext(BaseModel):
+    """The real, already-generated (and already response_validator-checked)
+    report narrative, if the user has generated one this session -- sent by
+    the client because, unlike evidence, this text only exists client-side
+    (no server-side "last generated report" store to recompute it from).
+    Deliberately narrow to the 3 free-text narrative fields, not the whole
+    report schema -- priority_area_justification/etc are already
+    reconstructed server-side from the SAME real evidence this endpoint
+    trusts, so re-sending them here would just be an unverified duplicate
+    of data already available a more trustworthy way.
+    """
+
+    executive_summary: Optional[str] = None
+    national_spatial_overview: Optional[List[str]] = None
+    compound_hazard_interpretation: Optional[List[str]] = None
+
+
 class DashboardChatRequest(BaseModel):
     message: str
     history: List[ChatTurn] = Field(default_factory=list)
@@ -88,11 +106,17 @@ class DashboardChatRequest(BaseModel):
     # area when the question is ambiguous ("why is this a priority?").
     selected_area: Optional[str] = None
     target_language: Optional[str] = "en"
+    report_context: Optional[ReportContext] = None
 
 
 class DashboardChatResponse(BaseModel):
     reply: str
     period: str
+    # Real, deterministic description of what was actually given to the
+    # model for THIS message -- not a claim about which sentences it used,
+    # just an honest accounting of the real evidence sections available.
+    # Rendered in the UI as a "grounded in" citation under the reply.
+    context_summary: Dict[str, Any]
 
 
 def _compact_layer_or_indicator_summary(item: Dict[str, Any]) -> Dict[str, Any]:
@@ -103,7 +127,11 @@ def _compact_layer_or_indicator_summary(item: Dict[str, Any]) -> Dict[str, Any]:
     return {key: value for key, value in item.items() if key != "interpretation"}
 
 
-def _build_chat_context_packet(evidence: Dict[str, Any], selected_area: Optional[str]) -> Dict[str, Any]:
+def _build_chat_context_packet(
+    evidence: Dict[str, Any],
+    selected_area: Optional[str],
+    community_evidence: Dict[str, Dict[str, Any]],
+) -> Dict[str, Any]:
     """The real, deterministic evidence this endpoint is willing to let the
     model see -- same shape/spirit as report_stages._synthesis_evidence_
     packet, just built fresh here since the chat assistant's own Q&A needs
@@ -127,10 +155,25 @@ def _build_chat_context_packet(evidence: Dict[str, Any], selected_area: Optional
     }
     if selected_area:
         packet["dashboard_selected_area"] = selected_area
+    if community_evidence:
+        # Only ever present for a real region name -- "not in this dict"
+        # already means "no reports" (see build_community_evidence_by_
+        # region's own docstring), so no empty-entry padding here either.
+        packet["community_ground_truth_by_area"] = community_evidence
     return packet
 
 
-def _build_chat_system_prompt(period: str, language_code: str, context_packet: Dict[str, Any]) -> str:
+def _build_chat_system_prompt(
+    period: str, language_code: str, context_packet: Dict[str, Any], report_context: Optional[ReportContext],
+) -> str:
+    report_block = ""
+    report_narrative = (report_context.model_dump(exclude_none=True) if report_context else {})
+    if report_narrative:
+        report_block = f"""
+
+ALREADY-GENERATED REPORT NARRATIVE (real AI-authored text from a previous report generation, already checked by this app's own response validator -- you may quote or summarize it, but if it ever conflicts with REAL EVIDENCE below, the evidence wins; the evidence is always the more authoritative, more current source):
+{compact_json(report_narrative, max_chars=4000)}"""
+
     return f"""You are the Forecast2Action AI dashboard assistant, helping a decision-maker understand the {period} Ethiopia climate-risk forecast currently shown on their dashboard.
 
 {get_language_instruction(language_code)}
@@ -143,10 +186,12 @@ SUPERLATIVE RULE: Only say an area has the "highest"/"lowest" value of a metric 
 
 NATIONAL VS AREA-LEVEL RULE: national_cross_indicator is its own real, independently-computed aggregate -- never describe it as "strong" just because several individual areas are; use area_signal_tally for any area-level count, and never count the priority_areas list yourself.
 
+COMMUNITY REPORTS RULE: community_ground_truth_by_area (if present) is real, user-submitted field observations, keyed by area name -- corroborating evidence, not proof, unless a report's own verification_status shows it was actually reviewed. An area with no entry in this dict has zero submitted reports -- say so plainly if asked, never imply reports exist for an area not listed.
+
 Keep answers conversational and concise (2-4 sentences) unless the user asks for more detail. If dashboard_selected_area is set below and the user's question doesn't name a specific area, assume they mean that one.
 
 REAL EVIDENCE FOR {period.upper()}:
-{compact_json(context_packet, max_chars=12000)}
+{compact_json(context_packet, max_chars=12000)}{report_block}
 """.strip()
 
 
@@ -247,6 +292,27 @@ def _chat_provider_attempts(system_prompt: str, history: List[Dict[str, str]], u
     )
 
 
+def _build_context_summary(
+    context_packet: Dict[str, Any], community_evidence: Dict[str, Any], report_context: Optional[ReportContext],
+) -> Dict[str, Any]:
+    """Real, deterministic accounting of what THIS message's context packet
+    actually contained -- not a claim about which parts the model's reply
+    drew on (that would require guessing at the model's own reasoning),
+    just an honest list of the real sections it was given. Rendered as a
+    "grounded in" citation under the reply in the chat UI.
+    """
+    priority_areas = context_packet.get("priority_areas") or []
+    national_signal = (context_packet.get("national_cross_indicator") or {}).get("signal")
+    return {
+        "priority_area_count": len(priority_areas),
+        "priority_area_names": [item.get("area") for item in priority_areas if item.get("area")],
+        "national_cross_indicator_signal": national_signal,
+        "selected_area": context_packet.get("dashboard_selected_area"),
+        "community_reports_areas": sorted(community_evidence.keys()) if community_evidence else [],
+        "included_report_narrative": bool(report_context and report_context.model_dump(exclude_none=True)),
+    }
+
+
 @router.post("/message", response_model=DashboardChatResponse)
 def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
     if not payload.message.strip():
@@ -259,9 +325,17 @@ def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not load real evidence for period={period}: {exc}") from exc
 
-    context_packet = _build_chat_context_packet(evidence, payload.selected_area)
+    # Real, freshly-read (never cached) community reports -- same function
+    # and same "restrict to this period's real priority areas" pattern
+    # report_stages.py already uses for Stage 2, not a client-trusted blob.
+    priority_area_names = [
+        item["area"] for item in evidence.get("priority_area_justifications") or [] if item.get("area")
+    ]
+    community_evidence = build_community_evidence_by_region(priority_area_names)
+
+    context_packet = _build_chat_context_packet(evidence, payload.selected_area, community_evidence)
     language_code = normalize_language_code(payload.target_language)
-    system_prompt = _build_chat_system_prompt(period, language_code, context_packet)
+    system_prompt = _build_chat_system_prompt(period, language_code, context_packet, payload.report_context)
     history = [turn.model_dump() for turn in payload.history[-MAX_HISTORY_TURNS:]]
 
     reply_text: Optional[str] = None
@@ -287,4 +361,5 @@ def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
     reply_text, _ = _repair_confirmed_language_in_text(reply_text)
     reply_text, _ = _repair_observational_present_in_text(reply_text)
 
-    return DashboardChatResponse(reply=reply_text, period=period)
+    context_summary = _build_context_summary(context_packet, community_evidence, payload.report_context)
+    return DashboardChatResponse(reply=reply_text, period=period, context_summary=context_summary)

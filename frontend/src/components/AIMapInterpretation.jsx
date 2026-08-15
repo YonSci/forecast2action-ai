@@ -644,6 +644,7 @@ function AIMapInterpretation({
   selectedLanguage = "en",
   onLanguageChange,
   onContextBuilt,
+  onReportChange,
 }) {
   const [providerOptions, setProviderOptions] = useState(
     FALLBACK_AI_PROVIDER_OPTIONS,
@@ -735,6 +736,16 @@ function AIMapInterpretation({
         : "",
     );
   }, [cacheKey, normalizedLanguage]);
+
+  // Single sync point for every setReport(...) call above (cache load,
+  // fresh generation, reset) instead of threading onReportChange through
+  // each call site individually -- lets the Dashboard chat assistant see
+  // the real, already-generated report narrative once one exists.
+  useEffect(() => {
+    if (typeof onReportChange === "function") {
+      onReportChange(report);
+    }
+  }, [report, onReportChange]);
 
   const contextSummary = useMemo(() => {
     return {

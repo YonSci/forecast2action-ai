@@ -26,6 +26,44 @@ function renderInlineMarkdown(text) {
   });
 }
 
+// Real, deterministic "grounded in" caption from the backend's own
+// context_summary (see app/api/dashboard_chat.py's _build_context_summary)
+// -- describes what evidence was actually available for that reply, not a
+// guess about which sentences the model drew on.
+function renderContextSummary(summary) {
+  if (!summary) return null;
+  const parts = [];
+  if (summary.priority_area_count) {
+    parts.push(`${summary.priority_area_count} priority areas`);
+  }
+  if (summary.national_cross_indicator_signal) {
+    parts.push(`national signal: ${summary.national_cross_indicator_signal.replace(/_/g, " ")}`);
+  }
+  if (summary.selected_area) {
+    parts.push(`focused on ${summary.selected_area}`);
+  }
+  if (summary.community_reports_areas?.length) {
+    parts.push(`community reports: ${summary.community_reports_areas.join(", ")}`);
+  }
+  if (summary.included_report_narrative) {
+    parts.push("generated report narrative included");
+  }
+  if (!parts.length) return null;
+  return <div className="f2a-chat-context-summary">Grounded in: {parts.join(" · ")}</div>;
+}
+
+function getStarterQuestions(selectedPriorityArea) {
+  const areaName = selectedPriorityArea?.area_name;
+  const questions = [];
+  if (areaName) {
+    questions.push(`Why is ${areaName} a priority this period?`);
+    questions.push(`Are there community reports for ${areaName}?`);
+  }
+  questions.push("What are the top drought priority areas?");
+  questions.push("What's the national risk signal this period?");
+  return questions.slice(0, 4);
+}
+
 function IconChatBubble() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -59,9 +97,11 @@ function IconSend() {
  * period's real, already-computed evidence (see app/api/dashboard_chat.py),
  * never a general-purpose assistant. Sends the dashboard's own current
  * forecastSelection/selectedPriorityArea as context on every message, so
- * the assistant answers about what the user is actually looking at.
+ * the assistant answers about what the user is actually looking at. When
+ * aiReport is set (the user has generated a report this session), its real
+ * narrative fields are sent too so the assistant can summarize/quote it.
  */
-function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage }) {
+function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage, aiReport }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -75,27 +115,35 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage 
     }
   }, [messages, isOpen]);
 
-  async function sendMessage(event) {
-    event.preventDefault();
-    const text = input.trim();
-    if (!text || isSending) return;
+  async function sendText(text) {
+    const trimmed = text.trim();
+    if (!trimmed || isSending) return;
 
-    const nextMessages = [...messages, { role: "user", content: text }];
+    const nextMessages = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setInput("");
     setIsSending(true);
     setError("");
+
+    const reportContext = aiReport
+      ? {
+          executive_summary: aiReport.executive_summary || null,
+          national_spatial_overview: aiReport.national_spatial_overview || null,
+          compound_hazard_interpretation: aiReport.compound_hazard_interpretation || null,
+        }
+      : null;
 
     try {
       const response = await fetch(apiUrl("/api/chat/message"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: text,
+          message: trimmed,
           history: nextMessages.slice(0, -1).slice(-MAX_HISTORY_TURNS),
           forecast_selection: forecastSelection,
           selected_area: selectedPriorityArea?.area_name || null,
           target_language: selectedLanguage || "en",
+          report_context: reportContext,
         }),
       });
       if (!response.ok) {
@@ -103,13 +151,21 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage 
         throw new Error(detail || `Request failed ${response.status}`);
       }
       const data = await response.json();
-      setMessages([...nextMessages, { role: "assistant", content: data.reply }]);
+      setMessages([
+        ...nextMessages,
+        { role: "assistant", content: data.reply, contextSummary: data.context_summary },
+      ]);
     } catch (err) {
       setError("The assistant is unavailable right now. Please try again in a moment.");
       console.error(err);
     } finally {
       setIsSending(false);
     }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    sendText(input);
   }
 
   return (
@@ -132,12 +188,20 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage 
           <div className="f2a-chat-messages" ref={scrollRef}>
             {messages.length === 0 && (
               <div className="f2a-chat-empty">
-                Ask about the priority areas, risk drivers, or exposure numbers currently shown on this dashboard.
+                <p>Ask about the priority areas, risk drivers, or exposure numbers currently shown on this dashboard.</p>
+                <div className="f2a-chat-starters">
+                  {getStarterQuestions(selectedPriorityArea).map((question) => (
+                    <button key={question} type="button" onClick={() => sendText(question)} disabled={isSending}>
+                      {question}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {messages.map((message, index) => (
               <div key={index} className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}>
                 {renderInlineMarkdown(message.content)}
+                {message.role === "assistant" && renderContextSummary(message.contextSummary)}
               </div>
             ))}
             {isSending && <div className="f2a-chat-bubble f2a-chat-bubble-assistant f2a-chat-typing">Thinking…</div>}
@@ -145,7 +209,7 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage 
 
           {error && <div className="f2a-chat-error">{error}</div>}
 
-          <form className="f2a-chat-input-row" onSubmit={sendMessage}>
+          <form className="f2a-chat-input-row" onSubmit={handleSubmit}>
             <input
               type="text"
               value={input}
