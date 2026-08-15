@@ -261,6 +261,15 @@ forecast2action_action_tracker_*.csv
 # pipeline, so there's no reason to push that extra ~30MB to the deployed repo.
 !data/raw/exposure/eth_population_2020_1km.tif
 
+# Raw downloaded/cached inputs for the one-off historical-calibration and
+# infrastructure data pipelines (app/data_pipeline/historical_rainfall_
+# pipeline.py, infrastructure_data_pipeline.py) -- large, re-fetchable
+# source data (116 raw CHIRPS GeoTIFF.gz files alone total ~1.6GB), not
+# meant to be version-controlled. The real OUTPUT these pipelines produce
+# (data/maps/Exposure/*.tif) is un-ignored above and IS committed.
+data/raw/historical_impact/
+data/raw/infrastructure/
+
 # Ethiopia admin boundary shapefile used by seasonal_raster_maps.py to clip
 # rendered maps to the real country border, and by the admin boundary
 # selector API. Also required at runtime on Render -- without it, deploys
