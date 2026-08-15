@@ -6,7 +6,7 @@
 // unlabeled section. Collapsed by default, same as TimescaledAdvisoryList.
 //
 // Each bullet is now itself a real structured object (area/action/
-// trigger/evidence/confidence -- see _ADVISORY_ITEM_SCHEMA in
+// trigger/evidence/cross_indicator_confidence -- see _ADVISORY_ITEM_SCHEMA in
 // app/api/ai_map_interpretation.py) -- see TimescaledAdvisoryList's
 // AdvisoryBullet for the same rendering, reused here.
 

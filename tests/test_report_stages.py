@@ -81,15 +81,37 @@ def test_build_stage1_prompt_uses_curated_images_and_excludes_priority_scores(mo
 
     monkeypatch.setattr(report_stages, "select_curated_stage1_images", fake_select)
 
-    evidence = {"climate_indicators": {"spi": {}}, "priority_scores": {"population_r_drought": []}}
+    evidence = {
+        "climate_indicators": {"spi": {"national": {"mean": -1.2}, "regional": [], "category": "moderately_dry"}},
+        "priority_scores": {"population_r_drought": []},
+        "priority_area_justifications": [{"justification_id": "Afar::drought", "area": "Afar", "rank": 1}],
+    }
     system_prompt, user_prompt, stage_images = report_stages.build_stage1_prompt(_request(), evidence)
 
     assert stage_images == curated
     assert captured_args["evidence"] is evidence
     assert "Stage 1" in user_prompt
     assert "priority_scores" not in user_prompt
-    assert "climate_indicators" in user_prompt
+    # Confirmed real gap, fixed: the old raw evidence spread's exclusion
+    # list named priority_scores but not priority_area_justifications --
+    # the already-ranked priority-area list, an even more direct violation
+    # of "Stage 1 cannot decide which areas matter" than priority_scores
+    # itself. See _evidence_interpretation_packet's docstring.
+    assert "priority_area_justifications" not in user_prompt
+    assert "justification_id" not in user_prompt
+    # Confirmed real gap, fixed: the old design spread the ENTIRE raw
+    # climate_indicators/hazard_risk_layers/categorical_layers dicts on top
+    # of the already-compact real_layer_summaries/real_indicator_summaries
+    # derived from that same data -- pure redundancy that caused real
+    # truncation (see _evidence_interpretation_packet's docstring). The raw
+    # top-level key itself must no longer appear; only the derived,
+    # compact summary (which DOES carry this SPI entry's real data through)
+    # should.
+    assert "climate_indicators" not in user_prompt
     assert "real_layer_summaries" in user_prompt
+    assert "real_indicator_summaries" in user_prompt
+    assert '"indicator": "spi"' in user_prompt
+    assert "moderately_dry" in user_prompt
 
 
 def test_wet_signal_is_significant_only_for_strong_wet_or_mixed_national_signal():
@@ -246,30 +268,38 @@ def test_build_stage1_prompt_excludes_raw_exposure_totals_phase4(monkeypatch):
 
 
 def test_build_stage1_prompt_survives_truncation_of_bulky_evidence(monkeypatch):
-    # compact_json truncates at a fixed character count (see its own
-    # implementation) -- if population_exposure_summary/risk_definition
-    # were appended AFTER a large evidence dict instead of placed first,
-    # truncation would silently drop them entirely before ever reaching
-    # the model. This reproduces that exact scenario with an evidence dict
-    # large enough to trigger real truncation.
+    # Confirmed real gap, fixed (see _evidence_interpretation_packet's
+    # docstring): the OLD design spread the full raw climate_indicators/
+    # hazard_risk_layers/categorical_layers dicts into this prompt, and
+    # THAT raw per-region bulk (confirmed live: ~136k real chars) was what
+    # real truncation used to cut through on every real run. Those raw
+    # dumps are gone now, replaced by the already-compact real_layer_
+    # summaries/real_indicator_summaries -- so a bulky climate_indicators
+    # input no longer produces a bulky prompt at all (this is itself the
+    # fix, not a regression: build_structured_indicator_summaries only
+    # ever extracts a national mean/signal + top-2/bottom-2 area names per
+    # indicator, never the raw per-region array).
+    #
+    # The one real field left in the new packet that still scales directly
+    # with region count is cross_indicator_findings (one entry per real
+    # admin1 region, included in full, not summarized) -- this reproduces
+    # real truncation via THAT field instead, confirming population_
+    # exposure_summary/risk_definition (placed earlier in the packet) still
+    # survive it.
     monkeypatch.setattr(report_stages, "select_curated_stage1_images", lambda request, evidence, period: [])
 
-    bulky_regional_stats = [
-        {"area_name": f"Region {i}", "min": 0.01, "max": 0.99, "mean": 0.5, "median": 0.5, "std": 0.1}
+    bulky_cross_indicator_findings = [
+        {
+            "area": f"Region {i}",
+            "signal": "strong_drought",
+            "agreement_score": 0.8,
+            "confidence": "high",
+            "supporting_indicators": ["spi", "cdd_anomaly", "rainfall_percentile"],
+            "contradicting_indicators": [],
+        }
         for i in range(400)
     ]
-    evidence = {
-        "climate_indicators": {
-            indicator: {"national": {"mean": 0.5}, "regional": bulky_regional_stats}
-            for indicator in ["rainfall_total", "spi", "cdd", "cwd", "rx1day", "rx5day", "rainfall_percentile"]
-        },
-        "exposure": {
-            "population_r_drought": {
-                "population_exposed_by_region": [{"area_name": "Afar", "total": 1000.0, "exposed": 400.0}],
-            },
-            "population_r_wet": {"population_exposed_by_region": []},
-        },
-    }
+    evidence = {"cross_indicator_findings": bulky_cross_indicator_findings}
 
     _, user_prompt, _ = report_stages.build_stage1_prompt(_request(), evidence)
 
@@ -296,12 +326,202 @@ def test_build_stage2_prompt_includes_priority_area_justifications_and_cross_ind
     assert "Stage 2" in user_prompt
     assert "strong_drought" in user_prompt
     assert "Afar::drought" in user_prompt
-    assert "0.9" in user_prompt
     assert "justification_id" in user_prompt
+    # priority_score is deliberately excluded from Stage 2's own compact
+    # packet (see _stage2_priority_area_view) -- it's banned from citation
+    # anyway, so removing it from the evidence itself is the stronger fix.
+    # rank, a legitimate ordinal signal, stays.
+    assert "0.9" not in user_prompt
+    assert '"rank": 1' in user_prompt
     # Real community ground-truth evidence is embedded and attributed by area.
     assert "COMMUNITY GROUND-TRUTH" in user_prompt
     assert "emerging_ground_signal" in user_prompt
     assert "pasture_stress" in user_prompt
+
+
+def test_synthesis_evidence_packet_drops_fields_stage2_does_not_need():
+    # Confirmed real gap, fixed: priority_score (banned from citation),
+    # supporting_indicators/contradicting_indicators (duplicated per-area in
+    # the separate cross-indicator block), and valid_cell_count (only the
+    # boolean low_sample_size_warning is ever referenced by Stage 2's task)
+    # used to be sent to Stage 2 in full, contributing real bulk toward the
+    # blind character-count truncation this packet exists to prevent.
+    stage1_result = {"layer_by_layer_summary": [], "indicator_by_indicator_summary": [], "data_quality_notes": ""}
+    evidence = {
+        "priority_area_justifications": [{
+            "justification_id": "Harari::drought",
+            "area": "Harari",
+            "rank": 1,
+            "priority_score": 0.599,
+            "risk_score": 23.6,
+            "risk_class": "Low",
+            "action_status": "preparedness",
+            "hazard_probability": 0.787,
+            "supporting_indicators": [{"indicator": "spi", "value": -2.7}],
+            "contradicting_indicators": [],
+            "valid_cell_count": 3,
+            "low_sample_size_warning": True,
+            "cross_indicator_signal": "strong_drought",
+        }],
+    }
+
+    packet = report_stages._synthesis_evidence_packet(stage1_result, evidence)
+    area = packet["priority_areas"][0]
+
+    assert "priority_score" not in area
+    assert "supporting_indicators" not in area
+    assert "contradicting_indicators" not in area
+    assert "valid_cell_count" not in area
+    # Real fields Stage 2's own task genuinely needs all stay.
+    assert area["risk_score"] == 23.6
+    assert area["risk_class"] == "Low"
+    assert area["action_status"] == "preparedness"
+    assert area["low_sample_size_warning"] is True
+    assert area["cross_indicator_signal"] == "strong_drought"
+    assert area["justification_id"] == "Harari::drought"
+
+
+def test_synthesis_evidence_packet_compacts_classification_method_to_a_code():
+    # Confirmed real gap, fixed: repeating the full ~30-95 char
+    # classification_method sentence on every one of ~18 layer/indicator
+    # entries added real, avoidable bulk -- the short code + one shared
+    # legend (see CLASSIFICATION_METHOD_LEGEND) says the same thing once.
+    # classification_breakpoints (a Stage-1 classification detail Stage 2's
+    # own task never references) is dropped entirely.
+    stage1_result = {
+        "layer_by_layer_summary": [{
+            "layer": "h_dry_mean",
+            "national_mean": 0.5,
+            "classification_method": "quintiles_of_current_period (no separate climatology exists for this layer)",
+            "classification_breakpoints": [0.1, 0.3, 0.5, 0.7],
+        }],
+        "indicator_by_indicator_summary": [],
+        "data_quality_notes": "",
+    }
+    evidence = {"priority_area_justifications": []}
+
+    packet = report_stages._synthesis_evidence_packet(stage1_result, evidence)
+    item = packet["layer_summaries"][0]
+
+    assert item["classification_method"] == "quintile_period"
+    assert "classification_breakpoints" not in item
+    assert item["national_mean"] == 0.5  # untouched real value
+
+
+def test_compact_indicator_criteria_bakes_units_into_keys_without_losing_values():
+    # Confirmed real gap, fixed: supporting_indicators/contradicting_
+    # indicators repeated the same {indicator, value, units, ...} object
+    # shape on every one of up to ~16 real regions -- the "units" strings
+    # were pure repeated boilerplate (rainfall_anomaly is ALWAYS "mm", spi
+    # is ALWAYS "std dev", etc.), never varying per-region. Baking the unit
+    # into the key removes that repetition with zero value loss.
+    objects = [
+        {"indicator": "rainfall_anomaly", "value": -28.27, "units": "mm", "value_pct": -53.74, "units_pct": "%"},
+        {"indicator": "spi", "value": -1.12, "units": "std dev"},
+        {"indicator": "cdd_anomaly", "value": 3.25, "units": "days"},
+        {"indicator": "drought_probability", "value": 80.0, "units": "%"},
+        {"indicator": "rainfall_percentile", "value": 10.0, "units": "percentile"},
+        # The rx_anomaly wrapper's own indicator/value/units triplet is
+        # redundant with its two real sibling values -- dropped in favor
+        # of reporting both siblings directly.
+        {"indicator": "rx5day_anomaly", "value": 7.92, "units": "mm", "rx1day_anomaly": 1.0, "rx5day_anomaly": 7.92},
+    ]
+
+    compact = report_stages._compact_indicator_criteria(objects)
+
+    assert compact == {
+        "rainfall_anomaly_mm": -28.27,
+        "rainfall_anomaly_pct": -53.74,
+        "spi_stddev": -1.12,
+        "cdd_anomaly_days": 3.25,
+        "drought_probability_pct": 80.0,
+        "rainfall_percentile": 10.0,
+        "rx1day_anomaly_mm": 1.0,
+        "rx5day_anomaly_mm": 7.92,
+    }
+    # No "units"/"units_pct"/bare "indicator" wrapper keys leaked through.
+    assert "units" not in str(compact.keys())
+
+
+def test_build_stage2_prompt_compacts_cross_indicator_supporting_contradicting():
+    evidence = {
+        "priority_area_justifications": [],
+        "cross_indicator_findings": [
+            {
+                "area": "National", "signal": "partial_drought", "agreement_score": 0.6, "confidence": "medium",
+                "supporting_indicators": [{"indicator": "spi", "value": -1.12, "units": "std dev"}],
+                "contradicting_indicators": [],
+                "missing_indicators": ["cwd_anomaly"],
+            },
+        ],
+    }
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, {}, {})
+
+    assert '"spi_stddev": -1.12' in user_prompt
+    # Confirmed real gap, fixed: missing_indicators was never referenced by
+    # any Stage 2 prompt instruction (confidence already reflects its
+    # practical effect) -- dropped from the compact view as pure unused
+    # weight, not silently lost information a task actually needed.
+    assert "missing_indicators" not in user_prompt
+    assert "cwd_anomaly" not in user_prompt
+
+
+def test_build_stage2_prompt_includes_classification_method_legend_and_no_truncation_marker():
+    # Regression guard for the confirmed real bug this packet replaced:
+    # compact_json's blind character-count truncation was silently cutting
+    # real Stage 1/priority-area evidence mid-object on real-sized data
+    # (measured: ~12.2k/~12.0k real chars against 10k ceilings). The new
+    # packet must fit comfortably under its higher ceilings without ever
+    # emitting the "...TRUNCATED..." marker for a realistic real-sized
+    # national report (18 layer/indicator entries, 10 priority areas).
+    layer_summaries = [
+        {
+            "layer": f"layer_{i}",
+            "national_signal": "moderate",
+            "national_mean": 12.345,
+            "highest_areas": ["Somali", "Afar"],
+            "lowest_areas": ["Addis Ababa", "Harari"],
+            "high_or_very_high_area_pct": 42.1,
+            "classification_method": "quintiles_of_real_climatology",
+            "classification_breakpoints": [1.0, 2.0, 3.0, 4.0],
+            "interpretation": "A real, fairly detailed interpretation sentence describing this layer's national pattern in plain language for the report reader.",
+            "confidence": "moderate",
+        }
+        for i in range(18)
+    ]
+    priority_areas = [
+        {
+            "justification_id": f"Area{i}::drought",
+            "area": f"Area{i}",
+            "rank": i + 1,
+            "hazard_type": "drought",
+            "risk_score": 23.622,
+            "risk_class": "Low",
+            "action_status": "preparedness",
+            "hazard_probability": 0.787,
+            "vulnerability": 0.551,
+            "population_exposed": 240167.7,
+            "population_exposed_pct": 84.86,
+            "roads_exposed_pct": 35.97,
+            "healthsites_exposed_pct": 100.0,
+            "cropland_exposed_pct": 30.72,
+            "supporting_indicators": [{"indicator": "spi", "value": -2.7, "units": "std dev"}] * 5,
+            "contradicting_indicators": [],
+            "cross_indicator_signal": "strong_drought",
+            "confidence": "high",
+            "valid_cell_count": 3,
+            "low_sample_size_warning": True,
+        }
+        for i in range(10)
+    ]
+    stage1_result = {"layer_by_layer_summary": layer_summaries, "indicator_by_indicator_summary": [], "data_quality_notes": "notes"}
+    evidence = {"priority_area_justifications": priority_areas, "cross_indicator_findings": []}
+
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, stage1_result, {})
+
+    assert "CLASSIFICATION_METHOD LEGEND" in user_prompt
+    assert "quintile_climatology" in user_prompt
+    assert "TRUNCATED" not in user_prompt
 
 
 def test_build_stage2_prompt_differentiator_example_uses_placeholders_not_a_real_falsifiable_claim():
@@ -345,6 +565,7 @@ def test_build_stage3_prompt_compacts_empty_ground_truth_and_rounds_stage2_numbe
         "priority_area_justification": [
             {
                 "justification_id": "Dire Dawa::drought",
+                "action_status": "action",  # actionable -- routes to actionable_areas, which carries risk_score
                 "risk_score": 16.812663291529855,
                 "community_reports": report_stages._NO_COMMUNITY_REPORTS,
             },
@@ -369,19 +590,30 @@ def test_action_evidence_packet_drops_differentiator_keeps_intervention_type_add
                 "rank": 2,
                 "hazard_type": "drought",
                 "risk_score": 16.81,
+                "risk_class": "Low",
+                "action_status": "action",
                 "hazard_probability": 0.684,
                 "vulnerability": 0.487,
-                "confidence": "high",
+                "cross_indicator_confidence": "high",
+                "data_quality_confidence": "moderate",
                 "differentiator": "Ranks #2 nationally for drought risk based on the real computed priority score (0.480), driven by a risk score of 16.81.",
                 "recommended_intervention_type": "Drought / water-security response",
                 "population_exposed": 29733,
                 "population_exposed_pct": 6.1,
                 "roads_exposed_pct": 56.9,
+                "roads_length_total_km": 276.3,
+                "roads_length_exposed_km": 70.6,
                 "healthsites_exposed_pct": 50.0,
+                "healthsites_total_count": 14,
+                "healthsites_exposed_count": 4,
                 "cropland_exposed_pct": 61.2,
+                "livestock_exposed_pct": 43.1,
                 "low_sample_size_warning": True,
                 "cross_indicator_signal": "strong_drought",
-                "supporting_indicators": ["spi", "cdd_anomaly"],
+                "supporting_indicators": [
+                    {"indicator": "spi", "value": -1.5, "units": "std dev"},
+                    {"indicator": "cdd_anomaly", "value": 5.0, "units": "days"},
+                ],
                 "community_reports": report_stages._NO_COMMUNITY_REPORTS,
             },
         ],
@@ -391,7 +623,8 @@ def test_action_evidence_packet_drops_differentiator_keeps_intervention_type_add
 
     assert packet["executive_summary"] == "National overview text."
     assert packet["data_quality_notes"] == ["low agreement in Somali"]
-    area = packet["priority_areas"][0]
+    assert packet["monitor_only_areas"] == []
+    area = packet["actionable_areas"][0]
     assert area["area"] == "Dire Dawa"
     assert area["rank"] == 2
     assert area["hazard"] == "drought"
@@ -402,14 +635,82 @@ def test_action_evidence_packet_drops_differentiator_keeps_intervention_type_add
     # Stage 3 actually receives -- despite being the most operationally
     # relevant exposure metric for the farmer_advisory audience.
     assert area["cropland_exposed_pct"] == 61.2
+    # Confirmed real gap, fixed: livestock_exposed_pct (real GLW4
+    # cattle-density raster) was already computed but never made it into
+    # the Action Evidence Packet either -- same gap as cropland above.
+    assert area["livestock_exposed_pct"] == 43.1
+    # Confirmed real gap, fixed: real OSM-derived road-length/health-
+    # facility denominators (see app.data_pipeline.infrastructure_data_
+    # pipeline) were already computed but never made it into the Action
+    # Evidence Packet either -- same gap, same fix.
+    assert area["roads_length_total_km"] == 276.3
+    assert area["roads_length_exposed_km"] == 70.6
+    assert area["healthsites_total_count"] == 14
+    assert area["healthsites_exposed_count"] == 4
+    assert area["cross_indicator_confidence"] == "high"
+    assert area["data_quality_confidence"] == "moderate"
     assert area["low_sample_size_warning"] is True
     assert area["recommended_intervention_type"] == "Drought / water-security response"
     assert area["livelihood_context"] == "not_available"
     assert area["ground_truth"] == {"available": False}
+    # supporting_indicators is compacted (see _compact_indicator_criteria)
+    # -- same verbose-object-to-{criterion: value} shape as Stage 2's
+    # cross-indicator block, since it's literally the same real object.
+    assert area["supporting_indicators"] == {"spi_stddev": -1.5, "cdd_anomaly_days": 5.0}
     # The whole point: differentiator (LLM prose restating these same
     # numbers) and the internal justification_id join key are NOT passed on.
     assert "differentiator" not in area
     assert "justification_id" not in area
+
+
+def test_action_evidence_packet_splits_monitor_only_areas_with_minimal_detail():
+    # Confirmed real gap, fixed: every priority area used to get the SAME
+    # full detail regardless of action_status, even though a real period
+    # typically has far more monitor_only/not_actionable areas than
+    # actionable ones (measured: July's real data, 1 of 10). Stage 3's own
+    # TASK already forbids a real response recommendation for these areas,
+    # so their full risk/exposure/indicator breakdown was unused weight.
+    stage1_result = {}
+    stage2_result = {
+        "executive_summary": "x",
+        "priority_area_justification": [
+            {
+                "justification_id": "Dire Dawa::drought", "area": "Dire Dawa", "hazard_type": "drought",
+                "rank": 2, "risk_class": "Very low", "action_status": "monitor_only",
+                "cross_indicator_signal": "strong_drought", "cross_indicator_confidence": "medium",
+                # Full detail present in the real deterministic object, but
+                # must NOT reach monitor_only_areas -- only the 7 minimal
+                # fields below should.
+                "risk_score": 12.1, "hazard_probability": 0.3, "vulnerability": 0.2,
+                "data_quality_confidence": "low",
+                "population_exposed_pct": 40.0, "supporting_indicators": [{"indicator": "spi", "value": -1.0, "units": "std dev"}],
+            },
+            {
+                "justification_id": "Somali::drought", "area": "Somali", "hazard_type": "drought",
+                "rank": 3, "risk_class": "Very low", "action_status": "not_actionable",
+                "cross_indicator_signal": "no_clear_signal",
+            },
+        ],
+    }
+
+    packet = report_stages._action_evidence_packet(stage1_result, stage2_result)
+
+    assert packet["actionable_areas"] == []
+    assert len(packet["monitor_only_areas"]) == 2
+    dire_dawa = next(item for item in packet["monitor_only_areas"] if item["area"] == "Dire Dawa")
+    assert dire_dawa == {
+        "area": "Dire Dawa", "hazard": "drought", "rank": 2, "risk_class": "Very low",
+        "cross_indicator_signal": "strong_drought", "cross_indicator_confidence": "medium",
+        "reason": "monitor_only",
+    }
+    somali = next(item for item in packet["monitor_only_areas"] if item["area"] == "Somali")
+    assert somali["reason"] == "not_actionable"
+    # Full-detail fields never leaked into the minimal monitor_only shape --
+    # data_quality_confidence deliberately excluded too (see this
+    # function's own docstring), unlike cross_indicator_confidence.
+    assert "risk_score" not in dire_dawa
+    assert "supporting_indicators" not in dire_dawa
+    assert "data_quality_confidence" not in dire_dawa
 
 
 def test_build_stage3_prompt_uses_compact_action_packet_not_full_stage1_stage2_dump():
@@ -453,18 +754,113 @@ def test_build_stage2_prompt_ties_recommended_intervention_to_real_action_status
     assert "do not treat a top-5 rank as proof that real action is warranted" in user_prompt.lower()
 
 
-def test_build_stage3_prompt_does_not_overclaim_roads_healthsites_as_real_counts():
-    # Confirmed real issue: roads_exposed_pct/healthsites_exposed_pct come
-    # from a normalized 0-1 DENSITY index -- no real road-length or
-    # facility-count dataset exists anywhere in this pipeline -- but the
-    # old grounding note called them "the real share of road/health-
-    # facility infrastructure exposed", which reads as a literal count
-    # claim (e.g. "N of N facilities"). The note must say plainly this is
-    # a density index, not a count, and flag small-area imprecision.
+def test_build_stage2_prompt_distinguishes_national_aggregate_signal_from_area_level_rollup():
+    # Confirmed real gap, fixed: a real Gemini Stage 2 output wrote "a
+    # strong national signal toward drought conditions" while the real
+    # National cross_indicator_findings entry was only "partial_drought"
+    # (agreement_score 0.6) -- it conflated "several areas are individually
+    # strong" with "the national aggregate itself is strong". The prompt
+    # must explicitly tell the model these are two separate statements.
+    evidence = {"priority_area_justifications": [], "cross_indicator_findings": []}
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, {}, {})
+
+    assert "must never be conflated" in user_prompt
+    assert "Never describe the national aggregate itself as \"strong\"" in user_prompt
+
+
+def test_build_stage2_prompt_supplies_real_area_signal_tally_and_forbids_self_counting():
+    # Confirmed real gap, fixed: a real Gemini Stage 2 output wrote "15
+    # individual administrative zones independently display a strong
+    # drought signal", naming only 8 of them, while the real
+    # cross_indicator_findings for that run held exactly 6 real
+    # strong_drought areas -- the model was counting the per-area rows
+    # itself. The prompt must now hand it the real, pre-counted tally and
+    # explicitly forbid counting the rows itself.
+    evidence = {
+        "priority_area_justifications": [],
+        "cross_indicator_findings": [
+            {"area": "National", "signal": "partial_drought", "agreement_score": 0.6},
+            {"area": "Afar", "signal": "strong_drought", "agreement_score": 1.0},
+            {"area": "Harari", "signal": "strong_drought", "agreement_score": 0.8},
+        ],
+    }
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), evidence, {}, {})
+
+    assert "REAL, ALREADY-COUNTED AREA SIGNAL TALLY" in user_prompt
+    assert '"strong_drought": 2' in user_prompt
+    assert "do not count the CROSS-INDICATOR AGREEMENT rows yourself" in user_prompt
+
+
+def test_build_stage2_prompt_labels_forecast_vs_climatology_roles():
+    # Confirmed real gap, fixed: a real Gemini Stage 2 output wrote
+    # "Climatologically, total rainfall averages 101.429 mm against a
+    # baseline of 129.697 mm" -- 101.429 was the real FORECAST mean, not
+    # the climatology baseline; the word "climatology" was pointed at the
+    # wrong real number even though both were correctly present.
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), {"priority_area_justifications": [], "cross_indicator_findings": []}, {}, {})
+
+    assert "FORECAST VS CLIMATOLOGY LABELING" in user_prompt
+    assert "must always introduce climatology_mean's own value, never forecast_mean's" in user_prompt
+
+
+def test_build_stage2_prompt_forbids_attributing_vulnerability_to_climate_drivers():
+    # Confirmed real gap, fixed: a real Gemini Stage 2 output wrote
+    # "drought vulnerability is classified as very high nationally ...
+    # driven by severe rainfall deficits" -- vulnerability (v_drought/
+    # v_wet) is a real, independently-sourced baseline food-security/
+    # livelihood layer (FEWS NET IPC phase data), not something forecast
+    # rainfall/SPI/hazard probability causes.
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), {"priority_area_justifications": [], "cross_indicator_findings": []}, {}, {})
+
+    assert "VULNERABILITY CAUSALITY RULE" in user_prompt
+    assert 'Never use "driven by"/"because of"/"due to"/"caused by" to connect a vulnerability statement to a climate/hazard value' in user_prompt
+
+
+def test_build_stage2_prompt_requires_real_superlative_flags_for_comparative_claims():
+    # Confirmed real gap, fixed: a real Gemini Stage 2 differentiator
+    # claimed a top-ranked area held "the highest hazard probability among
+    # drought areas" -- a DIFFERENT real area in the same real batch
+    # actually had a higher value. The model cannot correctly compare raw
+    # numbers across areas itself; it must use the real, deterministic
+    # highest_among_group/lowest_among_group fields instead (see
+    # app.context.statistical_evidence._superlative_flags).
+    _, user_prompt = report_stages.build_stage2_prompt(_request(), {"priority_area_justifications": [], "cross_indicator_findings": []}, {}, {})
+
+    assert "SUPERLATIVE WORDS" in user_prompt
+    assert "highest_among_group" in user_prompt and "lowest_among_group" in user_prompt
+    assert "You cannot correctly compare raw numbers across areas yourself" in user_prompt
+
+
+def test_build_stage3_prompt_now_allows_real_road_and_healthsite_counts():
+    # Confirmed real gap, fixed: roads_exposed_pct/healthsites_exposed_pct
+    # used to come ONLY from a normalized 0-1 DENSITY index with no real
+    # denominator -- the old grounding note explicitly forbade phrasing
+    # them as "N of N facilities" for exactly that reason. Real OSM-derived
+    # counts (roads_length_total_km/healthsites_total_count etc., see
+    # app.data_pipeline.infrastructure_data_pipeline) now exist, so the
+    # note must explicitly ALLOW real-count phrasing for these two
+    # specifically, while still forbidding it for cropland/livestock
+    # (which genuinely still have no real hectare/headcount data).
     _, user_prompt = report_stages.build_stage3_prompt(_request(), {}, {}, [])
 
-    assert "NOT a real count" in user_prompt
-    assert "never phrase them as" in user_prompt
+    assert "roads_length_total_km" in user_prompt and "healthsites_total_count" in user_prompt
+    assert "You MAY now phrase these as real counts" in user_prompt
+    assert "motorway/trunk/primary/secondary/tertiary" in user_prompt
+    # cropland/livestock still have no real count -- the ban stays for them.
+    assert 'never phrase THOSE two as "N hectares of cropland" or "N head of livestock"' in user_prompt
+
+
+def test_build_stage3_prompt_uses_language_aware_sms_character_budget():
+    # Confirmed real gap, fixed: Amharic/Tigrinya render in Ethiopic script,
+    # which forces UCS-2 SMS encoding (70 chars/segment) rather than GSM-7
+    # (160 chars/segment) -- a single hardcoded 160-char target silently
+    # doubles the real per-segment cost for those 2 languages.
+    _, english_prompt = report_stages.build_stage3_prompt(_request(), {}, {}, [])
+    assert "at most 155 characters" in english_prompt
+
+    amharic_request = AIMapInterpretationRequest(target_language="am")
+    _, amharic_prompt = report_stages.build_stage3_prompt(amharic_request, {}, {}, [])
+    assert "at most 70 characters" in amharic_prompt
 
 
 def test_build_stage2_prompt_instructs_using_real_low_sample_size_warning():
@@ -479,18 +875,22 @@ def test_build_stage2_prompt_instructs_using_real_low_sample_size_warning():
     assert "coarser estimate" in user_prompt
 
 
-def test_build_stage3_prompt_does_not_claim_livestock_exposure_evidence_that_does_not_exist():
-    # Confirmed real contradiction: this grounding note used to say
-    # "grounded in the real livestock exposure... already given", but
-    # _action_evidence_packet's packet_areas has no livestock field at
-    # all -- only population/roads/healthsites exposure. Telling the model
-    # to ground its answer in evidence that was never actually supplied
-    # invites exactly the kind of unsupported claim this app's grounding
-    # rules exist to prevent.
+def test_build_stage3_prompt_grounds_livestock_risk_in_real_cattle_exposure_and_discloses_cattle_only_scope():
+    # Confirmed real gap, fixed: livestock_exposed_pct (real GLW4
+    # cattle-density raster, wired into build_priority_area_justifications
+    # the same way cropland/roads/healthsites already were) now exists as
+    # real per-area evidence -- the old grounding note claiming "no real
+    # per-area livestock exposure metric exists in this pipeline at all"
+    # would now be FALSE. It must instead ground livestock risk in this
+    # real number while disclosing it is cattle-only (no sheep/goats
+    # raster exists in this catalog) and still only a density share, not a
+    # headcount or measured mortality rate.
     _, user_prompt = report_stages.build_stage3_prompt(_request(), {}, {}, [])
 
-    assert "no real per-area livestock exposure metric exists" in user_prompt
-    assert "grounded in the real livestock exposure" not in user_prompt
+    assert "no real per-area livestock exposure metric exists" not in user_prompt
+    assert "CATTLE ONLY" in user_prompt
+    assert "never describe it as covering sheep, goats, or livestock generally" in user_prompt
+    assert "livestock mortality risk has no real measured rate" in user_prompt
 
 
 def test_merge_priority_area_justifications_matches_by_id_and_degrades_gracefully():
@@ -549,8 +949,8 @@ def test_build_stage3_prompt_references_prior_stages_and_agro_pastoral():
     assert "immediate" in user_prompt and "near_term" in user_prompt and "preparedness" in user_prompt
     assert "monitoring" in user_prompt and "pre_positioning" in user_prompt and "immediate_action" in user_prompt
     assert "FEWS NET IPC" in user_prompt
-    assert "roads_exposed_pct" in user_prompt and "healthsites_exposed_pct" in user_prompt
-    assert "fabricated livestock exposure number or mortality rate" in user_prompt
+    assert "roads_exposed_pct" in user_prompt and "healthsites_exposed_pct" in user_prompt and "livestock_exposed_pct" in user_prompt
+    assert "never a fabricated mortality number" in user_prompt
     assert "rainfall anomaly alone" in user_prompt
 
 
@@ -612,12 +1012,12 @@ def test_merge_structured_summaries_keeps_real_fields_and_takes_only_llm_interpr
     deterministic = [
         {
             "layer": "population_r_drought", "national_signal": "very_low", "national_mean": 3.409,
-            "highest_areas": ["Harari", "Dire Dawa"], "lowest_areas": ["Somali"], "affected_area_pct": 0.0,
+            "highest_areas": ["Harari", "Dire Dawa"], "lowest_areas": ["Somali"], "high_or_very_high_area_pct": 0.0,
             "interpretation": "template interpretation", "confidence": "moderate",
         },
         {
             "layer": "h_wet_mean", "national_signal": "low", "national_mean": 0.1,
-            "highest_areas": [], "lowest_areas": [], "affected_area_pct": 2.0,
+            "highest_areas": [], "lowest_areas": [], "high_or_very_high_area_pct": 2.0,
             "interpretation": "template interpretation 2", "confidence": "low",
         },
     ]
@@ -626,7 +1026,7 @@ def test_merge_structured_summaries_keeps_real_fields_and_takes_only_llm_interpr
             "layer": "population_r_drought", "interpretation": "real LLM interpretation",
             # A real LLM attempting to also return these must not succeed --
             # they are silently ignored, not merged over the real values.
-            "national_mean": 42.61, "national_signal": "Moderate", "affected_area_pct": 21.3,
+            "national_mean": 42.61, "national_signal": "Moderate", "high_or_very_high_area_pct": 21.3,
         },
         {"layer": "does-not-exist", "interpretation": "should be ignored"},
     ]
@@ -638,7 +1038,7 @@ def test_merge_structured_summaries_keeps_real_fields_and_takes_only_llm_interpr
     assert by_layer["population_r_drought"]["interpretation"] == "real LLM interpretation"
     assert by_layer["population_r_drought"]["national_mean"] == 3.409  # real value, NOT the LLM's 42.61
     assert by_layer["population_r_drought"]["national_signal"] == "very_low"  # real value, NOT "Moderate"
-    assert by_layer["population_r_drought"]["affected_area_pct"] == 0.0  # real value, NOT 21.3
+    assert by_layer["population_r_drought"]["high_or_very_high_area_pct"] == 0.0  # real value, NOT 21.3
     assert by_layer["population_r_drought"]["highest_areas"] == ["Harari", "Dire Dawa"]
 
     # No matching narrative entry -- degrades to the deterministic object's
@@ -690,7 +1090,7 @@ def test_run_staged_report_generation_merges_all_three_stages(monkeypatch):
             return {
                 # Real, current shape: the LLM only ever returns {layer,
                 # interpretation} -- never national_mean/national_signal/
-                # highest_areas/lowest_areas/affected_area_pct/confidence,
+                # highest_areas/lowest_areas/high_or_very_high_area_pct/confidence,
                 # which are merged in server-side from the deterministic
                 # evidence regardless of what's returned here. Also
                 # includes a fabricated national_mean to prove it's ignored.

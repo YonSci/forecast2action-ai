@@ -456,7 +456,7 @@ function ReportList({ title, items }) {
 
 // layer_by_layer_summary/indicator_by_indicator_summary items are real
 // structured objects (layer/indicator, national_signal, national_mean,
-// highest_areas, lowest_areas, affected_area_pct, interpretation,
+// highest_areas, lowest_areas, high_or_very_high_area_pct, interpretation,
 // confidence -- see app/context/statistical_evidence.py's
 // build_structured_layer_summaries/build_structured_indicator_summaries),
 // not flat strings -- rendered as cards instead of ReportList's plain
@@ -498,8 +498,8 @@ function StructuredSummaryList({ title, items, keyField }) {
                 {item.national_mean !== null && item.national_mean !== undefined && (
                   <span>national mean {item.national_mean}</span>
                 )}
-                {item.affected_area_pct !== null && item.affected_area_pct !== undefined && (
-                  <span>{item.affected_area_pct}% high/very-high area</span>
+                {item.high_or_very_high_area_pct !== null && item.high_or_very_high_area_pct !== undefined && (
+                  <span>{item.high_or_very_high_area_pct}% high/very-high area</span>
                 )}
                 {Array.isArray(item.highest_areas) && item.highest_areas.length > 0 && (
                   <span>highest: {item.highest_areas.join(", ")}</span>
@@ -535,7 +535,7 @@ function formatAdvisoryBulletForCopy(item) {
     return `  - ${item}`;
   }
   const areas = Array.isArray(item.area) ? item.area.filter(Boolean).join(", ") : item.area;
-  const tags = [areas, item.trigger, item.confidence ? `${item.confidence} confidence` : null]
+  const tags = [areas, item.trigger, item.cross_indicator_confidence ? `${item.cross_indicator_confidence} cross-indicator confidence` : null]
     .filter(Boolean)
     .join(" · ");
   return `  - ${item.action}${tags ? ` (${tags})` : ""}`;
@@ -583,7 +583,7 @@ const HUMANITARIAN_LABELS_FOR_COPY = {
 
 function copyReport(report) {
   const highConfidencePriority = (report.priority_area_justification || []).filter(
-    (item) => item.confidence === "high",
+    (item) => item.cross_indicator_confidence === "high",
   );
 
   const lines = [
@@ -601,7 +601,7 @@ function copyReport(report) {
     "Compound-hazard interpretation",
     ...(report.compound_hazard_interpretation || []).map((item) => `- ${item}`),
     "",
-    "Why priority areas were selected (high-confidence areas only)",
+    "Why priority areas were selected (high cross-indicator confidence areas only)",
     ...highConfidencePriority.map(
       (item) =>
         `- #${item.rank} ${item.area} (${item.hazard_type}): risk score ${item.risk_score} (${item.risk_class || "unclassified"}), hazard probability ${item.hazard_probability}, vulnerability ${item.vulnerability}, action status: ${item.action_status || "unknown"}. ${item.differentiator || ""} ${item.recommended_intervention_type ? `Recommended: ${item.recommended_intervention_type}` : ""}`,
@@ -1209,14 +1209,14 @@ function AIMapInterpretation({
                   <strong>{item.area}</strong>
                   <span className="ai-advisory-tag ai-advisory-trigger">{item.hazard}</span>
                   <span className="ai-advisory-tag">{item.audience}</span>
-                  {item.confidence && (
-                    <span className={`ai-advisory-tag ai-advisory-confidence confidence-${item.confidence}`}>
-                      {item.confidence} confidence
+                  {item.cross_indicator_confidence && (
+                    <span className={`ai-advisory-tag ai-advisory-confidence confidence-${item.cross_indicator_confidence}`}>
+                      {item.cross_indicator_confidence} cross-indicator confidence
                     </span>
                   )}
                 </div>
                 <div className="ai-messaging-row">
-                  <SmsMessageCard text={item.message} />
+                  <SmsMessageCard text={item.message} languageCode={normalizedLanguage} />
                   <WhatsAppMessageCard text={item.message} />
                 </div>
               </div>

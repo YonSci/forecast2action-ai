@@ -4,6 +4,7 @@ from affine import Affine
 from app.context.statistical_evidence import (
     _action_status,
     _indicator_evidence_objects,
+    area_signal_counts,
     area_weighted_statistics,
     build_cross_indicator_findings,
     build_priority_area_justifications,
@@ -123,7 +124,7 @@ def test_cross_indicator_findings_strong_drought_signal(monkeypatch):
 
     assert by_area["National"]["signal"] == "strong_drought"
     assert by_area["National"]["agreement_score"] == 1.0
-    assert by_area["National"]["confidence"] == "high"
+    assert by_area["National"]["cross_indicator_confidence"] == "high"
     assert by_area["Region A"]["signal"] == "strong_drought"
     supporting = by_area["Region A"]["supporting_indicators"]
     supporting_names = {item["indicator"] for item in supporting}
@@ -184,7 +185,7 @@ def test_cross_indicator_findings_strong_wet_signal(monkeypatch):
     by_area = {item["area"]: item for item in findings}
 
     assert by_area["Region A"]["signal"] == "strong_wet"
-    assert by_area["Region A"]["confidence"] == "high"
+    assert by_area["Region A"]["cross_indicator_confidence"] == "high"
 
 
 def test_indicator_evidence_objects_rx_anomaly_picks_larger_real_magnitude():
@@ -263,6 +264,27 @@ def test_cross_indicator_findings_reports_real_missing_indicators(monkeypatch):
     assert "cdd_anomaly" in region_a["missing_indicators"]
 
 
+def test_area_signal_counts_excludes_national_and_tallies_by_signal():
+    # Confirmed real gap this closes: Stage 2 was previously left to count
+    # cross_indicator_findings' own per-area rows itself -- a real captured
+    # run held exactly 6 real strong_drought areas, but a real Gemini
+    # response claimed 15. This is the real, deterministic tally
+    # report_stages.build_stage2_prompt now hands Stage 2 directly.
+    findings = [
+        {"area": "National", "signal": "partial_drought", "agreement_score": 0.6},
+        {"area": "Afar", "signal": "strong_drought", "agreement_score": 1.0},
+        {"area": "Harari", "signal": "strong_drought", "agreement_score": 0.8},
+        {"area": "Somali", "signal": "partial_drought", "agreement_score": 0.5},
+        {"area": "Addis Ababa", "signal": "no_clear_signal", "agreement_score": 0.1},
+    ]
+
+    result = area_signal_counts(findings)
+
+    assert result["counts"] == {"strong_drought": 2, "partial_drought": 1, "no_clear_signal": 1}
+    assert "National" not in result["areas"].get("partial_drought", [])
+    assert result["areas"]["strong_drought"] == ["Afar", "Harari"]
+
+
 def test_action_status_recognizes_partial_signal_as_real_agreement():
     # partial_{hazard_type} must count as agreement the same as strong_
     # {hazard_type}/mixed -- a real partial signal must not be silently
@@ -296,19 +318,30 @@ def test_build_priority_area_justifications_extracts_real_fields_and_ranks_by_pr
                 "population_exposed_by_region": [
                     {"area_name": "Region B", "exposed": 12345.0, "exposed_pct": 62.3},
                 ],
+                # "total" included alongside "exposed"/"exposed_pct" --
+                # weighted_exposure_by_region's real return shape always
+                # has all 3 (see its own return construction); an earlier
+                # version of this fixture omitted "total" since nothing
+                # downstream read it yet -- now that roads_length_km/
+                # healthsites_count are real, non-normalized rasters (see
+                # app.data_pipeline.infrastructure_data_pipeline),
+                # "total"/"exposed" carry real km/count units and ARE read.
                 "roads_exposed_by_region": [
-                    {"area_name": "Region B", "exposed": 42.0, "exposed_pct": 18.5},
+                    {"area_name": "Region B", "total": 276.3, "exposed": 70.6, "exposed_pct": 25.6},
                 ],
                 "healthsites_exposed_by_region": [
-                    {"area_name": "Region B", "exposed": 3.0, "exposed_pct": 40.0},
+                    {"area_name": "Region B", "total": 14.0, "exposed": 4.0, "exposed_pct": 28.6},
                 ],
                 "cropland_exposed_by_region": [
                     {"area_name": "Region B", "exposed": 7.0, "exposed_pct": 55.5},
                 ],
+                "livestock_exposed_by_region": [
+                    {"area_name": "Region B", "exposed": 5.0, "exposed_pct": 47.2},
+                ],
             },
         },
         "cross_indicator_findings": [
-            {"area": "Region B", "signal": "strong_drought", "supporting_indicators": ["spi", "cdd_anomaly"], "contradicting_indicators": [], "confidence": "high"},
+            {"area": "Region B", "signal": "strong_drought", "supporting_indicators": ["spi", "cdd_anomaly"], "contradicting_indicators": [], "cross_indicator_confidence": "high"},
         ],
     }
 
@@ -326,20 +359,39 @@ def test_build_priority_area_justifications_extracts_real_fields_and_ranks_by_pr
     assert top["hazard_probability"] == 0.8
     assert top["vulnerability"] == 0.7
     assert top["population_exposed_pct"] == 62.3
-    assert top["roads_exposed_pct"] == 18.5
-    assert top["healthsites_exposed_pct"] == 40.0
+    assert top["roads_exposed_pct"] == 25.6
+    assert top["healthsites_exposed_pct"] == 28.6
+    # Confirmed real gap, fixed: roads_length_km/healthsites_count are now
+    # real, non-normalized rasters (see app.data_pipeline.infrastructure_
+    # data_pipeline), so weighted_exposure_by_region's own real `total`/
+    # `exposed` fields -- previously discarded since they were meaningless
+    # abstract-density units -- now carry real km/count denominators.
+    assert top["roads_length_total_km"] == 276.3
+    assert top["roads_length_exposed_km"] == 70.6
+    assert top["healthsites_total_count"] == 14
+    assert top["healthsites_exposed_count"] == 4
     # Confirmed real gap, fixed: cropland_exposed_by_region was already
     # computed in the evidence-building loop but never extracted here --
     # it never reached Stage 2/3 or the frontend at all.
     assert top["cropland_exposed_pct"] == 55.5
+    # Confirmed real gap, fixed: livestock_exposed_by_region (real GLW4
+    # cattle-density raster, see the exposure-computation loop's comment)
+    # was already computed but never extracted here either -- same gap,
+    # same fix, as cropland just above.
+    assert top["livestock_exposed_pct"] == 47.2
     # Confirmed real gap, fixed: valid_cell_count/low_sample_size_warning
     # are real, server-generated data-quality signals distinct from
-    # `confidence` (cross-indicator agreement) -- Region B's real 348
-    # cells is well above the threshold, so no warning.
+    # cross_indicator_confidence (cross-indicator agreement) -- Region B's
+    # real 348 cells is well above the threshold, so no warning.
     assert top["valid_cell_count"] == 348
     assert top["low_sample_size_warning"] is False
     assert top["supporting_indicators"] == ["spi", "cdd_anomaly"]
-    assert top["confidence"] == "high"
+    assert top["cross_indicator_confidence"] == "high"
+    # data_quality_confidence is the SAME real cell-count signal as a
+    # labeled tier (see LOW_SAMPLE_CELL_COUNT_THRESHOLD) -- distinct from
+    # cross_indicator_confidence, which stays "high" regardless of sample
+    # size. 348 cells is well above threshold -> "moderate", not "low".
+    assert top["data_quality_confidence"] == "moderate"
     # Moderate risk_class + real agreeing cross-indicator signal -> action.
     assert top["action_status"] == "action"
 
@@ -354,15 +406,42 @@ def test_build_priority_area_justifications_extracts_real_fields_and_ranks_by_pr
     assert second["action_status"] == "monitor_only"
     assert second["population_exposed_pct"] is None
     assert second["roads_exposed_pct"] is None
+    assert second["roads_length_total_km"] is None
+    assert second["roads_length_exposed_km"] is None
     assert second["healthsites_exposed_pct"] is None
+    assert second["healthsites_total_count"] is None
+
+    # Confirmed real gap this closes: a real captured Stage 2 differentiator
+    # claimed a top-ranked area was "driven by the highest hazard
+    # probability" when a DIFFERENT real area in the same batch actually had
+    # a higher value -- highest_among_group/lowest_among_group are the real,
+    # deterministic comparison Stage 2 must use instead of comparing raw
+    # numbers itself. Region B has the real higher hazard_probability (0.8
+    # vs 0.3), vulnerability (0.7 vs 0.5), and risk_score (55.0 vs 20.0), so
+    # it holds "highest" for all 3 and Region A holds "lowest" for all 3.
+    # population_exposed_pct has only ONE real value in this batch (Region
+    # A's is None) -- a "highest" claim with nothing to compare against is
+    # meaningless, so it must not appear in either area's list.
+    assert set(top["highest_among_group"]) == {"hazard_probability", "vulnerability", "risk_score"}
+    assert top["lowest_among_group"] == []
+    assert set(second["lowest_among_group"]) == {"hazard_probability", "vulnerability", "risk_score"}
+    assert second["highest_among_group"] == []
+    assert second["healthsites_exposed_count"] is None
     assert second["cropland_exposed_pct"] is None
+    assert second["livestock_exposed_pct"] is None
     # Region A's real 4 cells (matching Addis Ababa's real count) is below
     # LOW_SAMPLE_CELL_COUNT_THRESHOLD -- a real, deterministic warning,
     # not something the LLM has to notice or guess at itself.
     assert second["valid_cell_count"] == 4
     assert second["low_sample_size_warning"] is True
     assert second["supporting_indicators"] == []
-    assert second["confidence"] is None
+    assert second["cross_indicator_confidence"] is None
+    # Region A's real 4 cells IS below LOW_SAMPLE_CELL_COUNT_THRESHOLD --
+    # data_quality_confidence is "low" here even though cross_indicator_
+    # confidence is None (no cross-indicator finding at all for this area)
+    # -- the two signals are independent, one being unknown doesn't affect
+    # the other.
+    assert second["data_quality_confidence"] == "low"
 
 
 def test_build_priority_area_justifications_respects_top_n():
@@ -510,7 +589,7 @@ def test_build_structured_layer_summaries_continuous_layer():
     assert item["national_mean"] == 0.482
     assert item["highest_areas"] == ["South Ethiopia", "Harari"]
     assert item["lowest_areas"] == ["Amhara", "Addis Ababa"]
-    assert item["affected_area_pct"] == 40.0  # high + very_high
+    assert item["high_or_very_high_area_pct"] == 40.0  # high + very_high
     assert item["national_signal"] == "moderate"  # dominant class by area %
     assert "South Ethiopia" in item["interpretation"]
     assert item["confidence"] == "moderate"
@@ -564,7 +643,7 @@ def test_build_structured_layer_summaries_categorical_layer():
     assert item["national_signal"] == "very_low"
     assert item["national_mean"] is None
     assert item["highest_areas"] == []
-    assert item["affected_area_pct"] == 5.0  # high + very_high
+    assert item["high_or_very_high_area_pct"] == 5.0  # high + very_high
     assert "Very Low" in item["interpretation"]
     assert item["classification_method"] == "fixed_class_codes (real, upstream-defined -- the raster's pixel value already IS the class)"
     assert item["classification_breakpoints"] is None
@@ -600,4 +679,71 @@ def test_build_structured_indicator_summaries_uses_real_spi_category_not_quintil
     # negative) real areas are in lowest_areas, not a flipped "driest_areas".
     assert item["highest_areas"] == ["Addis Ababa", "Harari"]
     assert item["lowest_areas"] == ["Afar", "Somali"]
-    assert item["affected_area_pct"] is None
+    assert item["high_or_very_high_area_pct"] is None
+    # Confirmed real gap, fixed: the fallback that produced "risk_class_
+    # bands (real, fixed, upstream-defined 0-100 scale)" here was only ever
+    # meant for the real risk-score layers (which already carry their own
+    # correct string via class_scheme) -- SPI was the only caller that ever
+    # hit this fallback, so it was always mislabeling SPI's real McKee
+    # standardized-precipitation-index scale (roughly -2 to +2 std dev) as
+    # if it were a 0-100 risk score.
+    assert item["classification_method"] == "spi_mckee_category (real, fixed, standardized precipitation index thresholds, not a 0-100 scale)"
+
+
+def test_build_structured_indicator_summaries_exposes_explicit_anomaly_fields():
+    # Confirmed real gap, fixed: for an indicator with a real climatology
+    # departure, "national_mean" alone was the raw FORECAST value with no
+    # label distinguishing it from the anomaly -- indistinguishable from an
+    # anomaly figure once paired with an "Anomaly" map image (rainfall_total
+    # is curated to Stage 1 as its anomaly product). forecast_mean/
+    # anomaly_mean/anomaly_pct/climatology_mean must all be explicit so a
+    # reader never has to guess which product "national_mean" refers to.
+    evidence = {
+        "climate_indicators": {
+            "rainfall_total": {
+                "national": {"mean": 101.429},
+                "regional": [{"area_name": "Somali", "mean": 80.0}],
+                "class_area_pct": {"very_low": 20.0, "low": 20.0, "moderate": 20.0, "high": 20.0, "very_high": 20.0},
+                "class_scheme": "quintiles_of_real_climatology",
+                "class_breakpoints": [50.0, 80.0, 110.0, 140.0],
+                "departure": {
+                    "national_anomaly": {"mean": -28.268},
+                    "national_climatology_mean": 129.697,
+                    "national_pct_anomaly": {"mean": -53.74, "median": -50.0},
+                },
+            },
+        },
+    }
+
+    summaries = build_structured_indicator_summaries(evidence)
+
+    assert len(summaries) == 1
+    item = summaries[0]
+    assert item["national_mean"] == 101.429  # unchanged -- still the forecast mean
+    assert item["forecast_mean"] == 101.429
+    assert item["anomaly_mean"] == -28.268
+    assert item["climatology_mean"] == 129.697
+    assert item["anomaly_pct"] == -53.74
+
+
+def test_build_structured_indicator_summaries_no_anomaly_fields_when_departure_missing():
+    # SPI (and any indicator missing forecast/climatology/anomaly records)
+    # has no departure block -- must not fabricate forecast_mean/anomaly_*
+    # fields for it.
+    evidence = {
+        "climate_indicators": {
+            "spi": {
+                "national": {"mean": -1.6},
+                "regional": [],
+                "category": "severely_dry",
+            },
+        },
+    }
+
+    summaries = build_structured_indicator_summaries(evidence)
+
+    item = summaries[0]
+    assert "forecast_mean" not in item
+    assert "anomaly_mean" not in item
+    assert "climatology_mean" not in item
+    assert "anomaly_pct" not in item

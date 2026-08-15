@@ -7,10 +7,18 @@
 // the differentiator/recommended_intervention_type lines are LLM-authored
 // narrative.
 //
-// Modernization pass: filtered to confidence: high only (medium/low areas
-// are real but noisier signal -- hidden here, not deleted from the
-// underlying data), and split into side-by-side Drought / Wet-Flood
-// columns for direct comparison, per request.
+// Modernization pass: filtered to cross_indicator_confidence: high only
+// (medium/low areas are real but noisier signal -- hidden here, not
+// deleted from the underlying data), and split into side-by-side
+// Drought / Wet-Flood columns for direct comparison, per request.
+//
+// cross_indicator_confidence (renamed from the old generic "confidence")
+// measures ONLY how strongly this area's climate indicators agree with
+// each other -- see app.context.statistical_evidence._evaluate_area_
+// signal. data_quality_confidence is a SEPARATE real signal (grid-cell
+// sample size the area's own statistics were computed from, see
+// LOW_SAMPLE_CELL_COUNT_THRESHOLD) -- shown as its own badge below, not
+// merged into the same number.
 //
 // priority score / risk score / hazard probability / vulnerability used to
 // render as bare, unexplained numbers here -- unlike the map/table view,
@@ -67,8 +75,11 @@ function AreaCard({ item }) {
       <div className="ai-priority-justification-head">
         <span className="ai-priority-rank">#{item.rank}</span>
         <strong>{item.area}</strong>
-        {item.confidence && (
-          <span className="ai-priority-confidence">confidence: {item.confidence}</span>
+        {item.cross_indicator_confidence && (
+          <span className="ai-priority-confidence">cross-indicator confidence: {item.cross_indicator_confidence}</span>
+        )}
+        {item.data_quality_confidence && (
+          <span className="ai-priority-confidence">data quality: {item.data_quality_confidence}</span>
         )}
       </div>
 
@@ -118,7 +129,7 @@ function PriorityAreaJustificationList({ items }) {
     return null;
   }
 
-  const highConfidenceItems = items.filter((item) => item.confidence === "high");
+  const highConfidenceItems = items.filter((item) => item.cross_indicator_confidence === "high");
   const hiddenCount = items.length - highConfidenceItems.length;
   const droughtItems = highConfidenceItems.filter((item) => item.hazard_type === "drought");
   const wetItems = highConfidenceItems.filter((item) => item.hazard_type === "wet");
@@ -128,15 +139,15 @@ function PriorityAreaJustificationList({ items }) {
       <div className="ai-priority-panel-head">
         <h3>Why priority areas were selected</h3>
         <span className="ai-priority-filter-note">
-          Showing high-confidence areas only
+          Showing high cross-indicator confidence areas only
           {hiddenCount > 0
-            ? ` · ${hiddenCount} area${hiddenCount === 1 ? "" : "s"} hidden (medium/low confidence)`
+            ? ` · ${hiddenCount} area${hiddenCount === 1 ? "" : "s"} hidden (medium/low cross-indicator confidence)`
             : ""}
         </span>
       </div>
 
       {highConfidenceItems.length === 0 ? (
-        <p className="ai-priority-col-empty">No areas met the high-confidence threshold for this report.</p>
+        <p className="ai-priority-col-empty">No areas met the high cross-indicator confidence threshold for this report.</p>
       ) : (
         <div className="ai-priority-columns">
           <div>
@@ -147,7 +158,7 @@ function PriorityAreaJustificationList({ items }) {
               </span>
             </div>
             {droughtItems.length === 0 ? (
-              <p className="ai-priority-col-empty">No high-confidence drought areas.</p>
+              <p className="ai-priority-col-empty">No high cross-indicator confidence drought areas.</p>
             ) : (
               droughtItems.map((item) => <AreaCard key={item.justification_id} item={item} />)
             )}
@@ -160,7 +171,7 @@ function PriorityAreaJustificationList({ items }) {
               </span>
             </div>
             {wetItems.length === 0 ? (
-              <p className="ai-priority-col-empty">No high-confidence wet/flood areas.</p>
+              <p className="ai-priority-col-empty">No high cross-indicator confidence wet/flood areas.</p>
             ) : (
               wetItems.map((item) => <AreaCard key={item.justification_id} item={item} />)
             )}

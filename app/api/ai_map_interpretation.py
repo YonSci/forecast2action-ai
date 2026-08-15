@@ -262,9 +262,14 @@ _ADVISORY_ITEM_SCHEMA = {
         "action": {"type": "string"},
         "trigger": {"type": "string"},
         "evidence": {"type": "array", "items": {"type": "string"}},
-        "confidence": {"type": "string"},
+        # Named cross_indicator_confidence (not the old generic
+        # "confidence") because that's the only real thing this value ever
+        # measures -- see app.context.statistical_evidence._evaluate_area_
+        # signal, which computes it from agreement_score + available real
+        # criteria, not data completeness or forecast/ensemble skill.
+        "cross_indicator_confidence": {"type": "string"},
     },
-    "required": ["area", "action", "trigger", "evidence", "confidence"],
+    "required": ["area", "action", "trigger", "evidence", "cross_indicator_confidence"],
     "additionalProperties": False,
 }
 
@@ -299,10 +304,10 @@ _SMS_ITEM_SCHEMA = {
         "audience": {"type": "string"},
         "hazard": {"type": "string"},
         "valid_period": {"type": "string"},
-        "confidence": {"type": "string"},
+        "cross_indicator_confidence": {"type": "string"},
         "message": {"type": "string"},
     },
-    "required": ["area", "audience", "hazard", "valid_period", "confidence", "message"],
+    "required": ["area", "audience", "hazard", "valid_period", "cross_indicator_confidence", "message"],
     "additionalProperties": False,
 }
 
@@ -411,7 +416,7 @@ STAGE1_SCHEMA: Dict[str, Any] = {
     "properties": {
         # Object, not string, as of Phase 3 #17 -- each entry is a real
         # structured summary (national_signal, national_mean, highest_areas,
-        # lowest_areas, affected_area_pct, interpretation, confidence; see
+        # lowest_areas, high_or_very_high_area_pct, interpretation, confidence; see
         # app.context.statistical_evidence.build_structured_layer_summaries/
         # build_structured_indicator_summaries), not a free-text bullet, so
         # the frontend/response_validator/downstream stages get a real,
@@ -1048,6 +1053,47 @@ def _fallback_compound_hazard_interpretation(evidence: Optional[Dict[str, Any]])
     return lines
 
 
+def _fallback_single_priority_area_narrative(item: Dict[str, Any]) -> Dict[str, Any]:
+    """Deterministic narrative-only entry for ONE real priority-area object,
+    matching the real Stage 2 LLM's own expected per-item output shape (see
+    STAGE2_SCHEMA). Extracted from _fallback_priority_area_justification_
+    narrative's original per-item loop body so the same real, grounded text
+    can also be used surgically -- to repair a single area's LLM-authored
+    text after a response_validator violation, not just to fall back for
+    an entire failed stage (see app.advisory.response_validator.
+    repair_item_scoped_violations).
+    """
+    hazard_label = "drought" if item.get("hazard_type") == "drought" else "wet/flood"
+    action_status = item.get("action_status")
+    # Real, deterministic action_status decides the intervention label
+    # here exactly the same way build_stage2_prompt's DIFFERENTIATOR
+    # RULES instruct the real LLM to -- a not_actionable/monitor_only
+    # area must not get a full response label just because it's in
+    # the top-N ranking (see _action_status's own docstring).
+    if action_status == "action":
+        intervention = "Drought / water-security response" if item.get("hazard_type") == "drought" else "Flood / wet-hazard mitigation response"
+    elif action_status == "preparedness":
+        intervention = f"{hazard_label.title()} preparedness monitoring"
+    else:
+        intervention = "Monitoring only -- not currently actionable this period"
+    return {
+        "justification_id": item.get("justification_id"),
+        "differentiator": (
+            # Never cites priority_score (an internal ranking composite
+            # with no standalone reader meaning -- see build_stage2_
+            # prompt's DIFFERENTIATOR RULES, the same real ban applied
+            # here) -- explains the ranking via risk_class/hazard
+            # probability/action_status instead, exactly like the real
+            # LLM path is instructed to.
+            f"Ranks #{item.get('rank')} nationally for {hazard_label} risk, with a risk score of "
+            f"{format_number(item.get('risk_score'))} ({item.get('risk_class') or 'unclassified'}) and hazard "
+            f"probability of {format_number(item.get('hazard_probability'), 3)}."
+            + (f" Real data quality for this area is limited to {item.get('valid_cell_count')} grid cells -- treat as a coarser estimate." if item.get("low_sample_size_warning") else "")
+        ),
+        "recommended_intervention_type": intervention,
+    }
+
+
 def _fallback_priority_area_justification_narrative(evidence: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Deterministic narrative-only entries matching the real Stage 2 LLM's
     own expected output shape (see STAGE2_SCHEMA) -- keyed by justification_
@@ -1058,38 +1104,7 @@ def _fallback_priority_area_justification_narrative(evidence: Optional[Dict[str,
     may be at a finer admin level than this evidence engine covers).
     """
     justifications = (evidence or {}).get("priority_area_justifications") or []
-    narrative = []
-    for item in justifications:
-        hazard_label = "drought" if item.get("hazard_type") == "drought" else "wet/flood"
-        action_status = item.get("action_status")
-        # Real, deterministic action_status decides the intervention label
-        # here exactly the same way build_stage2_prompt's DIFFERENTIATOR
-        # RULES instruct the real LLM to -- a not_actionable/monitor_only
-        # area must not get a full response label just because it's in
-        # the top-N ranking (see _action_status's own docstring).
-        if action_status == "action":
-            intervention = "Drought / water-security response" if item.get("hazard_type") == "drought" else "Flood / wet-hazard mitigation response"
-        elif action_status == "preparedness":
-            intervention = f"{hazard_label.title()} preparedness monitoring"
-        else:
-            intervention = "Monitoring only -- not currently actionable this period"
-        narrative.append({
-            "justification_id": item.get("justification_id"),
-            "differentiator": (
-                # Never cites priority_score (an internal ranking composite
-                # with no standalone reader meaning -- see build_stage2_
-                # prompt's DIFFERENTIATOR RULES, the same real ban applied
-                # here) -- explains the ranking via risk_class/hazard
-                # probability/action_status instead, exactly like the real
-                # LLM path is instructed to.
-                f"Ranks #{item.get('rank')} nationally for {hazard_label} risk, with a risk score of "
-                f"{format_number(item.get('risk_score'))} ({item.get('risk_class') or 'unclassified'}) and hazard "
-                f"probability of {format_number(item.get('hazard_probability'), 3)}."
-                + (f" Real data quality for this area is limited to {item.get('valid_cell_count')} grid cells -- treat as a coarser estimate." if item.get("low_sample_size_warning") else "")
-            ),
-            "recommended_intervention_type": intervention,
-        })
-    return narrative
+    return [_fallback_single_priority_area_narrative(item) for item in justifications]
 
 
 def _fallback_actionable_areas(evidence: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -1107,9 +1122,10 @@ def _fallback_actionable_areas(evidence: Optional[Dict[str, Any]]) -> List[Dict[
 
 def _fallback_advisory_item(area_entry: Dict[str, Any], action_text: str) -> Dict[str, Any]:
     """One real, structured advisory bullet (see _ADVISORY_ITEM_SCHEMA) --
-    area/trigger/evidence/confidence are always the real values from the
-    deterministic priority-area object; only `action` is templated text,
-    matching the same shape the real LLM path is instructed to return.
+    area/trigger/evidence/cross_indicator_confidence are always the real
+    values from the deterministic priority-area object; only `action` is
+    templated text, matching the same shape the real LLM path is
+    instructed to return.
     """
     supporting = area_entry.get("supporting_indicators") or []
     return {
@@ -1117,7 +1133,7 @@ def _fallback_advisory_item(area_entry: Dict[str, Any], action_text: str) -> Dic
         "action": action_text,
         "trigger": area_entry.get("cross_indicator_signal") or area_entry.get("hazard_type"),
         "evidence": [item.get("indicator") for item in supporting if isinstance(item, dict) and item.get("indicator")],
-        "confidence": area_entry.get("confidence") or "low",
+        "cross_indicator_confidence": area_entry.get("cross_indicator_confidence") or "low",
     }
 
 
@@ -1134,13 +1150,14 @@ def _fallback_timescaled_advisory(
 def _fallback_humanitarian_priorities(evidence: Optional[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
     """monitoring covers EVERY real priority area (even not_actionable ones
     are worth watching); preparedness/pre_positioning/immediate_action are
-    real, deterministic tiers of action_status/confidence, each stricter
-    than the last -- never a flat top-N list treated as uniformly urgent.
+    real, deterministic tiers of action_status/cross_indicator_confidence,
+    each stricter than the last -- never a flat top-N list treated as
+    uniformly urgent.
     """
     justifications = (evidence or {}).get("priority_area_justifications") or []
     actionable = [item for item in justifications if item.get("action_status") in ("action", "preparedness")]
     ready = [item for item in justifications if item.get("action_status") == "action"]
-    urgent = [item for item in ready if item.get("confidence") == "high" and not item.get("low_sample_size_warning")]
+    urgent = [item for item in ready if item.get("cross_indicator_confidence") == "high" and not item.get("low_sample_size_warning")]
 
     return {
         "monitoring": [
@@ -1188,7 +1205,7 @@ def _fallback_sms_messages(
             "audience": "general",
             "hazard": area.get("hazard_type"),
             "valid_period": valid_period,
-            "confidence": area.get("confidence") or "low",
+            "cross_indicator_confidence": area.get("cross_indicator_confidence") or "low",
             "message": message,
             "character_count": len(message),
         })
@@ -1231,7 +1248,7 @@ def fallback_report(
     seasonal_product = request.forecast_selection.seasonalProductLabel or request.map_context.seasonal_product_label or request.forecast_selection.seasonalProduct or request.map_context.seasonal_product or "N/A"
 
     # Phase 3 #17 -- real structured objects (national_signal, national_mean,
-    # highest/lowest_areas, affected_area_pct, interpretation, confidence),
+    # highest/lowest_areas, high_or_very_high_area_pct, interpretation, confidence),
     # built from the SAME real `evidence` Stage 1's real LLM call receives
     # (app.context.statistical_evidence.build_national_region_evidence),
     # not the older request.all_map_layer_summaries/all_climate_indicator_

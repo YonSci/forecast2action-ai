@@ -90,6 +90,16 @@ LAYER_DEFINITIONS = [
     {"value": "buildings_normalized", "category": "exposure", "hazard_type": None, "label": "Buildings", "units": "normalized", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low exposure", "high_label": "High exposure", "is_categorical": False},
     {"value": "roads_normalized", "category": "exposure", "hazard_type": None, "label": "Roads", "units": "normalized", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low exposure", "high_label": "High exposure", "is_categorical": False},
     {"value": "healthsites_normalized", "category": "exposure", "hazard_type": None, "label": "Health Facilities", "units": "normalized", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low exposure", "high_label": "High exposure", "is_categorical": False},
+    # Real-unit counterparts of roads_normalized/healthsites_normalized
+    # above -- NOT normalized 0-1 density, real counts/km per pixel from
+    # live OSM Overpass data (see app.data_pipeline.infrastructure_data_
+    # pipeline). Used as the weight raster for the real infrastructure-
+    # exposure denominators (roads_length_total_km/healthsites_total_count
+    # etc. in app.context.statistical_evidence.build_priority_area_
+    # justifications) -- the existing *_normalized density layers above
+    # are untouched, still serving on-map visualization only.
+    {"value": "roads_length_km", "category": "exposure", "hazard_type": None, "label": "Roads (real length, km)", "units": "km per pixel", "vmin": 0.0, "vmax": 150.0, "cmap": "YlOrRd", "low_label": "Low road length", "high_label": "High road length", "is_categorical": False},
+    {"value": "healthsites_count", "category": "exposure", "hazard_type": None, "label": "Health Facilities (real count)", "units": "count per pixel", "vmin": 0.0, "vmax": 15.0, "cmap": "YlOrRd", "low_label": "Low facility count", "high_label": "High facility count", "is_categorical": False},
     {"value": "v_drought", "category": "vulnerability", "hazard_type": "drought", "label": "Drought Vulnerability", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "YlOrRd", "low_label": "Low vulnerability", "high_label": "High vulnerability", "is_categorical": False},
     {"value": "v_wet", "category": "vulnerability", "hazard_type": "wet", "label": "Wet Vulnerability", "units": "index", "vmin": 0.0, "vmax": 1.0, "cmap": "Blues", "low_label": "Low vulnerability", "high_label": "High vulnerability", "is_categorical": False},
     # Risk (r_drought/r_wet) = 100 * P * S_effective * E * V, so it is a

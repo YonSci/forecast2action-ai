@@ -372,6 +372,11 @@ def departure_from_climatology(indicator: str, period: str, admin_level: str = "
 
     national_anomaly = area_weighted_statistics(anomaly_arr, anomaly_transform)
     regional_anomaly = region_statistics(anomaly_arr, anomaly_transform, admin_level)
+    # Real national climatology mean -- climatology_arr was already loaded
+    # above for the %-anomaly calculation, but its own national mean was
+    # never surfaced, so a reader could see the forecast mean and the
+    # anomaly mean but not the baseline they're being compared against.
+    national_climatology = area_weighted_statistics(climatology_arr, anomaly_transform)
 
     # %-anomaly from the two real rasters directly -- masked where
     # climatology is too close to zero for a percentage to be meaningful
@@ -396,6 +401,7 @@ def departure_from_climatology(indicator: str, period: str, admin_level: str = "
         "indicator": indicator,
         "period": period,
         "national_anomaly": national_anomaly,
+        "national_climatology_mean": national_climatology.get("mean"),
         "national_pct_anomaly": {"mean": national_pct_anomaly.get("mean"), "median": national_pct_anomaly.get("median")},
         "regional_anomaly": regional_anomaly,
         "regional_pct_anomaly": regional_pct_anomaly,
@@ -709,7 +715,14 @@ def _evaluate_area_signal(
         # None) -- confirmed real gap: these were previously invisible,
         # silently lowering confidence with no way for a reader to see WHY.
         "missing_indicators": missing,
-        "confidence": confidence,
+        # Confirmed real gap, fixed: this was named the generic "confidence"
+        # everywhere downstream, but it only ever measures ONE thing --
+        # cross-indicator agreement strength -- not data completeness (see
+        # data_quality_confidence in build_priority_area_justifications) or
+        # forecast/ensemble skill (no real analog exists in this pipeline
+        # at all, see build_stage3_prompt's grounding note). The generic
+        # name let a reader conflate all three into one number.
+        "cross_indicator_confidence": confidence,
     }
 
 
@@ -776,6 +789,41 @@ def build_cross_indicator_findings(evidence: Dict[str, Any], period: str) -> Lis
         findings.append(_evaluate_area_signal(area_name, values, p_drought_threshold, p_wet_threshold))
 
     return findings
+
+
+def area_signal_counts(cross_indicator_findings: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Real, deterministic tally of build_cross_indicator_findings' own
+    per-area rows by signal (strong_drought/strong_wet/partial_drought/
+    partial_wet/mixed/no_clear_signal), with the real area names behind
+    each count. Excludes the "National" entry (index 0 of that function's
+    own output) -- that is a separate, independently-computed aggregate,
+    never a tally of the area-level rows below it (see
+    _check_national_signal_overstated_evidence in app.advisory.
+    response_validator for the sibling National-vs-rollup fix this
+    mirrors).
+
+    Confirmed real gap: Stage 2 was previously left to count these rows
+    itself when narrating the area-level rollup -- a real captured run's
+    cross_indicator_findings held exactly 6 real strong_drought areas, but
+    the real Gemini response wrote "15 individual administrative zones
+    independently display a strong drought signal", naming only 8 of them.
+    report_stages.build_stage2_prompt now hands this real tally to Stage 2
+    directly (do-not-recompute), and response_validator's
+    _check_area_signal_count_evidence uses this SAME function as its
+    backstop, so detection and the real evidence can never disagree about
+    what the true count is.
+    """
+    counts: Dict[str, int] = {}
+    areas: Dict[str, List[str]] = {}
+    for item in cross_indicator_findings or []:
+        if not isinstance(item, dict) or item.get("area") == "National":
+            continue
+        signal = item.get("signal")
+        if not signal:
+            continue
+        counts[signal] = counts.get(signal, 0) + 1
+        areas.setdefault(signal, []).append(item.get("area"))
+    return {"counts": counts, "areas": areas}
 
 
 # Step 7.5 -- deterministic, auditable "why this area is a priority" per
@@ -859,6 +907,51 @@ def _action_status(risk_class: Optional[str], cross_indicator_signal: Optional[s
     return "monitor_only" if signal_agrees else "not_actionable"
 
 
+# Real metrics a Stage 2 differentiator has actually been seen claiming a
+# superlative about -- kept narrow and explicit rather than every numeric
+# field on the object, matching this module's own "don't restate raw
+# numbers, explain drivers" convention (see report_stages.py's
+# DIFFERENTIATOR RULES).
+_SUPERLATIVE_METRICS = ("hazard_probability", "vulnerability", "population_exposed_pct", "risk_score")
+
+
+def _superlative_flags(area_items: List[Dict[str, Any]]) -> None:
+    """Mutates each item in area_items IN PLACE, adding highest_among_group/
+    lowest_among_group -- the real, deterministic list of _SUPERLATIVE_
+    METRICS names for which this area holds the real max/min value among
+    the OTHER areas in this SAME top-N hazard-type batch (exactly the group
+    Stage 2's own prompt shows together in one REAL, ALREADY-COMPUTED
+    PRIORITY AREAS block -- see report_stages._synthesis_evidence_packet).
+
+    Confirmed real gap this closes, caught via live testing: a real
+    captured Stage 2 differentiator said Harari was "driven by the highest
+    hazard probability among drought areas" -- Harari's real value was
+    0.787, but South Ethiopia's real value (0.837, in the SAME real top-5
+    drought batch) was actually higher. The LLM was doing its own
+    comparison across areas instead of being told the real answer;
+    comparisons this size are exactly what a deterministic max()/min() gets
+    right every time and an LLM does not. A "highest" claim with fewer than
+    2 real values to compare is meaningless, so no flag is set at all for a
+    metric with 0-1 real values in this batch (never silently claim
+    uniqueness for lack of a competitor).
+    """
+    for metric in _SUPERLATIVE_METRICS:
+        candidates = [(item[metric], item) for item in area_items if isinstance(item.get(metric), (int, float))]
+        if len(candidates) < 2:
+            continue
+        max_value = max(value for value, _ in candidates)
+        min_value = min(value for value, _ in candidates)
+        for value, item in candidates:
+            if value == max_value:
+                item.setdefault("highest_among_group", []).append(metric)
+            if value == min_value and max_value != min_value:
+                item.setdefault("lowest_among_group", []).append(metric)
+
+    for item in area_items:
+        item.setdefault("highest_among_group", [])
+        item.setdefault("lowest_among_group", [])
+
+
 def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PRIORITY_AREA_TOP_N) -> List[Dict[str, Any]]:
     hazard_risk_layers = evidence.get("hazard_risk_layers", {})
     exposure = evidence.get("exposure", {})
@@ -908,7 +1001,17 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
             item["area_name"]: item
             for item in exposure.get(rank_by, {}).get("cropland_exposed_by_region", [])
         }
+        # Confirmed real gap, fixed: livestock_exposed_by_region is now
+        # computed above (see the exposure-computation loop) but, like
+        # cropland before it, needs its own extraction here to actually
+        # reach Stage 2/3 -- see that loop's comment for the real cattle-
+        # only-raster caveat, which still applies to this field.
+        livestock_exposure_by_area = {
+            item["area_name"]: item
+            for item in exposure.get(rank_by, {}).get("livestock_exposed_by_region", [])
+        }
 
+        hazard_type_justifications: List[Dict[str, Any]] = []
         for rank, item in enumerate(ranking[:top_n], start=1):
             area_name = item.get("area_name")
             finding = _cross_indicator_lookup(cross_indicator_findings, area_name)
@@ -916,10 +1019,11 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
             roads_item = roads_exposure_by_area.get(area_name)
             healthsites_item = healthsites_exposure_by_area.get(area_name)
             cropland_item = cropland_exposure_by_area.get(area_name)
+            livestock_item = livestock_exposure_by_area.get(area_name)
             risk_class = classify_risk_score(risk_by_area.get(area_name))
             cross_indicator_signal = finding.get("signal") if finding else None
             valid_cell_count = valid_count_by_area.get(area_name)
-            justifications.append({
+            hazard_type_justifications.append({
                 "justification_id": f"{area_name}::{hazard_type}",
                 "rank": rank,
                 "area": area_name,
@@ -945,26 +1049,50 @@ def build_priority_area_justifications(evidence: Dict[str, Any], top_n: int = PR
                 "population_exposed": exposure_item.get("exposed") if exposure_item else None,
                 "population_exposed_pct": exposure_item.get("exposed_pct") if exposure_item else None,
                 "roads_exposed_pct": roads_item.get("exposed_pct") if roads_item else None,
+                # Real denominators, not just the share above -- see
+                # weighted_exposure_by_region's now real-unit `total`/
+                # `exposed` (roads_length_km/healthsites_count weight
+                # rasters, see this function's exposure-loop comment).
+                # "12.4 of 18.9 real km of major road exposed" instead of
+                # only "66% of road density exposed".
+                "roads_length_total_km": round(roads_item["total"], 1) if roads_item else None,
+                "roads_length_exposed_km": round(roads_item["exposed"], 1) if roads_item else None,
                 "healthsites_exposed_pct": healthsites_item.get("exposed_pct") if healthsites_item else None,
+                "healthsites_total_count": round(healthsites_item["total"]) if healthsites_item else None,
+                "healthsites_exposed_count": round(healthsites_item["exposed"]) if healthsites_item else None,
                 "cropland_exposed_pct": cropland_item.get("exposed_pct") if cropland_item else None,
+                "livestock_exposed_pct": livestock_item.get("exposed_pct") if livestock_item else None,
                 "supporting_indicators": finding.get("supporting_indicators", []) if finding else [],
                 "contradicting_indicators": finding.get("contradicting_indicators", []) if finding else [],
                 "cross_indicator_signal": cross_indicator_signal,
-                "confidence": finding.get("confidence") if finding else None,
+                "cross_indicator_confidence": finding.get("cross_indicator_confidence") if finding else None,
                 # Real, server-generated data-quality signal -- distinct
-                # from `confidence` above, which reflects cross-indicator
-                # AGREEMENT, not sample size. valid_cell_count is the real
-                # number of 0.25 deg (~27.6 km) grid cells this area's
-                # statistics were computed from; low_sample_size_warning is
-                # a real, deterministic flag (see LOW_SAMPLE_CELL_COUNT_
-                # THRESHOLD) so the LLM/UI never has to guess or invent
-                # "data completeness is robust" -- it summarizes a real
-                # number instead.
+                # from cross_indicator_confidence above, which reflects
+                # cross-indicator AGREEMENT, not sample size. valid_cell_
+                # count is the real number of 0.25 deg (~27.6 km) grid
+                # cells this area's statistics were computed from;
+                # low_sample_size_warning is a real, deterministic flag
+                # (see LOW_SAMPLE_CELL_COUNT_THRESHOLD) so the LLM/UI never
+                # has to guess or invent "data completeness is robust" --
+                # it summarizes a real number instead. data_quality_
+                # confidence is the same real signal as a labeled tier
+                # (matching cross_indicator_confidence's high/medium/low
+                # vocabulary) -- deliberately only "low"/"moderate", no
+                # invented "high": no real third grid-cell-count cutoff
+                # exists anywhere in this pipeline (same 2-tier pattern
+                # _structured_summary_object already uses for its own,
+                # unrelated national-data-presence signal).
                 "valid_cell_count": valid_cell_count,
                 "low_sample_size_warning": (
                     valid_cell_count is not None and valid_cell_count < LOW_SAMPLE_CELL_COUNT_THRESHOLD
                 ),
+                "data_quality_confidence": (
+                    "low" if (valid_cell_count is not None and valid_cell_count < LOW_SAMPLE_CELL_COUNT_THRESHOLD)
+                    else "moderate"
+                ),
             })
+        _superlative_flags(hazard_type_justifications)
+        justifications.extend(hazard_type_justifications)
     return justifications
 
 
@@ -987,6 +1115,20 @@ def _dominant_class(class_area_pct: Dict[str, float]) -> Optional[str]:
 def _high_class_area_pct(class_area_pct: Dict[str, float]) -> Optional[float]:
     """% of real area in the "high" + "very_high" classes -- a real,
     already-computed quantity (class_area_pct itself), not a new statistic.
+
+    Named high_or_very_high_area_pct (not the old generic affected_area_
+    pct) in the returned summary object precisely BECAUSE "high"/"very_
+    high" mean different things per entry -- this period's own top
+    quintile for most layers, a real fixed band for risk_score/SPI (see
+    classification_method, always given alongside this field) -- and the
+    old generic name read as a single universal severity claim regardless
+    of which. No genuinely fixed, domain-established absolute threshold
+    exists for hazard/probability/vulnerability/anomaly layers anywhere in
+    this pipeline (confirmed via investigation: the only candidate,
+    default_threshold_for(), is itself relative -- 60% of this period's own
+    observed value span, not a scientific cutoff) -- inventing an "X%
+    above threshold Y" framing would fabricate a precision this data
+    doesn't have, so this stays tied to the real class scheme instead.
     """
     if not class_area_pct:
         return None
@@ -1017,6 +1159,7 @@ def _structured_summary_object(
     highest_areas = [item["area_name"] for item in ranked[:2]]
     lowest_areas = [item["area_name"] for item in ranked[-2:]] if len(ranked) > 2 else []
     national_mean = national.get("mean")
+    is_spi = key_field == "indicator" and key == "spi"
     signal = national_signal or _dominant_class(class_area_pct)
 
     # Confirmed real gap: national_signal ("High"/"Very low"/etc) for
@@ -1033,8 +1176,19 @@ def _structured_summary_object(
     # would be the same class of fabrication this fix is meant to remove,
     # so the honest fix is to surface the real method and real breakpoints
     # instead, not invent a fake absolute scale.
+    # Confirmed real gap, fixed: this fallback used to apply "risk_class_
+    # bands (real, fixed, upstream-defined 0-100 scale)" to SPI whenever
+    # class_scheme was absent -- but class_scheme is always present for the
+    # real risk-score layers this label was written for (population_r_
+    # drought/wet already carry their own real "risk_class_bands..." string
+    # via class_scheme), so this branch only ever fired for SPI, mislabeling
+    # its real McKee standardized-precipitation-index scale (roughly -2 to
+    # +2 std dev) as if it were a 0-100 risk score. SPI's real absolute
+    # scale gets its own honest label instead.
     classification_method = entry.get("class_scheme") or (
-        "risk_class_bands (real, fixed, upstream-defined 0-100 scale)" if national_signal else None
+        "spi_mckee_category (real, fixed, standardized precipitation index thresholds, not a 0-100 scale)" if is_spi
+        else "risk_class_bands (real, fixed, upstream-defined 0-100 scale)" if national_signal
+        else None
     )
     class_breakpoints = entry.get("class_breakpoints")
 
@@ -1055,7 +1209,7 @@ def _structured_summary_object(
         "national_mean": round(national_mean, 3) if isinstance(national_mean, (int, float)) else None,
         "highest_areas": highest_areas,
         "lowest_areas": lowest_areas,
-        "affected_area_pct": _high_class_area_pct(class_area_pct),
+        "high_or_very_high_area_pct": _high_class_area_pct(class_area_pct),
         "classification_method": classification_method,
         "classification_breakpoints": [round(v, 4) for v in class_breakpoints] if class_breakpoints else None,
         "interpretation": interpretation,
@@ -1081,7 +1235,7 @@ def _categorical_summary_object(key: str, entry: Dict[str, Any]) -> Dict[str, An
         "national_mean": None,
         "highest_areas": [],
         "lowest_areas": [],
-        "affected_area_pct": _high_class_area_pct(class_area_pct),
+        "high_or_very_high_area_pct": _high_class_area_pct(class_area_pct),
         # Always real, fixed, upstream-defined bands (RISK_CLASS_BANDS or
         # DOMINANT_HAZARD_CODE_BANDS) -- the pixel value already IS the
         # class code for these 2 categorical layers, never quintile-derived.
@@ -1158,7 +1312,30 @@ def build_structured_indicator_summaries(evidence: Dict[str, Any]) -> List[Dict[
         # category (spi_category, computed when the evidence was built) is
         # used as the national_signal instead of a quintile-derived class.
         national_signal = entry.get("category") if indicator == "spi" else None
-        summaries.append(_structured_summary_object(indicator, "indicator", entry, national_signal=national_signal))
+        summary = _structured_summary_object(indicator, "indicator", entry, national_signal=national_signal)
+
+        # Confirmed real gap, fixed: for the 6 indicators with a real
+        # climatology departure, "national_mean" was the raw FORECAST mean
+        # with no explicit label -- indistinguishable from an anomaly value
+        # once paired with an "Anomaly" map image (rainfall_total, cdd are
+        # curated to Stage 1 specifically as their anomaly product). The
+        # underlying numbers were always both present and correctly used by
+        # the LLM in prose (via the separate "departure" block already sent
+        # in the full evidence payload), but the structured summary itself
+        # never named which product its headline number was. These 4 real
+        # fields make that unambiguous without changing what "national_mean"
+        # means for every other layer/indicator that has no anomaly concept.
+        departure = entry.get("departure")
+        if departure:
+            summary["forecast_mean"] = summary["national_mean"]
+            anomaly_mean = departure.get("national_anomaly", {}).get("mean")
+            climatology_mean = departure.get("national_climatology_mean")
+            anomaly_pct = departure.get("national_pct_anomaly", {}).get("mean")
+            summary["anomaly_mean"] = round(anomaly_mean, 3) if isinstance(anomaly_mean, (int, float)) else None
+            summary["climatology_mean"] = round(climatology_mean, 3) if isinstance(climatology_mean, (int, float)) else None
+            summary["anomaly_pct"] = round(anomaly_pct, 2) if isinstance(anomaly_pct, (int, float)) else None
+
+        summaries.append(summary)
     return summaries
 
 
@@ -1350,19 +1527,46 @@ def build_national_region_evidence(period: str, admin_level: str = "admin1", use
         cropland_arr, cropland_transform, _bounds = load_hazard_risk_display_array(cropland_record)
 
     # Step 7 item 7 -- roads/healthsites exposure, for humanitarian
-    # road-accessibility and health/sanitation triggers. Both rasters are
-    # real (data/maps/Exposure/ethiopia_{roads,healthsites}_normalized.tif)
-    # and were already in the hazard/risk catalog, just never wired into
-    # this exposure computation before -- same real pattern as cropland.
-    roads_record = find_hazard_risk_record("roads_normalized", period)
+    # road-accessibility and health/sanitation triggers.
+    #
+    # Confirmed real gap, fixed: this used to weight by roads_normalized/
+    # healthsites_normalized -- abstract, already-normalized 0-1 density
+    # rasters with undocumented provenance, so weighted_exposure_by_
+    # region's own real `total`/`exposed` fields came out in meaningless
+    # density units and were discarded (only the unitless `exposed_pct`
+    # was ever surfaced). Swapped to roads_length_km/healthsites_count
+    # (real km of major road / real facility count per pixel, from live
+    # OSM Overpass data -- see app.data_pipeline.infrastructure_data_
+    # pipeline) -- same weighted_exposure_by_region call, same weight-
+    # raster CONTRACT, but now `total`/`exposed` carry real, meaningful
+    # units for free. The *_normalized density layers are untouched,
+    # still serving on-map visualization only (see hazard_risk_catalog_
+    # shared.py's LAYER_DEFINITIONS comment for both pairs).
+    roads_record = find_hazard_risk_record("roads_length_km", period)
     roads_arr = roads_transform = None
     if roads_record:
         roads_arr, roads_transform, _bounds = load_hazard_risk_display_array(roads_record)
 
-    healthsites_record = find_hazard_risk_record("healthsites_normalized", period)
+    healthsites_record = find_hazard_risk_record("healthsites_count", period)
     healthsites_arr = healthsites_transform = None
     if healthsites_record:
         healthsites_arr, healthsites_transform, _bounds = load_hazard_risk_display_array(healthsites_record)
+
+    # Confirmed real gap, fixed: `livestock_cattle_normalized` (real GLW4
+    # cattle-density raster, data/maps/Exposure/ethiopia_livestock_cattle_
+    # normalized.tif) was already in the hazard/risk catalog like roads/
+    # healthsites/cropland, but never wired into this exposure computation
+    # -- so "no real per-area livestock exposure metric exists" was true
+    # right up until this fix. Note this is CATTLE ONLY: no sheep/goats
+    # raster is registered in this catalog (unlike the separate coarse
+    # 0.5-degree TLU-weighted grid in exposure_data_pipeline.py, which
+    # combines cattle+sheep+goats for the Hazard/Risk map's own Exposure
+    # layer) -- callers must not describe this as blanket "livestock"
+    # exposure without that caveat.
+    livestock_record = find_hazard_risk_record("livestock_cattle_normalized", period)
+    livestock_arr = livestock_transform = None
+    if livestock_record:
+        livestock_arr, livestock_transform, _bounds = load_hazard_risk_display_array(livestock_record)
 
     for rank_by in RISK_SCALE_LAYERS:
         record = find_hazard_risk_record(rank_by, period)
@@ -1386,6 +1590,10 @@ def build_national_region_evidence(period: str, admin_level: str = "admin1", use
         if healthsites_arr is not None:
             exposure_entry["healthsites_exposed_by_region"] = weighted_exposure_by_region(
                 arr, transform, healthsites_arr, healthsites_transform, admin_level, threshold,
+            )
+        if livestock_arr is not None:
+            exposure_entry["livestock_exposed_by_region"] = weighted_exposure_by_region(
+                arr, transform, livestock_arr, livestock_transform, admin_level, threshold,
             )
         evidence["exposure"][rank_by] = exposure_entry
 

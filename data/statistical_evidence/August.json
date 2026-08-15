@@ -279,6 +279,7 @@
           "valid_count": 1478,
           "weighting": "area_km2"
         },
+        "national_climatology_mean": 136.40211694828983,
         "national_pct_anomaly": {
           "mean": -54.16978526763084,
           "median": -54.418865108134334
@@ -1130,6 +1131,7 @@
           "valid_count": 1478,
           "weighting": "area_km2"
         },
+        "national_climatology_mean": 11.390806129999726,
         "national_pct_anomaly": {
           "mean": 50.91998150640735,
           "median": 45.53847122192383
@@ -1797,6 +1799,7 @@
           "valid_count": 1478,
           "weighting": "area_km2"
         },
+        "national_climatology_mean": 5.445334972660559,
         "national_pct_anomaly": {
           "mean": -35.24276800681449,
           "median": -26.350991107104377
@@ -2464,6 +2467,7 @@
           "valid_count": 1478,
           "weighting": "area_km2"
         },
+        "national_climatology_mean": 20.12312279581245,
         "national_pct_anomaly": {
           "mean": -36.935019009475795,
           "median": -30.16944411493442
@@ -3131,6 +3135,7 @@
           "valid_count": 1478,
           "weighting": "area_km2"
         },
+        "national_climatology_mean": 44.197998455995055,
         "national_pct_anomaly": {
           "mean": -37.46233757491451,
           "median": -32.12793420770899
@@ -3798,6 +3803,7 @@
           "valid_count": 1280,
           "weighting": "area_km2"
         },
+        "national_climatology_mean": 136.40211694828983,
         "national_pct_anomaly": {
           "mean": 9827.459160533303,
           "median": -94.98756017743953

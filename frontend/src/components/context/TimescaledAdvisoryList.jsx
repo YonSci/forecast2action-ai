@@ -7,7 +7,7 @@
 // don't dominate the page -- the user expands only the ones they need.
 //
 // Each bullet is now itself a real structured object (area/action/
-// trigger/evidence/confidence -- see _ADVISORY_ITEM_SCHEMA in
+// trigger/evidence/cross_indicator_confidence -- see _ADVISORY_ITEM_SCHEMA in
 // app/api/ai_map_interpretation.py), not a bare string -- see
 // AdvisoryBullet.jsx (shared with CategorizedHumanitarianList).
 
