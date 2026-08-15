@@ -61,6 +61,17 @@ router = APIRouter(prefix="/api/chat", tags=["Dashboard Chat Assistant"])
 # message would otherwise grow the prompt unboundedly turn over turn.
 MAX_HISTORY_TURNS = 10
 
+# Per-section prompt budgets, shared between _build_chat_system_prompt (what
+# actually gets sent) and _build_context_summary (what the citation is
+# allowed to claim) so the two can never drift apart -- real measured sizes
+# for a typical period: layer+indicator summaries ~9.1k, priority_areas
+# ~8.4k, community reports ~0.9k; each budget below has real headroom above
+# that, not the single shared 12000-char pool this used to be (see
+# _build_chat_system_prompt's own docstring for the real bug that caused).
+_NATIONAL_INDICATORS_MAX_CHARS = 12000
+_PRIORITY_AREAS_MAX_CHARS = 14000
+_COMMUNITY_REPORTS_MAX_CHARS = 6000
+
 # Fields from build_priority_area_justifications' own real per-area object
 # actually useful for Q&A -- drops supporting_indicators/contradicting_
 # indicators (verbose, already summarized by cross_indicator_signal) the
@@ -166,6 +177,35 @@ def _build_chat_context_packet(
 def _build_chat_system_prompt(
     period: str, language_code: str, context_packet: Dict[str, Any], report_context: Optional[ReportContext],
 ) -> str:
+    """Confirmed real gap, fixed: this used to serialize the WHOLE context_
+    packet through one shared compact_json(..., max_chars=12000) call --
+    real measured size for a typical period is ~21k chars, so
+    priority_areas (10 real areas x ~20 fields, ~8.4k alone) silently
+    crowded out community_ground_truth_by_area (~0.9k) before it ever
+    reached the model on a real live request, even though _build_context_
+    summary (computed from the SAME untruncated context_packet) kept
+    reporting it as included -- an honest-sounding citation for evidence
+    the model never actually saw. Same bug class report_stages.py already
+    fixed once for Stage 2's own prompt (see its own "Blind mid-JSON
+    truncation" comment) -- same fix here: each section gets its OWN
+    budget, sized with real headroom above the real measured content, so
+    one large section can never starve a smaller one.
+    """
+    layer_and_indicator_summaries = {
+        "layer_summaries": context_packet.get("layer_summaries") or [],
+        "indicator_summaries": context_packet.get("indicator_summaries") or [],
+    }
+    selected_area = context_packet.get("dashboard_selected_area")
+    selected_area_line = f"\n\ndashboard_selected_area: {selected_area}" if selected_area else ""
+
+    community = context_packet.get("community_ground_truth_by_area")
+    community_block = ""
+    if community:
+        community_block = f"""
+
+REAL COMMUNITY GROUND-TRUTH REPORTS (field observations submitted by community members, keyed by area name -- an area not listed here has zero submitted reports):
+{compact_json(community, max_chars=_COMMUNITY_REPORTS_MAX_CHARS)}"""
+
     report_block = ""
     report_narrative = (report_context.model_dump(exclude_none=True) if report_context else {})
     if report_narrative:
@@ -186,12 +226,21 @@ SUPERLATIVE RULE: Only say an area has the "highest"/"lowest" value of a metric 
 
 NATIONAL VS AREA-LEVEL RULE: national_cross_indicator is its own real, independently-computed aggregate -- never describe it as "strong" just because several individual areas are; use area_signal_tally for any area-level count, and never count the priority_areas list yourself.
 
-COMMUNITY REPORTS RULE: community_ground_truth_by_area (if present) is real, user-submitted field observations, keyed by area name -- corroborating evidence, not proof, unless a report's own verification_status shows it was actually reviewed. An area with no entry in this dict has zero submitted reports -- say so plainly if asked, never imply reports exist for an area not listed.
+COMMUNITY REPORTS RULE: REAL COMMUNITY GROUND-TRUTH REPORTS below (if present) is real, user-submitted field observations, keyed by area name -- corroborating evidence, not proof, unless a report's own verification_status shows it was actually reviewed. If that section is absent entirely from this prompt, you have NOT been given any community-report data at all -- say so plainly rather than guessing whether reports exist. If it IS present, an area with no entry in it has zero submitted reports.
 
 Keep answers conversational and concise (2-4 sentences) unless the user asks for more detail. If dashboard_selected_area is set below and the user's question doesn't name a specific area, assume they mean that one.
 
-REAL EVIDENCE FOR {period.upper()}:
-{compact_json(context_packet, max_chars=12000)}{report_block}
+NATIONAL INDICATORS FOR {period.upper()}:
+{compact_json(layer_and_indicator_summaries, max_chars=_NATIONAL_INDICATORS_MAX_CHARS)}
+
+PRIORITY AREAS FOR {period.upper()} (real, already-ranked):
+{compact_json(context_packet.get("priority_areas") or [], max_chars=_PRIORITY_AREAS_MAX_CHARS)}
+
+NATIONAL CROSS-INDICATOR AGGREGATE (its own real, independently-computed signal -- see NATIONAL VS AREA-LEVEL RULE above):
+{compact_json(context_packet.get("national_cross_indicator"), max_chars=1500)}
+
+AREA-LEVEL SIGNAL TALLY (real, deterministic counts by signal -- never count priority_areas yourself):
+{compact_json(context_packet.get("area_signal_tally"), max_chars=1500)}{selected_area_line}{community_block}{report_block}
 """.strip()
 
 
@@ -300,15 +349,35 @@ def _build_context_summary(
     drew on (that would require guessing at the model's own reasoning),
     just an honest list of the real sections it was given. Rendered as a
     "grounded in" citation under the reply in the chat UI.
+
+    Confirmed real gap, fixed: this used to read straight from context_
+    packet (pre-truncation) -- a real live request showed the citation
+    claiming "community reports: South Ethiopia" while compact_json's
+    per-prompt budget had actually cut that whole section before the model
+    ever saw it (see _build_chat_system_prompt's own docstring). Now
+    independently re-renders the community block with the SAME real budget
+    the prompt uses and only claims what actually survived -- the citation
+    can no longer promise evidence the model was never given.
     """
     priority_areas = context_packet.get("priority_areas") or []
     national_signal = (context_packet.get("national_cross_indicator") or {}).get("signal")
+
+    community_reports_areas: List[str] = []
+    community_reports_truncated = False
+    if community_evidence:
+        rendered = compact_json(community_evidence, max_chars=_COMMUNITY_REPORTS_MAX_CHARS)
+        if "...TRUNCATED..." in rendered:
+            community_reports_truncated = True
+        else:
+            community_reports_areas = sorted(community_evidence.keys())
+
     return {
         "priority_area_count": len(priority_areas),
         "priority_area_names": [item.get("area") for item in priority_areas if item.get("area")],
         "national_cross_indicator_signal": national_signal,
         "selected_area": context_packet.get("dashboard_selected_area"),
-        "community_reports_areas": sorted(community_evidence.keys()) if community_evidence else [],
+        "community_reports_areas": community_reports_areas,
+        "community_reports_truncated": community_reports_truncated,
         "included_report_narrative": bool(report_context and report_context.model_dump(exclude_none=True)),
     }
 

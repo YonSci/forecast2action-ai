@@ -44,6 +44,8 @@ function renderContextSummary(summary) {
   }
   if (summary.community_reports_areas?.length) {
     parts.push(`community reports: ${summary.community_reports_areas.join(", ")}`);
+  } else if (summary.community_reports_truncated) {
+    parts.push("community reports too large to include this time");
   }
   if (summary.included_report_narrative) {
     parts.push("generated report narrative included");
