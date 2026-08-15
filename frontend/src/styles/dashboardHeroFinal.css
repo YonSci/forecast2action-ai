@@ -61,6 +61,22 @@
   width: min(760px, 51%);
 }
 
+.f2a-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 20px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.f2a-back-link:hover {
+  color: #ffffff;
+}
+
 .f2a-eyebrow {
   display: inline-flex;
   align-items: center;

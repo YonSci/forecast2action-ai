@@ -34,7 +34,7 @@ function SubPageLayout({ children }) {
       <main>{children}</main>
 
       <div className="lp-ribbon">
-        <span className="lp-ribbon-tag">Built for IGAD Hackathon 2026</span>
+        <span className="lp-ribbon-tag">An ILRI product</span>
         <p>
           "Reimagining the future of early warning and early action for
           safer, more resilient communities across the region."
@@ -60,7 +60,7 @@ function SubPageLayout({ children }) {
           <Link to="/contact" className="lp-footer-contact-link">
             Contact us
           </Link>
-          <span className="lp-footer-meta">CLIMATE RISK &amp; EARLY WARNING · PROTOTYPE</span>
+          <span className="lp-footer-meta">CLIMATE RISK &amp; EARLY WARNING · AN ILRI PRODUCT</span>
         </div>
       </footer>
     </div>

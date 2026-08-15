@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "../styles/dashboardHeroFinal.css";
 
 const DEFAULT_COUNTS = {
@@ -284,7 +285,11 @@ function DashboardHero({
         <div className="f2a-hero-contours" />
 
         <div className="f2a-hero-copy">
-          <span className="f2a-eyebrow">IGAD HACKATHON 2026 PROTOTYPE</span>
+          <Link to="/" className="f2a-back-link">
+            ← Back to home
+          </Link>
+
+          <span className="f2a-eyebrow">AN ILRI PRODUCT</span>
 
           <h1>Forecast2Action AI</h1>
 

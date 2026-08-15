@@ -75,7 +75,7 @@ function About() {
         <div className="lp-wrap">
           <h2>Technology stack</h2>
           <p className="lp-prose" style={{ marginBottom: 18 }}>
-            The real, currently-installed dependencies this prototype runs
+            The real, currently-installed dependencies this platform runs
             on — not an aspirational list.
           </p>
           <div className="lp-feature-grid lp-tech-grid">
@@ -181,18 +181,18 @@ function About() {
 
       <section className="lp-article-section">
         <div className="lp-wrap">
-          <h2>Built for IGAD Hackathon 2026</h2>
+          <h2>An ILRI product</h2>
           <div className="lp-callout">
-            <h4>Prototype status</h4>
+            <h4>Developed at ILRI</h4>
             <p>
-              Forecast2Action AI was built as a prototype for the IGAD Hackathon
-              2026. The forecast, exposure, and vulnerability data pipelines are
-              real (see{" "}
+              Forecast2Action AI is developed at the International Livestock
+              Research Institute (ILRI). The forecast, exposure, and
+              vulnerability data pipelines are real (see{" "}
               <Link to="/data-sources" style={{ color: "var(--lp-teal)" }}>
                 Data sources
               </Link>
-              ), but the platform has not yet been operationally deployed or
-              validated by a humanitarian agency in the field.
+              ), computed deterministically from named, real datasets before
+              any AI interpretation is layered on top.
             </p>
           </div>
         </div>

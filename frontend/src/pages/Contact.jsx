@@ -3,7 +3,29 @@ import SubPageLayout from "../components/SubPageLayout.jsx";
 
 const CONTACT_LINKS = [
   {
-    label: "Email",
+    label: "Dr. Teferi Demissie",
+    value: "T.Demissie@cgiar.org",
+    href: "mailto:T.Demissie@cgiar.org",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    label: "Yonas Mersha (CGIAR)",
+    value: "Y.Mersha@cgiar.org",
+    href: "mailto:Y.Mersha@cgiar.org",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    label: "Yonas Mersha (personal)",
     value: "yonas.mersha14@gmail.com",
     href: "mailto:yonas.mersha14@gmail.com",
     icon: (
@@ -86,9 +108,8 @@ function Contact() {
           </span>
           <h1>Get in touch</h1>
           <p className="lp-hero-sub">
-            Questions about the methodology, the data, or the IGAD Hackathon
-            2026 submission — reach out directly, or explore the project on
-            GitHub.
+            Questions about the methodology, the data, or the platform —
+            reach out directly, or explore the project on GitHub.
           </p>
         </div>
       </section>
