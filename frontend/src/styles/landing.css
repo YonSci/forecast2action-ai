@@ -953,6 +953,35 @@
   word-break: break-word;
 }
 
+/* A single card grouping several emails for one person (e.g. Yonas
+   Mersha's CGIAR/personal/work addresses) instead of one card per email. */
+.lp-contact-card-group {
+  cursor: default;
+}
+
+.lp-contact-emails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lp-contact-emails a.lp-contact-value {
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.lp-contact-emails a.lp-contact-value:hover,
+.lp-contact-emails a.lp-contact-value:focus-visible {
+  color: var(--lp-teal);
+}
+
+.lp-contact-emails em {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--lp-muted-2);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
   .lp-hero-grid { grid-template-columns: 1fr; }

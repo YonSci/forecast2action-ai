@@ -1,50 +1,28 @@
 import { Link } from "react-router-dom";
 import SubPageLayout from "../components/SubPageLayout.jsx";
 
+const MAIL_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const CONTACT_LINKS = [
   {
     label: "Dr. Teferi Demissie",
     value: "T.Demissie@cgiar.org",
     href: "mailto:T.Demissie@cgiar.org",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    icon: MAIL_ICON,
   },
   {
-    label: "Yonas Mersha (CGIAR)",
-    value: "Y.Mersha@cgiar.org",
-    href: "mailto:Y.Mersha@cgiar.org",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    label: "Yonas Mersha (personal)",
-    value: "yonas.mersha14@gmail.com",
-    href: "mailto:yonas.mersha14@gmail.com",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    label: "Email (work)",
-    value: "yonas@grace-resilience.com",
-    href: "mailto:yonas@grace-resilience.com",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    label: "Yonas Mersha",
+    icon: MAIL_ICON,
+    emails: [
+      { tag: "CGIAR", value: "Y.Mersha@cgiar.org", href: "mailto:Y.Mersha@cgiar.org" },
+      { tag: "personal", value: "yonas.mersha14@gmail.com", href: "mailto:yonas.mersha14@gmail.com" },
+      { tag: "work", value: "yonas@grace-resilience.com", href: "mailto:yonas@grace-resilience.com" },
+    ],
   },
   {
     label: "GitHub",
@@ -117,21 +95,37 @@ function Contact() {
       <section className="lp-article-section">
         <div className="lp-wrap">
           <div className="lp-contact-grid">
-            {CONTACT_LINKS.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                target={item.href.startsWith("http") ? "_blank" : undefined}
-                rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-                className="lp-contact-card"
-              >
-                <span className="lp-contact-icon">{item.icon}</span>
-                <span>
-                  <span className="lp-contact-label">{item.label}</span>
-                  <span className="lp-contact-value">{item.value}</span>
-                </span>
-              </a>
-            ))}
+            {CONTACT_LINKS.map((item) =>
+              item.emails ? (
+                <div key={item.label} className="lp-contact-card lp-contact-card-group">
+                  <span className="lp-contact-icon">{item.icon}</span>
+                  <span>
+                    <span className="lp-contact-label">{item.label}</span>
+                    <span className="lp-contact-emails">
+                      {item.emails.map((email) => (
+                        <a key={email.href} href={email.href} className="lp-contact-value">
+                          {email.value} <em>({email.tag})</em>
+                        </a>
+                      ))}
+                    </span>
+                  </span>
+                </div>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target={item.href.startsWith("http") ? "_blank" : undefined}
+                  rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+                  className="lp-contact-card"
+                >
+                  <span className="lp-contact-icon">{item.icon}</span>
+                  <span>
+                    <span className="lp-contact-label">{item.label}</span>
+                    <span className="lp-contact-value">{item.value}</span>
+                  </span>
+                </a>
+              ),
+            )}
           </div>
         </div>
       </section>

@@ -289,8 +289,6 @@ function DashboardHero({
             ← Back to home
           </Link>
 
-          <span className="f2a-eyebrow">AN ILRI PRODUCT</span>
-
           <h1>Forecast2Action AI</h1>
 
           <p>
