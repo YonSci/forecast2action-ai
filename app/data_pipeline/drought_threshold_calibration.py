@@ -299,6 +299,7 @@ def build_results() -> Dict[str, Any]:
 
     spi_values = indicator_values["spi"]
     anomaly_values = indicator_values["rainfall_total"]
+    percentile_values = indicator_values["rainfall_percentile"]
     per_event = [
         {
             "glidenumber": r["glidenumber"],
@@ -312,11 +313,7 @@ def build_results() -> Dict[str, Any]:
             "affected": r["affected"],
             "rainfall_total_anomaly": anomaly_values.get((r["region"], r["year"])),
             "spi": spi_values.get((r["region"], r["year"])),
-            "spi_hit_moderately_dry": (
-                spi_values[(r["region"], r["year"])] <= INDICATOR_THRESHOLDS["spi"]["moderately_dry"]
-                if (r["region"], r["year"]) in spi_values
-                else None
-            ),
+            "rainfall_percentile": percentile_values.get((r["region"], r["year"])),
         }
         for r in sorted(records, key=lambda r: (r["year"], r["month"]))
     ]

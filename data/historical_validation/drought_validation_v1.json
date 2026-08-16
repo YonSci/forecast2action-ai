@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T17:44:51.721204+00:00",
+  "generated_at": "2026-08-16T18:13:15.117604+00:00",
   "scope": "drought_only_v1",
   "methodology": {
     "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical within-region rank). CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
@@ -141,7 +141,7 @@
       "affected": 986200,
       "rainfall_total_anomaly": -1.0807567294171214,
       "spi": -1.0837929546464642,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 18.333333333333332
     },
     {
       "glidenumber": "DR-1999-000148-ETH",
@@ -155,7 +155,7 @@
       "affected": 640000,
       "rainfall_total_anomaly": -0.3321330153410187,
       "spi": -0.2923807828303282,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 31.666666666666668
     },
     {
       "glidenumber": "DR-2000-000121-ETH",
@@ -169,7 +169,7 @@
       "affected": 10500000,
       "rainfall_total_anomaly": -0.6711640873389061,
       "spi": -0.6548698892109671,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 28.333333333333332
     },
     {
       "glidenumber": "DR-2001-000265-ETH",
@@ -183,7 +183,7 @@
       "affected": 1000000,
       "rainfall_total_anomaly": -0.24701096326211786,
       "spi": -0.2211098983332488,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 41.666666666666664
     },
     {
       "glidenumber": "DR-2002-000524-ETH",
@@ -197,7 +197,7 @@
       "affected": 2000000,
       "rainfall_total_anomaly": -1.3642234062061296,
       "spi": -1.3867557952068905,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-2002-000105-ETH",
@@ -211,7 +211,7 @@
       "affected": 14300000,
       "rainfall_total_anomaly": -1.3642234062061296,
       "spi": -1.3867557952068905,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-2006-000229-ETH",
@@ -225,7 +225,7 @@
       "affected": 11000000,
       "rainfall_total_anomaly": 0.40640519286632587,
       "spi": 0.4497797379230437,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 78.33333333333333
     },
     {
       "glidenumber": "DR-2008-000043-ETH",
@@ -239,7 +239,7 @@
       "affected": 8,
       "rainfall_total_anomaly": -1.1645205543561956,
       "spi": -1.199265786008732,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-2011-000029-ETH",
@@ -253,7 +253,7 @@
       "affected": 0,
       "rainfall_total_anomaly": 1.0787742321691733,
       "spi": 1.073045640585229,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 85.0
     },
     {
       "glidenumber": "DR-2015-000109-ETH",
@@ -267,7 +267,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -2.064255601421989,
       "spi": -2.1580108005433543,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 5.0
     },
     {
       "glidenumber": "DR-2022-000168-ETH",
@@ -281,7 +281,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -0.1554399141601258,
       "spi": -0.1287930960985412,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 45.0
     },
     {
       "glidenumber": "DR-2022-000268-ETH",
@@ -295,7 +295,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -1.2628718352300043,
       "spi": -1.3462508993418696,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-2022-000257-ETH",
@@ -309,7 +309,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -0.1554399141601258,
       "spi": -0.1287930960985412,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 45.0
     },
     {
       "glidenumber": "DR-2022-000250-ETH",
@@ -323,7 +323,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -0.1554399141601258,
       "spi": -0.1287930960985412,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 45.0
     },
     {
       "glidenumber": "DR-2022-000247-ETH",
@@ -337,7 +337,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -0.1554399141601258,
       "spi": -0.1287930960985412,
-      "spi_hit_moderately_dry": false
+      "rainfall_percentile": 45.0
     },
     {
       "glidenumber": "DR-2022-000285-ETH",
@@ -351,7 +351,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -1.2628718352300043,
       "spi": -1.3462508993418696,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-2022-000280-ETH",
@@ -365,7 +365,7 @@
       "affected": 0,
       "rainfall_total_anomaly": -1.2628718352300043,
       "spi": -1.3462508993418696,
-      "spi_hit_moderately_dry": true
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-2026-000117-ETH",
@@ -379,7 +379,7 @@
       "affected": 0,
       "rainfall_total_anomaly": null,
       "spi": null,
-      "spi_hit_moderately_dry": null
+      "rainfall_percentile": null
     }
   ]
 }
