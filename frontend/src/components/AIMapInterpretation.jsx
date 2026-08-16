@@ -637,6 +637,184 @@ function downloadReport(report) {
   URL.revokeObjectURL(link.href);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+// Converts the same plain-text line arrays copyReport() already builds
+// (from formatStructuredSummaryForCopy/formatStructuredAdvisory/etc, all
+// real report fields, no fabricated content) into a bulletin-friendly HTML
+// fragment -- sub-headings (lines ending in ":") become <p>, everything
+// else becomes a bulleted <li>, so the bulletin never duplicates the
+// field-extraction logic those helpers already got right.
+function linesToBulletinHtml(lines) {
+  if (!lines || lines.length === 0) {
+    return "<p class=\"bulletin-empty\">Not available.</p>";
+  }
+  const parts = [];
+  let openList = false;
+  for (const raw of lines) {
+    const trimmed = String(raw).trim();
+    if (!trimmed) continue;
+    if (trimmed.endsWith(":") && !trimmed.startsWith("-")) {
+      if (openList) {
+        parts.push("</ul>");
+        openList = false;
+      }
+      parts.push(`<p class="bulletin-subhead">${escapeHtml(trimmed)}</p>`);
+      continue;
+    }
+    if (!openList) {
+      parts.push("<ul>");
+      openList = true;
+    }
+    parts.push(`<li>${escapeHtml(trimmed.replace(/^-+\s*/, ""))}</li>`);
+  }
+  if (openList) parts.push("</ul>");
+  return parts.join("") || "<p class=\"bulletin-empty\">Not available.</p>";
+}
+
+// Real, currently-generated report data (Stage 1-3 pipeline output already
+// held in this component's `report` state) formatted as a standalone,
+// printable HTML bulletin -- deliberately NOT calling the legacy
+// GET /api/bulletin/{district} endpoint, which is wired to a stale
+// hackathon-era prototype CSV (data/sample/hazard_indicators.csv) that
+// doesn't contain any of this app's real current admin1 area names.
+function buildBulletinHtml(report, context) {
+  const generatedAt = `${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  const highConfidencePriority = (report.priority_area_justification || []).filter(
+    (item) => item.cross_indicator_confidence === "high",
+  );
+
+  const priorityRowsHtml = highConfidencePriority
+    .map(
+      (item) => `
+      <tr>
+        <td>#${escapeHtml(item.rank)}</td>
+        <td>${escapeHtml(item.area)}</td>
+        <td>${escapeHtml(titleCase(item.hazard_type))}</td>
+        <td>${escapeHtml(titleCase(item.risk_class || "unclassified"))}</td>
+        <td>${escapeHtml(Number.isFinite(Number(item.risk_score)) ? Number(item.risk_score).toFixed(1) : item.risk_score)}</td>
+        <td>${escapeHtml(titleCase(item.action_status || "unknown"))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const spatialOverviewHtml = linesToBulletinHtml(
+    (report.national_spatial_overview || []).map((item) => `- ${item}`),
+  );
+  const compoundHazardHtml = linesToBulletinHtml(
+    (report.compound_hazard_interpretation || []).map((item) => `- ${item}`),
+  );
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>${escapeHtml(report.title || "Forecast2Action AI Early Warning Bulletin")}</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 40px 32px 80px; color: #16233a; line-height: 1.55; }
+  h1 { font-size: 1.6rem; margin: 0 0 6px; color: #06204a; }
+  h2 { font-size: 1.02rem; margin-top: 32px; margin-bottom: 10px; border-bottom: 2px solid #dbe7f7; padding-bottom: 6px; color: #1570ef; }
+  .meta { color: #5d6b85; font-size: 0.84rem; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .meta strong { color: #16233a; }
+  .exec-summary { background: #f3f7fd; border: 1px solid #dbe7f7; border-radius: 12px; padding: 16px 18px; white-space: pre-wrap; }
+  .bulletin-subhead { font-weight: 700; margin: 12px 0 4px; color: #16233a; }
+  .bulletin-empty { color: #8492a6; font-style: italic; }
+  ul { padding-left: 20px; margin: 4px 0; }
+  li { margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 0.84rem; }
+  th, td { border: 1px solid #dbe7f7; padding: 6px 8px; text-align: left; }
+  th { background: #f3f7fd; }
+  .disclosure { margin-top: 44px; padding-top: 14px; border-top: 1px solid #dbe7f7; font-size: 0.74rem; color: #8492a6; }
+  .print-hint { font-size: 0.78rem; color: #5d6b85; margin-bottom: 4px; }
+  @media print { .print-hint { display: none; } body { padding: 0 8px; } }
+</style>
+</head>
+<body>
+  <p class="print-hint">Open the print dialog and choose "Save as PDF" to export this bulletin.</p>
+  <h1>Forecast2Action AI Early Warning Bulletin</h1>
+  <div class="meta">
+    <span><strong>Area:</strong> ${escapeHtml(context.areaName)}${context.areaSubtitle ? ` (${escapeHtml(context.areaSubtitle)})` : ""}</span>
+    <span><strong>Forecast:</strong> ${escapeHtml(context.forecastScaleLabel)} · ${escapeHtml(context.leadLabel)}</span>
+    <span><strong>Language:</strong> ${escapeHtml(context.languageLabel)}</span>
+    <span><strong>Generated:</strong> ${escapeHtml(generatedAt)}</span>
+  </div>
+
+  <section>
+    <h2>Executive summary</h2>
+    <div class="exec-summary">${escapeHtml(report.executive_summary || "Not available.")}</div>
+  </section>
+
+  ${
+    priorityRowsHtml
+      ? `<section>
+    <h2>Priority areas (high cross-indicator confidence)</h2>
+    <table>
+      <thead><tr><th>Rank</th><th>Area</th><th>Hazard</th><th>Risk class</th><th>Risk score</th><th>Status</th></tr></thead>
+      <tbody>${priorityRowsHtml}</tbody>
+    </table>
+  </section>`
+      : ""
+  }
+
+  <section>
+    <h2>Ethiopia-wide spatial overview</h2>
+    ${spatialOverviewHtml}
+  </section>
+
+  <section>
+    <h2>Compound-hazard interpretation</h2>
+    ${compoundHazardHtml}
+  </section>
+
+  <section>
+    <h2>Farmer advisory</h2>
+    ${linesToBulletinHtml(formatStructuredAdvisory(report.farmer_advisory, TIMESCALE_LABELS_FOR_COPY))}
+  </section>
+
+  <section>
+    <h2>Agro-pastoral advisory</h2>
+    ${linesToBulletinHtml(formatStructuredAdvisory(report.agro_pastoral_advisory, TIMESCALE_LABELS_FOR_COPY))}
+  </section>
+
+  <section>
+    <h2>Humanitarian priorities</h2>
+    ${linesToBulletinHtml(formatStructuredAdvisory(report.humanitarian_priorities, HUMANITARIAN_LABELS_FOR_COPY))}
+  </section>
+
+  <section>
+    <h2>SMS-ready messages</h2>
+    ${linesToBulletinHtml(formatSmsMessagesForCopy(report.sms_messages))}
+  </section>
+
+  <div class="disclosure">
+    Generated by Forecast2Action AI (${escapeHtml(report?._metadata?.ai_engine || "AI provider / fallback")}${report?._metadata?.provider ? ` · ${escapeHtml(report._metadata.provider)}` : ""}). Deterministic evidence is computed server-side from real climate and exposure data; narrative text is AI-generated and should be reviewed by a qualified officer before acting on it in the field.
+  </div>
+</body>
+</html>`;
+}
+
+function downloadBulletin(report, context) {
+  const html = buildBulletinHtml(report, context);
+  const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const safeArea = String(context.areaName || "ethiopia")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  link.download = `forecast2action_bulletin_${safeArea || "ethiopia"}.html`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
 function AIMapInterpretation({
   forecastSelection = {},
   adminSelection = {},
@@ -1157,6 +1335,27 @@ function AIMapInterpretation({
                 onClick={() => downloadReport(report)}
               >
                 Export JSON
+              </button>
+              <button
+                type="button"
+                className="ai-secondary-action ai-bulletin-action"
+                onClick={() =>
+                  downloadBulletin(report, {
+                    areaName: selectedPriorityArea?.area_name || "Ethiopia (national)",
+                    areaSubtitle: selectedPriorityArea?.zone
+                      ? `${selectedPriorityArea.zone} · ${selectedPriorityArea.region}`
+                      : selectedPriorityArea?.region || "",
+                    forecastScaleLabel:
+                      forecastSelection?.seasonalScaleLabel ||
+                      getForecastScaleLabel(forecastSelection.forecastScale),
+                    leadLabel:
+                      forecastSelection?.seasonalPeriodLabel ||
+                      getLeadLabel(forecastSelection.lead, forecastSelection.seasonalPeriod),
+                    languageLabel: getLanguageLabel(normalizedLanguage),
+                  })
+                }
+              >
+                Download bulletin
               </button>
             </div>
           </div>

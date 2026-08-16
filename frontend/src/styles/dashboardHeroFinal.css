@@ -275,17 +275,19 @@
   display: grid;
   grid-template-columns:
     minmax(150px, 0.86fr)
-    16px
+    14px
     minmax(220px, 1.28fr)
-    16px
+    14px
+    minmax(176px, 0.98fr)
+    14px
     minmax(205px, 1.18fr)
-    16px
+    14px
     minmax(188px, 1.08fr)
-    16px
+    14px
     minmax(138px, 0.76fr)
-    16px
-    minmax(176px, 0.98fr);
-  gap: 7px;
+    14px
+    minmax(150px, 0.86fr);
+  gap: 6px;
   align-items: center;
 }
 
@@ -546,16 +548,18 @@
     right: 30px;
     grid-template-columns:
       minmax(130px, 0.86fr)
-      12px
+      10px
       minmax(194px, 1.28fr)
-      12px
+      10px
+      minmax(152px, 0.98fr)
+      10px
       minmax(178px, 1.18fr)
-      12px
+      10px
       minmax(165px, 1.08fr)
-      12px
+      10px
       minmax(125px, 0.76fr)
-      12px
-      minmax(152px, 0.98fr);
+      10px
+      minmax(130px, 0.86fr);
   }
 
   .f2a-workflow-pill {

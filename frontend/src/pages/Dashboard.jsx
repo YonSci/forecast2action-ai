@@ -8,6 +8,7 @@ import RiskMap from "../components/RiskMap.jsx";
 import TopInterventionAreas from "../components/TopInterventionAreas.jsx";
 import SelectedAreaAdvisory from "../components/SelectedAreaAdvisory.jsx";
 import SelectedAreaCommunityReports from "../components/SelectedAreaCommunityReports.jsx";
+import ActionImplementationTracker from "../components/ActionImplementationTracker.jsx";
 import { apiUrl } from "../config.js";
 
 function safeArray(response, keys = []) {
@@ -61,6 +62,11 @@ function Dashboard() {
   // assistant can see the real, already-generated report narrative once
   // one exists, instead of only the raw evidence it recomputes itself.
   const [aiReport, setAiReport] = useState(null);
+  // Lifted from AIMapInterpretation (via onContextBuilt) so the action
+  // tracker can serve real, context-linked tasks (see
+  // /api/action-tracker/{district}?context_id=...) instead of falling back
+  // to the legacy district-CSV path, which has no real current area names.
+  const [contextId, setContextId] = useState(null);
   async function loadCommunityReports() {
     try {
       const response = await fetchJson("/api/community-reports");
@@ -153,7 +159,15 @@ function Dashboard() {
         selectedLanguage={selectedLanguage}
         onLanguageChange={setSelectedLanguage}
         onReportChange={setAiReport}
+        onContextBuilt={({ contextId: builtContextId }) => setContextId(builtContextId)}
       />
+      {selectedPriorityArea && (
+        <ActionImplementationTracker
+          selectedPriorityArea={selectedPriorityArea}
+          forecastSelection={forecastSelection}
+          contextId={contextId}
+        />
+      )}
       <ChatWidget
         forecastSelection={forecastSelection}
         selectedPriorityArea={selectedPriorityArea}
