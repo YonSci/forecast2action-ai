@@ -11,12 +11,14 @@ functions that don't need a live LLM call to verify.
 from app.api.dashboard_chat import (
     _ACTION_STATUS_TO_RISK_LEVEL,
     _AUDIENCE_TO_LIBRARY_VALUE,
+    _build_chat_context_packet,
     _build_context_summary,
     _build_other_area_packet,
     _detect_comparison_periods,
     _detect_other_areas,
     _maybe_build_action_guidance,
     _real_admin1_area_names,
+    _real_regional_indicator_values,
 )
 
 REAL_EVIDENCE = {
@@ -30,6 +32,13 @@ REAL_EVIDENCE = {
         "p_drought": {"regional": [{"area_name": "Somali", "mean": 0.21}]},
         "v_drought": {"regional": [{"area_name": "Somali", "mean": 0.73}]},
     },
+    "climate_indicators": {
+        "spi": {"regional": [{"area_name": "Harari", "mean": -4.466029765623594}]},
+        "rainfall_total": {"regional": [{"area_name": "Harari", "mean": 27.467}]},
+    },
+    "priority_area_justifications": [
+        {"area": "Harari", "hazard_type": "drought", "rank": 1, "risk_score": 30.19},
+    ],
 }
 
 
@@ -145,3 +154,37 @@ def test_build_context_summary_defaults_are_empty_when_nothing_extra_happened():
     assert summary["comparison_periods"] == []
     assert summary["other_areas_included"] == []
     assert summary["action_guidance_count"] == 0
+
+
+# Confirmed real gap this closes, caught via live user testing: a real user
+# asked the chatbot for Harari's SPI/rainfall_total/etc, and it correctly
+# declined -- correctly, because layer_summaries/indicator_summaries only
+# ever carried national_mean + highest_areas/lowest_areas, even though
+# evidence["climate_indicators"][indicator]["regional"] already has a real
+# per-region value for every real admin1 region. These tests cover the fix.
+def test_real_regional_indicator_values_returns_real_per_area_values_with_units_baked_in():
+    values = _real_regional_indicator_values(REAL_EVIDENCE, "Harari")
+    assert values["spi_stddev"] == -4.466
+    assert values["rainfall_total_mm"] == 27.467
+
+
+def test_real_regional_indicator_values_rainfall_percentile_has_no_redundant_suffix():
+    evidence = {"climate_indicators": {"rainfall_percentile": {"regional": [{"area_name": "Harari", "mean": 0.0}]}}}
+    values = _real_regional_indicator_values(evidence, "Harari")
+    assert "rainfall_percentile" in values
+    assert "rainfall_percentile_percentile" not in values
+
+
+def test_real_regional_indicator_values_empty_for_area_with_no_real_data():
+    assert _real_regional_indicator_values(REAL_EVIDENCE, "Nowhereland") == {}
+
+
+def test_build_chat_context_packet_attaches_real_climate_indicator_values_to_priority_areas():
+    packet = _build_chat_context_packet(REAL_EVIDENCE, selected_area=None, community_evidence={})
+    harari = next(item for item in packet["priority_areas"] if item["area"] == "Harari")
+    assert harari["climate_indicator_values"]["spi_stddev"] == -4.466
+
+
+def test_build_other_area_packet_also_attaches_real_climate_indicator_values():
+    packet = _build_other_area_packet(REAL_EVIDENCE, "Harari")
+    assert packet["climate_indicator_values"]["spi_stddev"] == -4.466

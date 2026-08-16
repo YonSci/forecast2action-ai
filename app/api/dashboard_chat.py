@@ -56,6 +56,7 @@ from app.context.community_context import build_community_evidence_by_region
 from app.context.knowledge_context import build_knowledge_context
 from app.context.statistical_evidence import (
     INDICATOR_DEFINITIONS,
+    _extract_regional_means,
     area_signal_counts,
     build_national_region_evidence,
     build_structured_indicator_summaries,
@@ -71,12 +72,14 @@ MAX_HISTORY_TURNS = 10
 # Per-section prompt budgets, shared between _build_chat_system_prompt (what
 # actually gets sent) and _build_context_summary (what the citation is
 # allowed to claim) so the two can never drift apart -- real measured sizes
-# for a typical period: layer+indicator summaries ~9.1k, priority_areas
-# ~8.4k, community reports ~0.9k; each budget below has real headroom above
-# that, not the single shared 12000-char pool this used to be (see
-# _build_chat_system_prompt's own docstring for the real bug that caused).
+# for a typical period: layer+indicator summaries ~9.1k, community reports
+# ~0.9k; each budget below has real headroom above that, not the single
+# shared 12000-char pool this used to be (see _build_chat_system_prompt's
+# own docstring for the real bug that caused). priority_areas re-measured
+# at ~11.0k after adding real per-area climate_indicator_values (was
+# ~8.4k) -- bumped from 14000 to keep a similar real safety margin.
 _NATIONAL_INDICATORS_MAX_CHARS = 12000
-_PRIORITY_AREAS_MAX_CHARS = 14000
+_PRIORITY_AREAS_MAX_CHARS = 16000
 _COMMUNITY_REPORTS_MAX_CHARS = 6000
 _COMPARISON_PERIOD_MAX_CHARS = 4000
 
@@ -149,6 +152,42 @@ _CHAT_PRIORITY_AREA_FIELDS = (
     "low_sample_size_warning", "highest_among_group", "lowest_among_group",
 )
 
+# Real per-indicator units, unit baked into the compact key name (same
+# convention report_stages._compact_indicator_criteria already uses).
+# Confirmed real gap this closes, caught via live user testing: a real user
+# asked "what is Harari's SPI/rainfall_total/cdd/..." and the chatbot
+# correctly declined -- correctly, because layer_summaries/indicator_
+# summaries only ever carried national_mean + highest_areas/lowest_areas (2
+# area names), even though evidence["climate_indicators"][indicator][
+# "regional"] already has a REAL per-region value for every one of the 15
+# real admin1 regions (confirmed directly: Harari's real August SPI is
+# -4.47 std dev, a genuinely more extreme value than the -1.62 national
+# mean -- this was sitting in real, already-computed evidence the whole
+# time, just never forwarded to the model).
+_INDICATOR_VALUE_UNITS = {
+    "rainfall_total": "mm",
+    "spi": "stddev",
+    "cdd": "days",
+    "cwd": "days",
+    "rx1day": "mm",
+    "rx5day": "mm",
+    # No suffix -- "rainfall_percentile" is already self-describing (a
+    # unitless 0-100 rank), same as report_stages._compact_indicator_
+    # criteria's own real precedent for this exact indicator name.
+    "rainfall_percentile": None,
+}
+
+
+def _real_regional_indicator_values(evidence: Dict[str, Any], area_name: str) -> Dict[str, float]:
+    climate = evidence.get("climate_indicators") or {}
+    values: Dict[str, float] = {}
+    for indicator, unit in _INDICATOR_VALUE_UNITS.items():
+        regional = _extract_regional_means(climate.get(indicator), "regional")
+        if area_name in regional:
+            key = f"{indicator}_{unit}" if unit else indicator
+            values[key] = round(regional[area_name], 3)
+    return values
+
 
 class ChatTurn(BaseModel):
     role: str  # "user" | "assistant"
@@ -218,11 +257,17 @@ def _build_chat_context_packet(
     don't match Stage 2's narrative-writing needs closely enough to share
     the exact same packet.
     """
-    priority_areas = [
-        {key: item.get(key) for key in _CHAT_PRIORITY_AREA_FIELDS}
-        for item in evidence.get("priority_area_justifications") or []
-        if isinstance(item, dict)
-    ]
+    priority_areas = []
+    for item in evidence.get("priority_area_justifications") or []:
+        if not isinstance(item, dict):
+            continue
+        compact = {key: item.get(key) for key in _CHAT_PRIORITY_AREA_FIELDS}
+        area_name = item.get("area")
+        if area_name:
+            indicator_values = _real_regional_indicator_values(evidence, area_name)
+            if indicator_values:
+                compact["climate_indicator_values"] = indicator_values
+        priority_areas.append(compact)
     packet: Dict[str, Any] = {
         "layer_summaries": [_compact_layer_or_indicator_summary(item) for item in build_structured_layer_summaries(evidence)],
         "indicator_summaries": [_compact_layer_or_indicator_summary(item) for item in build_structured_indicator_summaries(evidence)],
@@ -349,7 +394,7 @@ def _build_other_area_packet(evidence: Dict[str, Any], area_name: str) -> Option
             (item.get("mean") for item in layer.get("regional") or [] if item.get("area_name") == area_name), None,
         )
 
-    return {
+    packet = {
         "area": area_name,
         "cross_indicator_signal": finding.get("signal"),
         "cross_indicator_confidence": finding.get("cross_indicator_confidence"),
@@ -362,6 +407,10 @@ def _build_other_area_packet(evidence: Dict[str, Any], area_name: str) -> Option
         "wet_vulnerability": regional_mean("v_wet"),
         "note": "Did not rank in this period's top-5-per-hazard priority areas -- fewer real fields available than a ranked area.",
     }
+    indicator_values = _real_regional_indicator_values(evidence, area_name)
+    if indicator_values:
+        packet["climate_indicator_values"] = indicator_values
+    return packet
 
 
 def _maybe_build_action_guidance(
@@ -520,7 +569,7 @@ Keep answers conversational and concise (2-4 sentences) unless the user asks for
 NATIONAL INDICATORS FOR {period.upper()}:
 {compact_json(layer_and_indicator_summaries, max_chars=_NATIONAL_INDICATORS_MAX_CHARS)}
 
-PRIORITY AREAS FOR {period.upper()} (real, already-ranked):
+PRIORITY AREAS FOR {period.upper()} (real, already-ranked). Each area's own real "climate_indicator_values" (when present) are that AREA's real forecast values -- distinct from, and often quite different from, the NATIONAL INDICATORS block above (e.g. a real national SPI mean can look moderate while one specific area's real SPI is far more extreme). If asked for an area's rainfall_total/spi/cdd/cwd/rx1day/rx5day/rainfall_percentile, use that area's own real value here -- never substitute the national mean for it, and never say the value is unavailable if it's present here:
 {compact_json(context_packet.get("priority_areas") or [], max_chars=_PRIORITY_AREAS_MAX_CHARS)}
 
 NATIONAL CROSS-INDICATOR AGGREGATE (its own real, independently-computed signal -- see NATIONAL VS AREA-LEVEL RULE above):
