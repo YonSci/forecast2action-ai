@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-16T14:36:56.581431+00:00",
+  "generated_at": "2026-08-16T15:53:01.564536+00:00",
   "scope": "drought_only_v1",
   "methodology": {
-    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. Anomaly is a simplified per-region z-score against a multi-year baseline, NOT the full McKee et al. 1993 gamma-distribution SPI this app's live forecast product uses -- disclosed as an approximation, not presented as exact.",
-    "thresholds_evaluated": "This app's own real SPI_CATEGORY_BANDS (moderately/severely/extremely dry) -- not modified by this diagnostic.",
+    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical within-region rank). CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
+    "thresholds_evaluated": "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by this diagnostic.",
     "caveat": "Small real sample size, especially at the seasonal/event-year level (n=11 event-years). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
   },
   "data_provenance": {
@@ -13,58 +13,121 @@
     "drought_events_matched": 18,
     "baseline_years": "1997-2025"
   },
-  "monthly_analysis": {
-    "event_months": 12,
-    "no_event_months": 1728,
-    "mean_anomaly_event": -0.32220985878629765,
-    "mean_anomaly_no_event": 0.0022375684637937323,
-    "thresholds": [
-      {
-        "threshold_label": "moderately_dry",
-        "threshold_value": -1.0,
-        "hit_rate": 0.25,
-        "false_alarm_rate": 0.16203703703703703
-      },
-      {
-        "threshold_label": "severely_dry",
-        "threshold_value": -1.5,
-        "hit_rate": 0.08333333333333333,
-        "false_alarm_rate": 0.05324074074074074
-      },
-      {
-        "threshold_label": "extremely_dry",
-        "threshold_value": -2.0,
-        "hit_rate": 0.0,
-        "false_alarm_rate": 0.015046296296296295
-      }
-    ]
+  "indicators": {
+    "rainfall_total": {
+      "label": "Rainfall Total (z-score anomaly)",
+      "event_years": 11,
+      "no_event_years": 424,
+      "mean_value_event": -0.62338151651801,
+      "mean_value_no_event": 0.016172633683250344,
+      "thresholds": [
+        {
+          "threshold_label": "moderately_dry",
+          "threshold_value": -1.0,
+          "hit_rate": 0.45454545454545453,
+          "false_alarm_rate": 0.17452830188679244
+        },
+        {
+          "threshold_label": "severely_dry",
+          "threshold_value": -1.5,
+          "hit_rate": 0.09090909090909091,
+          "false_alarm_rate": 0.054245283018867926
+        },
+        {
+          "threshold_label": "extremely_dry",
+          "threshold_value": -2.0,
+          "hit_rate": 0.09090909090909091,
+          "false_alarm_rate": 0.02122641509433962
+        }
+      ]
+    },
+    "spi": {
+      "label": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology)",
+      "event_years": 11,
+      "no_event_years": 424,
+      "mean_value_event": -0.6316731385192839,
+      "mean_value_no_event": 0.01650769215726811,
+      "thresholds": [
+        {
+          "threshold_label": "moderately_dry",
+          "threshold_value": -1.0,
+          "hit_rate": 0.45454545454545453,
+          "false_alarm_rate": 0.16981132075471697
+        },
+        {
+          "threshold_label": "severely_dry",
+          "threshold_value": -1.5,
+          "hit_rate": 0.09090909090909091,
+          "false_alarm_rate": 0.06132075471698113
+        },
+        {
+          "threshold_label": "extremely_dry",
+          "threshold_value": -2.0,
+          "hit_rate": 0.09090909090909091,
+          "false_alarm_rate": 0.02830188679245283
+        }
+      ]
+    },
+    "rainfall_percentile": {
+      "label": "Rainfall Percentile (real empirical rank, within-region)",
+      "event_years": 11,
+      "no_event_years": 424,
+      "mean_value_event": 34.39393939393939,
+      "mean_value_no_event": 52.11477987421384,
+      "thresholds": [
+        {
+          "threshold_label": "moderately_dry",
+          "threshold_value": 15.87,
+          "hit_rate": 0.36363636363636365,
+          "false_alarm_rate": 0.1320754716981132
+        },
+        {
+          "threshold_label": "severely_dry",
+          "threshold_value": 6.68,
+          "hit_rate": 0.09090909090909091,
+          "false_alarm_rate": 0.0330188679245283
+        },
+        {
+          "threshold_label": "extremely_dry",
+          "threshold_value": 2.28,
+          "hit_rate": 0.0,
+          "false_alarm_rate": 0.0
+        }
+      ]
+    }
   },
-  "seasonal_analysis": {
-    "event_years": 11,
-    "no_event_years": 424,
-    "mean_anomaly_event": -0.6233815165180098,
-    "mean_anomaly_no_event": 0.016172633683250327,
-    "thresholds": [
-      {
-        "threshold_label": "moderately_dry",
-        "threshold_value": -1.0,
-        "hit_rate": 0.45454545454545453,
-        "false_alarm_rate": 0.17452830188679244
-      },
-      {
-        "threshold_label": "severely_dry",
-        "threshold_value": -1.5,
-        "hit_rate": 0.09090909090909091,
-        "false_alarm_rate": 0.054245283018867926
-      },
-      {
-        "threshold_label": "extremely_dry",
-        "threshold_value": -2.0,
-        "hit_rate": 0.09090909090909091,
-        "false_alarm_rate": 0.02122641509433962
-      }
-    ]
-  },
+  "region_summary": [
+    {
+      "region": "Oromia",
+      "event_count": 11,
+      "years": [
+        1997,
+        2000,
+        2001,
+        2002,
+        2011,
+        2015,
+        2022
+      ]
+    },
+    {
+      "region": "Somali",
+      "event_count": 4,
+      "years": [
+        1999,
+        2006,
+        2008,
+        2026
+      ]
+    },
+    {
+      "region": "South Ethiopia",
+      "event_count": 3,
+      "years": [
+        2022
+      ]
+    }
+  ],
   "events": [
     {
       "glidenumber": "DR-1997-000091-ETH",
@@ -72,8 +135,9 @@
       "location": "Somali state + Borena, Bale (Oromiya state) +South Ome zone",
       "year": 1997,
       "month": 4,
-      "seasonal_anomaly": -1.0807567294171214,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.0807567294171214,
+      "spi": -1.0837929546464642,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-1999-000148-ETH",
@@ -81,8 +145,9 @@
       "location": "Somali Region",
       "year": 1999,
       "month": 4,
-      "seasonal_anomaly": -0.3321330153410187,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.3321330153410187,
+      "spi": -0.2923807828303282,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2000-000121-ETH",
@@ -90,8 +155,9 @@
       "location": "Ambassel, Kutaber (South Wollo),  North Borena, East Haraghe, South Tigre, Welayita, Konso, Ogaden, Somali, Amhara, Oromiya, Tigray regions",
       "year": 2000,
       "month": 3,
-      "seasonal_anomaly": -0.6711640873389061,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.6711640873389061,
+      "spi": -0.6548698892109671,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2001-000265-ETH",
@@ -99,8 +165,9 @@
       "location": "Liben, Afder, Gode, Warder, Degah Bur, Siq (Somalia state)",
       "year": 2001,
       "month": 3,
-      "seasonal_anomaly": -0.24701096326211786,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.24701096326211786,
+      "spi": -0.2211098983332488,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2002-000524-ETH",
@@ -108,8 +175,9 @@
       "location": "Afar region, East, North and South",
       "year": 2002,
       "month": 0,
-      "seasonal_anomaly": -1.3642234062061296,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.3642234062061296,
+      "spi": -1.3867557952068905,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2002-000105-ETH",
@@ -117,8 +185,9 @@
       "location": "Amhara, Oromiya, Tigray, Somali, SNNPR, Afar",
       "year": 2002,
       "month": 1,
-      "seasonal_anomaly": -1.3642234062061296,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.3642234062061296,
+      "spi": -1.3867557952068905,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2006-000229-ETH",
@@ -126,8 +195,9 @@
       "location": "southern and south-eastern Oromiya and Somali regions",
       "year": 2006,
       "month": 2,
-      "seasonal_anomaly": 0.40640519286632587,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": 0.40640519286632587,
+      "spi": 0.4497797379230437,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2008-000043-ETH",
@@ -135,8 +205,9 @@
       "location": "Somali Region",
       "year": 2008,
       "month": 4,
-      "seasonal_anomaly": -1.1645205543561956,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.1645205543561956,
+      "spi": -1.199265786008732,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2011-000029-ETH",
@@ -144,8 +215,9 @@
       "location": "",
       "year": 2011,
       "month": 8,
-      "seasonal_anomaly": 1.0787742321691733,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": 1.0787742321691733,
+      "spi": 1.073045640585229,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2015-000109-ETH",
@@ -153,8 +225,9 @@
       "location": "",
       "year": 2015,
       "month": 6,
-      "seasonal_anomaly": -2.064255601421989,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -2.064255601421989,
+      "spi": -2.1580108005433543,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2022-000168-ETH",
@@ -162,8 +235,9 @@
       "location": "Ethiopia",
       "year": 2022,
       "month": 2,
-      "seasonal_anomaly": -0.1554399141601258,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.1554399141601258,
+      "spi": -0.1287930960985412,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2022-000268-ETH",
@@ -171,8 +245,9 @@
       "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
       "year": 2022,
       "month": 7,
-      "seasonal_anomaly": -1.2628718352300043,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.2628718352300043,
+      "spi": -1.3462508993418696,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2022-000257-ETH",
@@ -180,8 +255,9 @@
       "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
       "year": 2022,
       "month": 7,
-      "seasonal_anomaly": -0.1554399141601258,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.1554399141601258,
+      "spi": -0.1287930960985412,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2022-000250-ETH",
@@ -189,8 +265,9 @@
       "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
       "year": 2022,
       "month": 7,
-      "seasonal_anomaly": -0.1554399141601258,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.1554399141601258,
+      "spi": -0.1287930960985412,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2022-000247-ETH",
@@ -198,8 +275,9 @@
       "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
       "year": 2022,
       "month": 7,
-      "seasonal_anomaly": -0.1554399141601258,
-      "seasonal_hit_moderately_dry": false
+      "rainfall_total_anomaly": -0.1554399141601258,
+      "spi": -0.1287930960985412,
+      "spi_hit_moderately_dry": false
     },
     {
       "glidenumber": "DR-2022-000285-ETH",
@@ -207,8 +285,9 @@
       "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
       "year": 2022,
       "month": 8,
-      "seasonal_anomaly": -1.2628718352300043,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.2628718352300043,
+      "spi": -1.3462508993418696,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2022-000280-ETH",
@@ -216,8 +295,9 @@
       "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
       "year": 2022,
       "month": 8,
-      "seasonal_anomaly": -1.2628718352300043,
-      "seasonal_hit_moderately_dry": true
+      "rainfall_total_anomaly": -1.2628718352300043,
+      "spi": -1.3462508993418696,
+      "spi_hit_moderately_dry": true
     },
     {
       "glidenumber": "DR-2026-000117-ETH",
@@ -225,8 +305,9 @@
       "location": "Ethiopia, Kenya, Somalia",
       "year": 2026,
       "month": 4,
-      "seasonal_anomaly": null,
-      "seasonal_hit_moderately_dry": null
+      "rainfall_total_anomaly": null,
+      "spi": null,
+      "spi_hit_moderately_dry": null
     }
   ]
 }

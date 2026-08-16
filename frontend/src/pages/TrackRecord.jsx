@@ -1,21 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SubPageLayout from "../components/SubPageLayout.jsx";
 import { apiUrl } from "../config.js";
+import ethiopiaAdmin1 from "../data/ethiopiaAdmin1.json";
 
 const THRESHOLD_ORDER = ["moderately_dry", "severely_dry", "extremely_dry"];
 const THRESHOLD_LABELS = {
-  moderately_dry: "Moderately dry (anomaly ≤ −1.0)",
-  severely_dry: "Severely dry (anomaly ≤ −1.5)",
-  extremely_dry: "Extremely dry (anomaly ≤ −2.0)",
+  moderately_dry: "Moderately dry",
+  severely_dry: "Severely dry",
+  extremely_dry: "Extremely dry",
 };
+const INDICATOR_ORDER = ["spi", "rainfall_total", "rainfall_percentile"];
 
 function formatPct(value) {
   if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
   return `${(value * 100).toFixed(1)}%`;
 }
 
-function formatAnomaly(value) {
+function formatValue(value) {
   if (value === null || value === undefined) return "N/A";
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
 }
@@ -23,6 +25,10 @@ function formatAnomaly(value) {
 function orderedThresholds(analysis) {
   const byLabel = Object.fromEntries((analysis?.thresholds || []).map((t) => [t.threshold_label, t]));
   return THRESHOLD_ORDER.map((label) => byLabel[label]).filter(Boolean);
+}
+
+function thresholdAt(analysis, label) {
+  return (analysis?.thresholds || []).find((t) => t.threshold_label === label);
 }
 
 function ThresholdTable({ analysis }) {
@@ -34,14 +40,16 @@ function ThresholdTable({ analysis }) {
         <thead>
           <tr>
             <th>Threshold</th>
-            <th>Hit rate (event years below threshold)</th>
-            <th>False-alarm rate (no-event below threshold)</th>
+            <th>Threshold value</th>
+            <th>Hit rate (event years below)</th>
+            <th>False-alarm rate (no-event below)</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.threshold_label}>
               <td>{THRESHOLD_LABELS[row.threshold_label] || row.threshold_label}</td>
+              <td>{row.threshold_value}</td>
               <td className="lp-td-strong">{formatPct(row.hit_rate)}</td>
               <td>{formatPct(row.false_alarm_rate)}</td>
             </tr>
@@ -49,6 +57,169 @@ function ThresholdTable({ analysis }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function IndicatorComparisonTable({ indicators }) {
+  if (!indicators) return null;
+  return (
+    <div className="lp-data-table-wrap">
+      <table className="lp-data-table">
+        <thead>
+          <tr>
+            <th>Indicator</th>
+            <th>Mean value, event years</th>
+            <th>Mean value, no-event years</th>
+            <th>Hit rate (moderately dry)</th>
+            <th>False-alarm rate (moderately dry)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {INDICATOR_ORDER.map((key) => {
+            const analysis = indicators[key];
+            if (!analysis) return null;
+            const moderately = thresholdAt(analysis, "moderately_dry");
+            return (
+              <tr key={key}>
+                <td className="lp-td-strong">{analysis.label}</td>
+                <td>{formatValue(analysis.mean_value_event)}</td>
+                <td>{formatValue(analysis.mean_value_no_event)}</td>
+                <td className="lp-td-strong">{formatPct(moderately?.hit_rate)}</td>
+                <td>{formatPct(moderately?.false_alarm_rate)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const MAP_SIZE = 520;
+const MAP_PADDING = 20;
+
+function buildEthMapProjection(features, size, padding) {
+  let lonMin = Infinity;
+  let lonMax = -Infinity;
+  let latMin = Infinity;
+  let latMax = -Infinity;
+  for (const feat of features) {
+    const rings =
+      feat.geometry.type === "Polygon" ? feat.geometry.coordinates : feat.geometry.coordinates.flat();
+    for (const ring of rings) {
+      for (const [lon, lat] of ring) {
+        if (lon < lonMin) lonMin = lon;
+        if (lon > lonMax) lonMax = lon;
+        if (lat < latMin) latMin = lat;
+        if (lat > latMax) latMax = lat;
+      }
+    }
+  }
+  const avgLatRad = ((latMin + latMax) / 2) * (Math.PI / 180);
+  const cosLat = Math.cos(avgLatRad);
+  const lonSpan = (lonMax - lonMin) * cosLat;
+  const latSpan = latMax - latMin;
+  const inner = size - padding * 2;
+  const scale = Math.min(inner / lonSpan, inner / latSpan);
+  const drawnW = lonSpan * scale;
+  const drawnH = latSpan * scale;
+  const offsetX = padding + (inner - drawnW) / 2;
+  const offsetY = padding + (inner - drawnH) / 2;
+  return {
+    project(lon, lat) {
+      return [offsetX + (lon - lonMin) * cosLat * scale, offsetY + (latMax - lat) * scale];
+    },
+  };
+}
+
+function ethRingToPathD(ring, projection) {
+  return (
+    ring
+      .map(([lon, lat], i) => {
+        const [x, y] = projection.project(lon, lat);
+        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ") + " Z"
+  );
+}
+
+function ethGeometryToPathD(geometry, projection) {
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map((ring) => ethRingToPathD(ring, projection)).join(" ");
+  }
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .map((poly) => poly.map((ring) => ethRingToPathD(ring, projection)).join(" "))
+      .join(" ");
+  }
+  return "";
+}
+
+// Real teal -> amber -> red scale (matches this site's own accent palette)
+// driven by each region's real historical drought-event count -- not
+// illustrative, unlike the landing page's stylized hero map.
+function eventCountColor(count, maxCount) {
+  if (!count) return "rgba(148,178,219,0.10)";
+  const t = maxCount > 0 ? count / maxCount : 0;
+  const stops = [
+    [0, [53, 212, 199]],
+    [0.5, [247, 144, 9]],
+    [1, [239, 74, 61]],
+  ];
+  for (let i = 0; i < stops.length - 1; i++) {
+    const [a0, aColor] = stops[i];
+    const [b0, bColor] = stops[i + 1];
+    if (t >= a0 && t <= b0) {
+      const localT = (t - a0) / (b0 - a0 || 1);
+      const c = aColor.map((ch, idx) => Math.round(ch + (bColor[idx] - ch) * localT));
+      return `rgb(${c.join(",")})`;
+    }
+  }
+  return "rgb(239,74,61)";
+}
+
+function DroughtEventMap({ regionSummary }) {
+  const countByRegion = useMemo(() => {
+    const map = {};
+    for (const item of regionSummary || []) {
+      map[item.region] = item;
+    }
+    return map;
+  }, [regionSummary]);
+
+  const maxCount = Math.max(1, ...(regionSummary || []).map((item) => item.event_count));
+  const projection = useMemo(
+    () => buildEthMapProjection(ethiopiaAdmin1.features, MAP_SIZE, MAP_PADDING),
+    [],
+  );
+
+  return (
+    <svg
+      viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
+      role="img"
+      aria-label="Map of real historical drought event counts by region"
+      style={{ width: "100%", maxWidth: 420, display: "block", margin: "0 auto" }}
+    >
+      {ethiopiaAdmin1.features.map((feat) => {
+        const regionName = feat.properties.name;
+        const summary = countByRegion[regionName];
+        const count = summary?.event_count || 0;
+        return (
+          <path
+            key={feat.properties.region_id}
+            d={ethGeometryToPathD(feat.geometry, projection)}
+            fill={eventCountColor(count, maxCount)}
+            stroke="rgba(148,178,219,0.35)"
+            strokeWidth="1"
+          >
+            <title>
+              {regionName}: {count} real drought event{count === 1 ? "" : "s"}
+              {summary ? ` (${summary.years.join(", ")})` : ""}
+            </title>
+          </path>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -83,8 +254,10 @@ function TrackRecord() {
     };
   }, []);
 
-  const seasonal = data?.seasonal_analysis;
+  const indicators = data?.indicators;
+  const spi = indicators?.spi;
   const events = Array.isArray(data?.events) ? data.events : [];
+  const regionSummary = Array.isArray(data?.region_summary) ? data.region_summary : [];
   const eventCount = data?.data_provenance?.drought_events_matched ?? events.length;
 
   return (
@@ -133,27 +306,27 @@ function TrackRecord() {
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 For every real region-year where a real GLIDE drought event
                 was registered, was that region's real JJAS (June–September)
-                seasonal rainfall actually anomalously dry droughts are
-                accumulation phenomena, so a seasonal total is a more honest
-                test than any single month.
+                seasonal rainfall actually anomalously dry, using a real
+                gamma-fit SPI? Droughts are accumulation phenomena, so a
+                seasonal total is a more honest test than any single month.
               </p>
               <div className="lp-feature-grid" style={{ marginBottom: 18 }}>
                 <div className="lp-feature-card">
                   <h3 style={{ fontSize: "1.02rem" }}>Real event years</h3>
                   <p style={{ fontSize: "1.8rem", fontWeight: 800, margin: "8px 0 4px", color: "var(--lp-teal)" }}>
-                    {seasonal?.event_years ?? "N/A"}
+                    {spi?.event_years ?? "N/A"}
                   </p>
                   <p style={{ margin: 0, color: "var(--lp-muted)" }}>
                     region-years with a real registered drought event
                   </p>
                 </div>
                 <div className="lp-feature-card">
-                  <h3 style={{ fontSize: "1.02rem" }}>Mean anomaly, event years</h3>
+                  <h3 style={{ fontSize: "1.02rem" }}>Mean SPI, event years</h3>
                   <p style={{ fontSize: "1.8rem", fontWeight: 800, margin: "8px 0 4px", color: "var(--lp-red, #ef4a3d)" }}>
-                    {formatAnomaly(seasonal?.mean_anomaly_event)}
+                    {formatValue(spi?.mean_value_event)}
                   </p>
                   <p style={{ margin: 0, color: "var(--lp-muted)" }}>
-                    vs {formatAnomaly(seasonal?.mean_anomaly_no_event)} for no-event years
+                    vs {formatValue(spi?.mean_value_no_event)} for no-event years
                   </p>
                 </div>
                 <div className="lp-feature-card">
@@ -167,11 +340,66 @@ function TrackRecord() {
                 </div>
               </div>
               <p className="lp-prose" style={{ marginBottom: 10, fontWeight: 700 }}>
-                Hit rate vs. false-alarm rate, using the same threshold values
-                as this app's real SPI classification bands applied to the
-                rainfall anomaly, not to a computed SPI:
+                Real SPI hit rate vs. false-alarm rate, this app's own real SPI classification bands:
               </p>
-              <ThresholdTable analysis={seasonal} />
+              <ThresholdTable analysis={spi} />
+            </div>
+          </section>
+
+          <hr className="lp-article-divider" />
+
+          <section className="lp-article-section">
+            <div className="lp-wrap">
+              <h2>Which real indicator predicts best?</h2>
+              <p className="lp-prose" style={{ marginBottom: 18 }}>
+                This app offers 7 real climate indicators. Three can be
+                tested against real history using data already downloaded:
+                Rainfall Total, SPI, and Rainfall Percentile. CDD, CWD,
+                Rx1day, and Rx5day need real daily rainfall this repo hasn't
+                downloaded yet, so they're not included here.
+              </p>
+              <IndicatorComparisonTable indicators={indicators} />
+              <p className="lp-prose" style={{ marginTop: 14, fontSize: "0.9rem" }}>
+                Real SPI and Rainfall Total perform almost identically at
+                every threshold: a real gamma-distribution correction barely
+                changes the classification at this sample size. Rainfall
+                Percentile trails both on hit rate at the moderately-dry
+                threshold.
+              </p>
+            </div>
+          </section>
+
+          <hr className="lp-article-divider" />
+
+          <section className="lp-article-section">
+            <div className="lp-wrap">
+              <h2>Real drought events, by region</h2>
+              <p className="lp-prose" style={{ marginBottom: 18 }}>
+                Where the real matched GLIDE drought events actually
+                happened, not a national average, but the real regional
+                concentration.
+              </p>
+              <DroughtEventMap regionSummary={regionSummary} />
+              <div className="lp-data-table-wrap" style={{ marginTop: 22 }}>
+                <table className="lp-data-table">
+                  <thead>
+                    <tr>
+                      <th>Region</th>
+                      <th>Real events</th>
+                      <th>Years</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {regionSummary.map((item) => (
+                      <tr key={item.region}>
+                        <td className="lp-td-strong">{item.region}</td>
+                        <td>{item.event_count}</td>
+                        <td>{item.years.join(", ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -181,10 +409,9 @@ function TrackRecord() {
             <div className="lp-wrap">
               <h2>Every real event, by name</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Not a summary statistic in isolation each real GLIDE drought
-                event this analysis matched, with whether its region's real
-                seasonal rainfall actually crossed the moderately-dry
-                threshold that year.
+                Not a summary statistic in isolation: each real GLIDE
+                drought event this analysis matched, with its region's real
+                SPI and Rainfall Total anomaly that year.
               </p>
               <div className="lp-data-table-wrap">
                 <table className="lp-data-table">
@@ -193,8 +420,9 @@ function TrackRecord() {
                       <th>GLIDE ID</th>
                       <th>Region</th>
                       <th>Year</th>
-                      <th>Seasonal anomaly</th>
-                      <th>Crossed moderately-dry?</th>
+                      <th>SPI</th>
+                      <th>Rainfall Total anomaly</th>
+                      <th>Crossed moderately-dry (SPI)?</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -205,12 +433,12 @@ function TrackRecord() {
                         </td>
                         <td className="lp-td-strong">{event.region}</td>
                         <td>{event.year}</td>
-                        <td>{formatAnomaly(event.seasonal_anomaly)}</td>
+                        <td>{formatValue(event.spi)}</td>
+                        <td>{formatValue(event.rainfall_total_anomaly)}</td>
                         <td>
-                          {event.seasonal_hit_moderately_dry === null ||
-                          event.seasonal_hit_moderately_dry === undefined
+                          {event.spi_hit_moderately_dry === null || event.spi_hit_moderately_dry === undefined
                             ? "No baseline"
-                            : event.seasonal_hit_moderately_dry
+                            : event.spi_hit_moderately_dry
                               ? "Yes"
                               : "No"}
                         </td>
