@@ -1,9 +1,10 @@
 {
-  "generated_at": "2026-08-16T22:47:55.169582+00:00",
+  "generated_at": "2026-08-16T23:41:53.089364+00:00",
   "scope": "drought_only_v1_jjas_registered_pixel_level",
   "methodology": {
     "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's own reported coordinate -- not averaged across the whole admin1 region it falls in. Only 7 real unique coordinates exist among this dataset's matched events (several events share the same GLIDE-reported centroid), so this is a real but small set of specific locations, not a general Ethiopia-wide sample. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical rank at that exact pixel). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought episode logged as multiple GLIDE records at the same coordinate isn't counted more than once; real events registered in other months are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. The false-alarm rate should be read as \"at these same real drought-prone pixels, in years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event pool is drawn from the same small set of locations, not a random sample. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
     "thresholds_evaluated": "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by this diagnostic.",
+    "auc_note": "AUC (area under the ROC curve) measures how well an indicator ranks real event-years as drier than real no-event years across every possible real threshold, not just the three fixed bands above. 1.0 = perfect separation, 0.5 = no better than a coin flip. Computed here via real pairwise comparison (equivalent to the standard Mann-Whitney formulation), not a threshold sweep.",
     "caveat": "Very small real sample size (n=4 JJAS-registered event-years out of 13 real event-years total, across only 7 real unique pixel locations). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
   },
   "data_provenance": {
@@ -23,6 +24,7 @@
       "no_event_years": 191,
       "mean_value_event": -0.7100512517476004,
       "mean_value_no_event": 0.032285010078076534,
+      "auc": 0.6492146596858639,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
@@ -50,6 +52,7 @@
       "no_event_years": 191,
       "mean_value_event": -0.8127867695627002,
       "mean_value_no_event": 0.03210248627969676,
+      "auc": 0.6570680628272252,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
@@ -77,6 +80,7 @@
       "no_event_years": 191,
       "mean_value_event": 35.0,
       "mean_value_no_event": 52.469458987783604,
+      "auc": 0.6786649214659686,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",

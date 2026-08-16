@@ -47,7 +47,7 @@ import csv
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from shapely.geometry import Point, shape
 
@@ -260,6 +260,30 @@ def _rate(values: List[float], threshold: float) -> float:
     return sum(1 for v in values if v <= threshold) / len(values) if values else float("nan")
 
 
+def compute_auc(event_values: List[float], no_event_values: List[float]) -> Optional[float]:
+    """Real ROC AUC (area under the hit-rate/false-alarm-rate curve),
+    computed directly via pairwise comparison rather than a manual
+    threshold sweep -- equivalent to the standard Mann-Whitney
+    formulation: for a real random (event, no-event) pair, how often does
+    the event have the lower (drier) value? Ties count as half a point.
+    1.0 = perfect separation at every real threshold, 0.5 = no better than
+    chance, <0.5 would mean the indicator runs backwards. Real sample
+    sizes here are small (n_event=4), so this is small-sample AUC, not an
+    asymptotic estimate -- disclosed as such in the results, not presented
+    as a precise skill score.
+    """
+    if not event_values or not no_event_values:
+        return None
+    concordant = 0.0
+    for event_value in event_values:
+        for no_event_value in no_event_values:
+            if event_value < no_event_value:
+                concordant += 1
+            elif event_value == no_event_value:
+                concordant += 0.5
+    return concordant / (len(event_values) * len(no_event_values))
+
+
 def build_indicator_analysis(
     indicator: str,
     values_by_key: Dict[Tuple[str, int], float],
@@ -284,6 +308,7 @@ def build_indicator_analysis(
         "no_event_years": len(no_event_values),
         "mean_value_event": float(np.mean(event_values)) if event_values else None,
         "mean_value_no_event": float(np.mean(no_event_values)) if no_event_values else None,
+        "auc": compute_auc(event_values, no_event_values),
         "thresholds": [
             {
                 "threshold_label": label,
@@ -401,6 +426,13 @@ def build_results() -> Dict[str, Any]:
                 "the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by "
                 "this diagnostic."
             ),
+            "auc_note": (
+                "AUC (area under the ROC curve) measures how well an indicator ranks real event-years "
+                "as drier than real no-event years across every possible real threshold, not just the "
+                "three fixed bands above. 1.0 = perfect separation, 0.5 = no better than a coin flip. "
+                "Computed here via real pairwise comparison (equivalent to the standard Mann-Whitney "
+                "formulation), not a threshold sweep."
+            ),
             "caveat": (
                 "Very small real sample size (n="
                 f"{len(jjas_point_year_events)} JJAS-registered event-years out of "
@@ -443,6 +475,7 @@ def run_diagnostic() -> None:
         print(f"  Real event years: {analysis['event_years']} | Real no-event years: {analysis['no_event_years']}")
         print(f"  Mean value (event years):    {analysis['mean_value_event']:+.2f}" if analysis["mean_value_event"] is not None else "  Mean value (event years): N/A")
         print(f"  Mean value (no-event years): {analysis['mean_value_no_event']:+.2f}" if analysis["mean_value_no_event"] is not None else "  Mean value (no-event years): N/A")
+        print(f"  AUC: {analysis['auc']:.3f}" if analysis["auc"] is not None else "  AUC: N/A")
         for row in analysis["thresholds"]:
             print(f"    {row['threshold_value']:<8.2f} {row['threshold_label']:16s} hit={row['hit_rate']:.1%}  false_alarm={row['false_alarm_rate']:.1%}")
 

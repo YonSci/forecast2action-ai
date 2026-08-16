@@ -18,6 +18,12 @@ function formatPct(value) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+function formatAuc(value) {
+  if (value === null || value === undefined || Number.isNaN(value))
+    return "N/A";
+  return value.toFixed(3);
+}
+
 function formatValue(value) {
   if (value === null || value === undefined) return "N/A";
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
@@ -75,6 +81,7 @@ function IndicatorComparisonTable({ indicators }) {
             <th>Indicator</th>
             <th>Mean value, event years</th>
             <th>Mean value, no-event years</th>
+            <th>AUC</th>
             <th>Hit rate (moderately dry)</th>
             <th>False-alarm rate (moderately dry)</th>
           </tr>
@@ -89,9 +96,8 @@ function IndicatorComparisonTable({ indicators }) {
                 <td className="lp-td-strong">{analysis.label}</td>
                 <td>{formatValue(analysis.mean_value_event)}</td>
                 <td>{formatValue(analysis.mean_value_no_event)}</td>
-                <td className="lp-td-strong">
-                  {formatPct(moderately?.hit_rate)}
-                </td>
+                <td className="lp-td-strong">{formatAuc(analysis.auc)}</td>
+                <td>{formatPct(moderately?.hit_rate)}</td>
                 <td>{formatPct(moderately?.false_alarm_rate)}</td>
               </tr>
             );
@@ -742,7 +748,11 @@ function TrackRecord() {
                 against real history using data already downloaded: Rainfall
                 Total, SPI, and Rainfall Percentile. CDD, CWD, Rx1day, and
                 Rx5day need real daily rainfall this repo hasn't downloaded yet,
-                so they're not included here.
+                so they're not included here. AUC (area under the ROC curve)
+                measures how well an indicator ranks real event-years as
+                drier than real no-event years across every real threshold,
+                not just the fixed moderately-dry cutoff: 1.0 is perfect
+                separation, 0.5 is no better than a coin flip.
               </p>
               <IndicatorComparisonTable indicators={indicators} />
               <p
@@ -755,9 +765,12 @@ function TrackRecord() {
                 gamma-distribution correction or percentile ranking doesn't
                 change which real events get flagged there. They diverge at
                 the extremely-dry threshold: SPI and Rainfall Total still
-                catch a real event Percentile misses entirely (0% hit rate),
-                the one place in this comparison where indicator choice
-                actually matters.
+                catch a real event Percentile misses entirely (0% hit rate).
+                But across the full AUC curve, Rainfall Percentile actually
+                ranks highest (0.679 vs 0.657 for SPI and 0.649 for Rainfall
+                Total): a real reminder that a single fixed threshold and
+                overall discrimination can tell different stories, and
+                neither one alone is the whole picture.
               </p>
             </div>
           </section>
