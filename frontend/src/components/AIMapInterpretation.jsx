@@ -14,6 +14,7 @@ import CategorizedHumanitarianList from "./context/CategorizedHumanitarianList.j
 import SmsMessageCard from "./context/SmsMessageCard.jsx";
 import WhatsAppMessageCard from "./context/WhatsAppMessageCard.jsx";
 import RetrievalDebugPanel from "./context/RetrievalDebugPanel.jsx";
+import ethiopiaAdmin1 from "../data/ethiopiaAdmin1.json";
 import "../styles/aiMapInterpretation.css";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -704,6 +705,7 @@ async function fetchSeasonalMapEntry(indicatorValue, indicatorLabel, period, pro
       subtitle: [data.map.period_label, data.map.product_label].filter(Boolean).join(" · "),
       imageUrl: data.map.image_url,
       legend: data.map.legend || null,
+      bounds: data.map.bounds || null,
     };
   } catch {
     return null;
@@ -722,6 +724,7 @@ async function fetchHazardRiskMapEntry(layer, period) {
       subtitle: data.map.period_label || period,
       imageUrl: data.map.image_url,
       legend: data.map.legend || null,
+      bounds: data.map.bounds || null,
     };
   } catch {
     return null;
@@ -813,6 +816,54 @@ function legendToHtml(legend) {
       </div>`;
 }
 
+function boundaryRingToPathD(ring, west, north) {
+  return (
+    ring
+      .map(([lon, lat], i) => {
+        const x = (lon - west).toFixed(3);
+        const y = (north - lat).toFixed(3);
+        return `${i === 0 ? "M" : "L"}${x},${y}`;
+      })
+      .join(" ") + " Z"
+  );
+}
+
+function boundaryGeometryToPathD(geometry, west, north) {
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map((ring) => boundaryRingToPathD(ring, west, north)).join(" ");
+  }
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .map((poly) => poly.map((ring) => boundaryRingToPathD(ring, west, north)).join(" "))
+      .join(" ");
+  }
+  return "";
+}
+
+// Real admin1 region-boundary overlay for bulletin map figures -- reuses
+// the same simplified real Ethiopia admin1 boundaries built for the
+// landing page hero map. Positioned with a PLAIN linear lon/lat
+// projection (no cos-latitude correction, unlike the landing page's
+// decorative version) because this has to align pixel-for-pixel with the
+// underlying raster PNG, which is rendered directly from its own
+// equirectangular pixel grid over the exact same real bounds this map
+// record already returned (get_raster_bounds in seasonal_raster_maps.py /
+// hazard_risk_maps.py). Falls back to Ethiopia's own real bounding box
+// (confirmed earlier building the landing page map) if a map has no bounds.
+function boundaryOverlaySvg(bounds) {
+  const west = Number.isFinite(bounds?.west) ? bounds.west : 32.99;
+  const east = Number.isFinite(bounds?.east) ? bounds.east : 47.99;
+  const south = Number.isFinite(bounds?.south) ? bounds.south : 3.4;
+  const north = Number.isFinite(bounds?.north) ? bounds.north : 14.85;
+  const width = Math.max(east - west, 0.01);
+  const height = Math.max(north - south, 0.01);
+  const paths = ethiopiaAdmin1.features
+    .filter((feat) => feat.properties.region_id !== "contested")
+    .map((feat) => `<path d="${boundaryGeometryToPathD(feat.geometry, west, north)}" />`)
+    .join("");
+  return `<svg class="bulletin-map-boundaries" viewBox="0 0 ${width.toFixed(3)} ${height.toFixed(3)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${paths}</svg>`;
+}
+
 function bulletinMapGroupHtml(title, entries) {
   if (!entries || entries.length === 0) return "";
   return `
@@ -823,7 +874,10 @@ function bulletinMapGroupHtml(title, entries) {
           .map(
             (item) => `
         <figure>
-          <img src="${item.dataUrl}" alt="${escapeHtml(item.title)}" />
+          <div class="bulletin-map-frame">
+            <img src="${item.dataUrl}" alt="${escapeHtml(item.title)}" />
+            ${boundaryOverlaySvg(item.bounds)}
+          </div>
           <figcaption>
             <strong>${escapeHtml(item.title)}</strong>
             ${item.subtitle ? `<span>${escapeHtml(item.subtitle)}</span>` : ""}
@@ -930,7 +984,10 @@ function buildBulletinHtml(report, context) {
   .bulletin-map-group h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #5d6b85; margin: 0 0 10px; }
   .bulletin-maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 4px; }
   .bulletin-maps figure { margin: 0; border: 1px solid #dbe7f7; border-radius: 12px; overflow: hidden; background: #f8fafc; }
-  .bulletin-maps img { width: 100%; height: 170px; object-fit: contain; display: block; background: #0b1c33; }
+  .bulletin-map-frame { position: relative; width: 100%; height: 170px; background: #ffffff; }
+  .bulletin-map-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .bulletin-map-boundaries { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .bulletin-map-boundaries path { fill: none; stroke: rgba(15, 35, 65, 0.55); stroke-width: 1; vector-effect: non-scaling-stroke; }
   .bulletin-maps figcaption { padding: 8px 10px 10px; font-size: 0.76rem; color: #5d6b85; }
   .bulletin-maps figcaption strong { display: block; color: #16233a; font-size: 0.8rem; }
   .bulletin-maps figcaption > span { display: block; font-size: 0.68rem; margin-top: 1px; }
@@ -941,7 +998,7 @@ function buildBulletinHtml(report, context) {
   .bulletin-legend-categorical { display: flex; flex-wrap: wrap; gap: 4px 10px; }
   .bulletin-legend-swatch { display: inline-flex; align-items: center; gap: 4px; font-size: 0.66rem; color: #16233a; }
   .bulletin-legend-swatch i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
-  @media print { .print-hint { display: none; } body { padding: 0 8px; } .bulletin-maps img { height: 140px; } .bulletin-map-group { break-inside: avoid; } }
+  @media print { .print-hint { display: none; } body { padding: 0 8px; } .bulletin-map-frame { height: 140px; } .bulletin-map-group { break-inside: avoid; } }
 </style>
 </head>
 <body>
