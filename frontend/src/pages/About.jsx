@@ -75,8 +75,8 @@ function About() {
         <div className="lp-wrap">
           <h2>Technology stack</h2>
           <p className="lp-prose" style={{ marginBottom: 18 }}>
-            The real, currently-installed dependencies this platform runs
-            on — not an aspirational list.
+            The real, currently-installed dependencies this platform runs on not
+            an aspirational list.
           </p>
           <div className="lp-feature-grid lp-tech-grid">
             <div className="lp-feature-card">
@@ -84,23 +84,36 @@ function About() {
               <ul className="lp-tool-list">
                 <li>
                   <span className="lp-tool-name">React 19</span>
-                  <span className="lp-tool-desc">The UI library the dashboard and every page on this site are built with.</span>
+                  <span className="lp-tool-desc">
+                    The UI library the dashboard and every page on this site are
+                    built with.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">React Router 7</span>
-                  <span className="lp-tool-desc">Client-side routing between pages — Home, Dashboard, Docs, and every page you're navigating right now.</span>
+                  <span className="lp-tool-desc">
+                    Client-side routing between pages Home, Dashboard, Docs, and
+                    every page you're navigating right now.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">Vite</span>
-                  <span className="lp-tool-desc">Dev server and production build tool.</span>
+                  <span className="lp-tool-desc">
+                    Dev server and production build tool.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">Leaflet / react-leaflet</span>
-                  <span className="lp-tool-desc">Renders the interactive forecast, hazard/risk, and priority-area maps.</span>
+                  <span className="lp-tool-desc">
+                    Renders the interactive forecast, hazard/risk, and
+                    priority-area maps.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">Recharts</span>
-                  <span className="lp-tool-desc">Chart rendering elsewhere in the dashboard.</span>
+                  <span className="lp-tool-desc">
+                    Chart rendering elsewhere in the dashboard.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -113,44 +126,67 @@ function About() {
                 </li>
                 <li>
                   <span className="lp-tool-name">FastAPI</span>
-                  <span className="lp-tool-desc">Serves every <code>/api</code> endpoint the frontend calls.</span>
+                  <span className="lp-tool-desc">
+                    Serves every <code>/api</code> endpoint the frontend calls.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">Uvicorn</span>
-                  <span className="lp-tool-desc">The ASGI server that actually runs FastAPI.</span>
+                  <span className="lp-tool-desc">
+                    The ASGI server that actually runs FastAPI.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">Pydantic</span>
-                  <span className="lp-tool-desc">Validates request/response data and schemas.</span>
+                  <span className="lp-tool-desc">
+                    Validates request/response data and schemas.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">pytest</span>
-                  <span className="lp-tool-desc">Runs the backend's automated test suite.</span>
+                  <span className="lp-tool-desc">
+                    Runs the backend's automated test suite.
+                  </span>
                 </li>
               </ul>
             </div>
             <div className="lp-feature-card">
-              <h3 style={{ fontSize: "1.02rem" }}>Geospatial &amp; data processing</h3>
+              <h3 style={{ fontSize: "1.02rem" }}>
+                Geospatial &amp; data processing
+              </h3>
               <ul className="lp-tool-list">
                 <li>
                   <span className="lp-tool-name">rasterio</span>
-                  <span className="lp-tool-desc">Reads and writes the GeoTIFF hazard, exposure, and vulnerability raster layers.</span>
+                  <span className="lp-tool-desc">
+                    Reads and writes the GeoTIFF hazard, exposure, and
+                    vulnerability raster layers.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">rioxarray / xarray</span>
-                  <span className="lp-tool-desc">Labeled multi-dimensional arrays for the ensemble forecast data.</span>
+                  <span className="lp-tool-desc">
+                    Labeled multi-dimensional arrays for the ensemble forecast
+                    data.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">netCDF4 / h5netcdf</span>
-                  <span className="lp-tool-desc">Reads the raw ensemble forecast (<code>.nc</code>) files.</span>
+                  <span className="lp-tool-desc">
+                    Reads the raw ensemble forecast (<code>.nc</code>) files.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">geopandas</span>
-                  <span className="lp-tool-desc">Handles region/zone/woreda administrative boundary geometry.</span>
+                  <span className="lp-tool-desc">
+                    Handles region/zone/woreda administrative boundary geometry.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">NumPy / pandas / SciPy</span>
-                  <span className="lp-tool-desc">Numerical computation, tabular data, and statistics — e.g. the gamma-distribution fit behind SPI.</span>
+                  <span className="lp-tool-desc">
+                    Numerical computation, tabular data, and statistics e.g. the
+                    gamma-distribution fit behind SPI.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -158,20 +194,28 @@ function About() {
               <h3 style={{ fontSize: "1.02rem" }}>AI &amp; language models</h3>
               <p>
                 A context-engineered, evidence-grounded LLM pipeline with
-                RAG-based action guidance — not a single freeform prompt.
+                RAG-based action guidance not a single freeform prompt.
               </p>
               <ul className="lp-tool-list">
                 <li>
                   <span className="lp-tool-name">Google Gemini</span>
-                  <span className="lp-tool-desc">Primary AI provider for report interpretation and advisory generation.</span>
+                  <span className="lp-tool-desc">
+                    Primary AI provider for report interpretation and advisory
+                    generation.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">OpenRouter</span>
-                  <span className="lp-tool-desc">Fallback multi-model routing provider.</span>
+                  <span className="lp-tool-desc">
+                    Fallback multi-model routing provider.
+                  </span>
                 </li>
                 <li>
                   <span className="lp-tool-name">OpenAI-compatible API</span>
-                  <span className="lp-tool-desc">Shared client interface used to call all three providers above.</span>
+                  <span className="lp-tool-desc">
+                    Shared client interface used to call all three providers
+                    above.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -191,8 +235,8 @@ function About() {
               <Link to="/data-sources" style={{ color: "var(--lp-teal)" }}>
                 Data sources
               </Link>
-              ), computed deterministically from named, real datasets before
-              any AI interpretation is layered on top.
+              ), computed deterministically from named, real datasets before any
+              AI interpretation is layered on top.
             </p>
           </div>
         </div>

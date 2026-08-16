@@ -18,9 +18,11 @@ Forecast2Action AI covers Ethiopia at the national scale (admin1/admin2/admin3),
 - ranks regions into a priority queue using a deterministic, auditable formula;
 - classifies each region into an alert level (Trigger / Warning / Watch / No alert);
 - generates an AI-interpreted integrated risk report executive summary, national spatial overview, compound hazard interpretation, and per-area justifications;
-- produces audience-specific advisories (Disaster Risk Manager, NGO/Anticipatory Action Planner, Agriculture & Livestock Extension Officer, Community Member) and SMS/WhatsApp-ready community messages in English, Amharic, Oromifa/Afaan Oromo, Tigrinya, and Somali;
+- produces audience-specific advisories (Farmer, Agro-pastoral, Humanitarian) and SMS/WhatsApp-ready community messages in English, Amharic, Oromifa/Afaan Oromo, Tigrinya, and Somali;
 - accepts community ground-truth reports that corroborate or contradict the forecast signal;
-- tracks recommended actions through to implementation, with CSV export.
+- tracks recommended actions through to implementation, with CSV export;
+- answers follow-up questions through a grounded, streaming dashboard chat assistant (tuned for Disaster manager, Extension officer, NGO planner, or General audiences) that only cites real, already-computed evidence, never a freeform re-query of the model;
+- exports a self-contained HTML bulletin containing real climate-indicator, risk-layer, and priority-area maps (each with its own colorbar/legend and region boundaries) alongside the full generated advisory.
 
 Every generated report is validated against the same evidence it was built from before it reaches a user see [§4 The response validator](#4-the-response-validator).
 
@@ -80,9 +82,10 @@ Nothing here is an LLM re-prompt loop every repair is a deterministic Python tra
 - Priority intervention area ranking, reproducible and auditable.
 - AI-generated integrated report with per-area justification, confidence, and infrastructure/exposure denominators.
 - Community ground-truth reporting (water shortage, crop wilting, pasture condition, livestock stress, flooding, disease concern, and more).
-- Action implementation tracker with CSV export.
+- Action implementation tracker (real per-area tasks, status/approval workflow) with CSV export.
 - Multilingual SMS/WhatsApp-ready community messages.
-- Downloadable HTML/Markdown bulletins.
+- Downloadable, self-contained HTML bulletin containing the full generated advisory plus all 7 climate-indicator, 8 risk-layer, and 2 priority-area maps, each with a real colorbar/legend and region-boundary overlay.
+- Grounded, streaming AI dashboard assistant that answers follow-up questions against the same real evidence and generated report, including cross-period comparison, methodology Q&A, and RAG-based action-guidance retrieval, audience-tuned (Disaster manager / Extension officer / NGO planner / General).
 
 ---
 
@@ -119,9 +122,10 @@ forecast2action-ai/
 │
 ├── app/
 │   ├── api/
-│   │   ├── main.py                          # FastAPI app, CORS, bulletin export
+│   │   ├── main.py                          # FastAPI app, CORS, action tracker
 │   │   ├── report_stages.py                 # 3-stage AI report pipeline
 │   │   ├── ai_map_interpretation.py         # AI provider calls, schemas
+│   │   ├── dashboard_chat.py                # grounded dashboard chat assistant (message/stream)
 │   │   ├── hazard_risk_maps.py              # hazard/risk raster tile service
 │   │   ├── hazard_risk_ranking.py           # priority ranking engine
 │   │   ├── seasonal_raster_maps.py          # interactive climate indicator raster service
@@ -248,8 +252,10 @@ pytest
 | `GET /api/community-feedback-summary`                                                                    | Summarizes ground-truth reports                                      |
 | `GET /api/priority-actions`                                                                              | Ranked priority action queue                                         |
 | `GET /api/action-tracker/{district}` / `.../csv`                                                         | Action implementation tracker + CSV export                           |
-| `GET /api/bulletin/{district}`                                                                           | HTML or Markdown bulletin export                                     |
+| `POST /api/chat/message` / `POST /api/chat/stream`                                                       | Grounded dashboard chat assistant (non-streaming / SSE streaming)    |
 | `GET/POST /api/context/*`                                                                                | Context-engineering / decision-context endpoints                     |
+
+The downloadable HTML bulletin (see [§5 Dashboard features](#5-dashboard-features)) is composed entirely client-side from the already-generated report plus the same `/api/seasonal-raster/map` and `/api/hazard-risk/map` calls above no separate bulletin endpoint.
 
 Full interactive documentation is available at `/docs` on the running backend.
 

@@ -12,7 +12,7 @@ function Platform() {
           <span className="lp-eyebrow">
             <span className="lp-dot" /> Platform
           </span>
-          <h1>Four real capabilities, one decision pipeline</h1>
+          <h1>Five real capabilities, one decision pipeline</h1>
           <p className="lp-hero-sub">
             Forecast2Action AI isn't a single model it's a pipeline of
             deterministic statistics, a real formula-driven risk score, and AI
@@ -116,6 +116,33 @@ function Platform() {
               built from invented place names, fabricated statistics, and
               forecast-vs-observed confusion are flagged automatically, not just
               trusted.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-article-section">
+        <div className="lp-wrap">
+          <h2>Grounded assistant, tracking &amp; reporting</h2>
+          <div className="lp-prose">
+            <p>
+              A streaming dashboard chat assistant answers follow-up
+              questions, such as area-level indicator values, cross-period
+              comparisons, or methodology, against the same real evidence and
+              generated report, never a freeform re-query of the model.
+              Responses are tuned to who's asking (Disaster manager,
+              Extension officer, NGO planner, or General) and can pull in
+              RAG-retrieved action guidance when the question calls for it.
+            </p>
+            <p>
+              An action implementation tracker turns each area's recommended
+              actions into real, trackable tasks (status, approval, CSV
+              export), and a one-click bulletin export packages the full
+              generated advisory alongside all 7 climate-indicator, 8
+              risk-layer, and 2 priority-area maps, each with its own real
+              colorbar/legend and region-boundary overlay, into a single
+              self-contained HTML file built entirely from data already on
+              screen.
             </p>
           </div>
         </div>

@@ -80,6 +80,12 @@ function HowItWorks() {
                   agro-pastoral, and humanitarian advisories, cross-checked
                   against the same evidence it was given before being delivered
                   as an SMS, a WhatsApp message, or the full dashboard report.
+                  From there, recommended actions can be tracked to
+                  implementation, a follow-up question can go to the grounded
+                  dashboard chat assistant, and the whole advisory can be
+                  exported as a self-contained HTML bulletin with every
+                  climate-indicator, risk-layer, and priority-area map
+                  included.
                 </p>
               </div>
             </div>
