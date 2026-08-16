@@ -388,6 +388,131 @@ function SortableEventTable({ events }) {
   );
 }
 
+// Same real moderately-dry threshold values as INDICATOR_THRESHOLDS in
+// drought_threshold_calibration.py -- carrying the same underlying
+// probability as this app's own SPI_CATEGORY_BANDS, not an arbitrary cutoff.
+const MODERATELY_DRY_THRESHOLDS = {
+  spi: -1.0,
+  rainfall_total_anomaly: -1.0,
+  rainfall_percentile: 15.87,
+};
+
+function isHit(value, indicatorKey) {
+  if (value === null || value === undefined) return null;
+  return value <= MODERATELY_DRY_THRESHOLDS[indicatorKey];
+}
+
+function HitBadge({ value, indicatorKey, formatter }) {
+  const hit = isHit(value, indicatorKey);
+  if (hit === null) {
+    return <span style={{ color: "var(--lp-muted)" }}>N/A</span>;
+  }
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <span
+        style={{
+          color: hit ? "var(--lp-red, #ef4a3d)" : "var(--lp-muted)",
+          fontWeight: hit ? 800 : 400,
+        }}
+      >
+        {formatter(value)}
+      </span>
+      <span
+        style={{
+          fontSize: "0.6rem",
+          padding: "1px 6px",
+          borderRadius: 999,
+          border: `1px solid ${hit ? "var(--lp-red, #ef4a3d)" : "var(--lp-line)"}`,
+          color: hit ? "var(--lp-red, #ef4a3d)" : "var(--lp-muted)",
+          textTransform: "uppercase",
+          letterSpacing: "0.03em",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {hit ? "Hit" : "Miss"}
+      </span>
+    </span>
+  );
+}
+
+const CAPTURED_MISSED_COLUMNS = [
+  { key: "year", label: "Year" },
+  { key: "month", label: "Month" },
+  { key: "region", label: "Region" },
+];
+
+function CapturedVsMissedTable({ events }) {
+  const [sortKey, setSortKey] = useState("year");
+  const [sortDir, setSortDir] = useState("asc");
+
+  const sortedEvents = useMemo(
+    () => sortEvents(events, sortKey, sortDir),
+    [events, sortKey, sortDir],
+  );
+
+  function handleSort(key) {
+    if (key === sortKey) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  return (
+    <div className="lp-data-table-wrap">
+      <table className="lp-data-table">
+        <thead>
+          <tr>
+            {CAPTURED_MISSED_COLUMNS.map((column) => (
+              <th
+                key={column.key}
+                onClick={() => handleSort(column.key)}
+                style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+                aria-sort={
+                  sortKey === column.key ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+                }
+              >
+                {column.label}
+                {sortKey === column.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+              </th>
+            ))}
+            <th>SPI</th>
+            <th>Rainfall Total</th>
+            <th>Rainfall Percentile</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedEvents.map((event) => (
+            <tr key={`${event.glidenumber}-${event.region}`}>
+              <td>{event.year}</td>
+              <td>{formatMonth(event.month)}</td>
+              <td className="lp-td-strong">{event.region}</td>
+              <td>
+                <HitBadge value={event.spi} indicatorKey="spi" formatter={formatValue} />
+              </td>
+              <td>
+                <HitBadge
+                  value={event.rainfall_total_anomaly}
+                  indicatorKey="rainfall_total_anomaly"
+                  formatter={formatValue}
+                />
+              </td>
+              <td>
+                <HitBadge
+                  value={event.rainfall_percentile}
+                  indicatorKey="rainfall_percentile"
+                  formatter={formatPercentile}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function TrackRecord() {
   const [data, setData] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -608,6 +733,22 @@ function TrackRecord() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+
+          <hr className="lp-article-divider" />
+
+          <section className="lp-article-section">
+            <div className="lp-wrap">
+              <h2>Captured vs. missed, by year, month &amp; region</h2>
+              <p className="lp-prose" style={{ marginBottom: 18 }}>
+                Every real GLIDE drought event, and whether each real
+                indicator actually crossed its moderately-dry threshold in
+                that region-year. Not the aggregate percentage above, but
+                the real event-by-event record it's built from. Click a
+                column heading to sort.
+              </p>
+              <CapturedVsMissedTable events={events} />
             </div>
           </section>
 
