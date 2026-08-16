@@ -145,6 +145,37 @@
   cursor: not-allowed;
 }
 
+.f2a-chat-starter-glossary {
+  border-style: dashed !important;
+  font-style: italic;
+}
+
+.f2a-chat-followups {
+  margin: 10px 0 2px;
+}
+
+.f2a-chat-audience-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line, #d9e3f2);
+  background: var(--panel, #ffffff);
+  font-size: 0.76rem;
+  color: var(--muted, #60708c);
+}
+
+.f2a-chat-audience-row select {
+  flex: 1;
+  border: 1px solid var(--line, #d9e3f2);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--text, #0f274d);
+  background: var(--panel-soft, #f7faff);
+}
+
 .f2a-chat-bubble {
   max-width: 86%;
   padding: 10px 13px;

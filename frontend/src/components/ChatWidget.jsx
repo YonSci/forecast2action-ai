@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { apiUrl } from "../config.js";
+import { HAZARD_RISK_TERM_DEFINITIONS } from "../constants/hazardRiskGlossary.js";
 import "../styles/chatWidget.css";
+
+// Real audience vocabulary matching app/api/dashboard_chat.py's
+// _AUDIENCE_INSTRUCTIONS keys (confirmed against data/knowledge/
+// action_library.json, not the "Disaster Risk Manager"/etc labels from
+// this project's own old, superseded README).
+const AUDIENCE_OPTIONS = [
+  { value: "", label: "General" },
+  { value: "disaster_manager", label: "Disaster manager" },
+  { value: "extension_officer", label: "Extension officer" },
+  { value: "ngo_planner", label: "NGO planner" },
+];
 
 const MAX_HISTORY_TURNS = 10;
 
@@ -64,6 +76,28 @@ function getStarterQuestions(selectedPriorityArea) {
   questions.push("What are the top drought priority areas?");
   questions.push("What's the national risk signal this period?");
   return questions.slice(0, 4);
+}
+
+// Shown under the LAST assistant reply only (not every past one) once a
+// real conversation is underway -- a grounded-only assistant otherwise
+// relies on the user guessing what's in scope after the first answer.
+function getFollowUpQuestions(selectedPriorityArea) {
+  const areaName = selectedPriorityArea?.area_name;
+  const questions = areaName
+    ? [`Compare ${areaName} to last period`, `What should be done about this?`, `Give me an SMS-ready version`]
+    : ["What's changed since last period?", "What should be done about this?"];
+  return questions.slice(0, 3);
+}
+
+// Real glossary terms (frontend/src/constants/hazardRiskGlossary.js --
+// already used elsewhere on the dashboard for the same real definitions),
+// phrased as natural questions the grounded assistant can actually answer
+// via its own METHODOLOGY REFERENCE block -- not invented terminology.
+const GLOSSARY_CHIP_LAYERS = ["population_risk_class", "v_drought", "p_drought"];
+function getGlossaryQuestions() {
+  return GLOSSARY_CHIP_LAYERS
+    .filter((layer) => HAZARD_RISK_TERM_DEFINITIONS[layer])
+    .map((layer) => `What does ${layer} mean?`);
 }
 
 function IconChatBubble() {
@@ -137,9 +171,11 @@ function ChatWidget({
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState(loadStoredMessages);
   const [input, setInput] = useState("");
+  const [audience, setAudience] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -150,6 +186,30 @@ function ChatWidget({
   useEffect(() => {
     saveStoredMessages(messages);
   }, [messages]);
+
+  // Keyboard shortcut ("/") to open the assistant, matching the common
+  // search-shortcut convention -- guarded against firing while the user is
+  // already typing anywhere else on the page (an input/textarea/
+  // contenteditable), so it never steals a literal "/" keystroke.
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key !== "/" || isOpen) return;
+      const target = event.target;
+      const isTyping =
+        target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+      if (isTyping) return;
+      event.preventDefault();
+      setIsOpen(true);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   function clearChatHistory() {
     setMessages([]);
@@ -197,6 +257,7 @@ function ChatWidget({
       selected_area: selectedPriorityArea?.area_name || null,
       target_language: selectedLanguage || "en",
       report_context: reportContext,
+      audience: audience || null,
     });
 
     let receivedAnything = false;
@@ -322,7 +383,7 @@ function ChatWidget({
             </div>
           </div>
 
-          <div className="f2a-chat-messages" ref={scrollRef}>
+          <div className="f2a-chat-messages" ref={scrollRef} role="log" aria-live="polite">
             {messages.length === 0 && (
               <div className="f2a-chat-empty">
                 <p>
@@ -340,30 +401,71 @@ function ChatWidget({
                       {question}
                     </button>
                   ))}
+                  {getGlossaryQuestions().map((question) => (
+                    <button
+                      key={question}
+                      type="button"
+                      className="f2a-chat-starter-glossary"
+                      onClick={() => sendText(question)}
+                      disabled={isSending}
+                    >
+                      {question}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}
-              >
-                {message.streaming && !message.content ? (
-                  <span className="f2a-chat-typing-dots">Thinking…</span>
-                ) : (
-                  renderInlineMarkdown(message.content)
-                )}
-                {message.streaming && message.content && (
-                  <span className="f2a-chat-cursor" aria-hidden="true" />
-                )}
-              </div>
-            ))}
+            {messages.map((message, index) => {
+              const isLast = index === messages.length - 1;
+              const showFollowUps =
+                isLast && message.role === "assistant" && !message.streaming && !isSending;
+              return (
+                <div key={index}>
+                  <div className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}>
+                    {message.streaming && !message.content ? (
+                      <span className="f2a-chat-typing-dots">Thinking…</span>
+                    ) : (
+                      renderInlineMarkdown(message.content)
+                    )}
+                    {message.streaming && message.content && (
+                      <span className="f2a-chat-cursor" aria-hidden="true" />
+                    )}
+                  </div>
+                  {showFollowUps && (
+                    <div className="f2a-chat-starters f2a-chat-followups">
+                      {getFollowUpQuestions(selectedPriorityArea).map((question) => (
+                        <button key={question} type="button" onClick={() => sendText(question)}>
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {error && <div className="f2a-chat-error">{error}</div>}
 
+          <div className="f2a-chat-audience-row">
+            <label htmlFor="f2a-chat-audience">Answering as</label>
+            <select
+              id="f2a-chat-audience"
+              value={audience}
+              onChange={(event) => setAudience(event.target.value)}
+              disabled={isSending}
+            >
+              {AUDIENCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <form className="f2a-chat-input-row" onSubmit={handleSubmit}>
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(event) => setInput(event.target.value)}
@@ -389,6 +491,7 @@ function ChatWidget({
         aria-label={
           isOpen ? "Close dashboard assistant" : "Open dashboard assistant"
         }
+        title={isOpen ? undefined : "Open dashboard assistant (/)"}
       >
         {isOpen ? <IconClose /> : <IconChatBubble />}
       </button>

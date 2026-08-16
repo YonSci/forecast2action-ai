@@ -53,6 +53,7 @@ from app.api.ai_map_interpretation import (
 from app.api.report_stages import CLASSIFICATION_METHOD_LEGEND, _risk_definition_block
 from app.api.seasonal_catalog_shared import PERIODS
 from app.context.community_context import build_community_evidence_by_region
+from app.context.knowledge_context import build_knowledge_context
 from app.context.statistical_evidence import (
     INDICATOR_DEFINITIONS,
     area_signal_counts,
@@ -91,6 +92,49 @@ _PERIOD_MENTION_PATTERN = re.compile(
 # many EXTRA periods one message can pull in keeps a message that happens
 # to mention every month from quadrupling the prompt size.
 _MAX_COMPARISON_PERIODS = 2
+_MAX_OTHER_AREAS = 3
+_COMPARISON_AREA_MAX_CHARS = 2500
+
+# Real audience vocabulary from data/knowledge/action_library.json (confirmed
+# by reading the file directly, NOT the "Disaster Risk Manager"/"NGO
+# Anticipatory Action Planner"/etc labels from this project's own OLD,
+# superseded README -- that document described a much earlier prototype and
+# those labels don't exist anywhere in the current app). "general" is this
+# endpoint's own neutral default (no audience selected), distinct from the
+# library's internal "any" match-everything marker.
+_AUDIENCE_INSTRUCTIONS = {
+    "disaster_manager": "Answer as if briefing a Disaster Risk Management office coordinator -- prioritize operational thresholds, coordination triggers, and response readiness over general explanation.",
+    "extension_officer": "Answer as if briefing an agriculture/livestock extension officer -- prioritize practical, field-level guidance relevant to farmers and agro-pastoral communities.",
+    "ngo_planner": "Answer as if briefing an NGO/anticipatory-action planner -- prioritize early-action triggers, pre-positioning needs, and humanitarian relevance.",
+}
+# Maps a chat audience selection to the action_library's own real audience
+# value for retrieval (see _maybe_build_action_guidance) -- "general"/None
+# retrieves with "any" rather than narrowing to one real audience's actions.
+_AUDIENCE_TO_LIBRARY_VALUE = {
+    "disaster_manager": "disaster_manager",
+    "extension_officer": "extension_officer",
+    "ngo_planner": "ngo_planner",
+}
+
+# Deterministic, keyword-based action-intent detection (not an LLM guess) --
+# only retrieves from the real action-guidance knowledge base when the
+# question actually looks like an action question, so a plain "why" question
+# doesn't get padded with unrelated retrieved guidance.
+_ACTION_INTENT_PATTERN = re.compile(
+    r"\b(what should|what can|what to do|recommend(?:ation)?s?|what action|"
+    r"how (?:should|can|do) .*(?:respond|prepare)|early action|response plan)\b",
+    re.IGNORECASE,
+)
+
+# Real action_status -> action_library risk_level mapping. action_status is
+# already a real, deterministic tier (see app.context.statistical_evidence.
+# _action_status): "action" means risk_class is High/Very high (or Moderate
+# with agreeing cross-indicator signal) -- the same real urgency a "trigger"
+# risk_level represents in the action library. "preparedness" maps to
+# "warning" (elevated but not yet at trigger threshold); anything else
+# (monitor_only/not_actionable) maps to "watch" (library's lowest tier) --
+# this app never asks the library for the risk_level of forecast is very low.
+_ACTION_STATUS_TO_RISK_LEVEL = {"action": "trigger", "preparedness": "warning"}
 
 # Fields from build_priority_area_justifications' own real per-area object
 # actually useful for Q&A -- drops supporting_indicators/contradicting_
@@ -138,6 +182,11 @@ class DashboardChatRequest(BaseModel):
     selected_area: Optional[str] = None
     target_language: Optional[str] = "en"
     report_context: Optional[ReportContext] = None
+    # One of _AUDIENCE_INSTRUCTIONS' real keys ("disaster_manager",
+    # "extension_officer", "ngo_planner"), or None/"general" for no
+    # audience-specific framing -- any other value is treated as unset
+    # rather than raising, since this only changes tone, never grounding.
+    audience: Optional[str] = None
 
 
 class DashboardChatResponse(BaseModel):
@@ -246,6 +295,109 @@ def _build_comparison_period_packet(period: str, selected_area: Optional[str]) -
     return packet
 
 
+def _real_admin1_area_names(evidence: Dict[str, Any]) -> List[str]:
+    """Every real admin1 region name this period's evidence actually covers
+    -- cross_indicator_findings includes ALL real regions (see
+    app.context.statistical_evidence.build_cross_indicator_findings, which
+    iterates every region with real raster coverage), not just the top-
+    ranked ones priority_areas is limited to. This is the real, authoritative
+    list _detect_other_areas matches user messages against.
+    """
+    return sorted({
+        item.get("area") for item in evidence.get("cross_indicator_findings") or []
+        if item.get("area") and item.get("area") != "National"
+    })
+
+
+def _detect_other_areas(
+    message: str, history: List[Dict[str, str]], all_area_names: List[str], already_included: List[str],
+) -> List[str]:
+    """Real, deterministic area-name detection (case-insensitive substring
+    match against this period's own real admin1 region names) -- not an LLM
+    guess. Only returns areas NOT already fully present in priority_areas
+    (the top-ranked areas already get full real detail; this is purely for
+    a real area the user names that didn't rank top-5 for either hazard).
+    """
+    recent_text = (message + " " + " ".join(turn.get("content", "") for turn in history[-4:])).lower()
+    already = {name.lower() for name in already_included}
+    mentioned = [
+        name for name in all_area_names
+        if name.lower() not in already and name.lower() in recent_text
+    ]
+    return mentioned[:_MAX_OTHER_AREAS]
+
+
+def _build_other_area_packet(evidence: Dict[str, Any], area_name: str) -> Optional[Dict[str, Any]]:
+    """Compact real evidence for a real admin1 region that didn't rank in
+    this period's top-5-per-hazard-type priority_areas -- built from
+    cross_indicator_findings (real for every region) and hazard_risk_layers'
+    real regional means (also real for every region, not just top-ranked
+    ones), since that area has no real priority_area_justifications entry
+    to draw from at all.
+    """
+    finding = next(
+        (item for item in evidence.get("cross_indicator_findings") or [] if item.get("area") == area_name), None,
+    )
+    if not finding:
+        return None
+
+    hazard_risk_layers = evidence.get("hazard_risk_layers") or {}
+
+    def regional_mean(layer_key: str) -> Optional[float]:
+        layer = hazard_risk_layers.get(layer_key) or {}
+        return next(
+            (item.get("mean") for item in layer.get("regional") or [] if item.get("area_name") == area_name), None,
+        )
+
+    return {
+        "area": area_name,
+        "cross_indicator_signal": finding.get("signal"),
+        "cross_indicator_confidence": finding.get("cross_indicator_confidence"),
+        "agreement_score": finding.get("agreement_score"),
+        "drought_risk_score": regional_mean("population_r_drought"),
+        "wet_risk_score": regional_mean("population_r_wet"),
+        "drought_hazard_probability": regional_mean("p_drought"),
+        "wet_hazard_probability": regional_mean("p_wet"),
+        "drought_vulnerability": regional_mean("v_drought"),
+        "wet_vulnerability": regional_mean("v_wet"),
+        "note": "Did not rank in this period's top-5-per-hazard priority areas -- fewer real fields available than a ranked area.",
+    }
+
+
+def _maybe_build_action_guidance(
+    message: str, target_area: Optional[Dict[str, Any]], audience: Optional[str],
+) -> Optional[List[Dict[str, Any]]]:
+    """Retrieves real early-action guidance from this app's own knowledge
+    base (data/knowledge/action_library.json, via the SAME app.context.
+    knowledge_context.build_knowledge_context/app.retrieval.hybrid_retriever
+    Stage 3 already uses) -- only when the message actually looks like an
+    action question (see _ACTION_INTENT_PATTERN) AND a real target area's
+    hazard_type/action_status is available to build a real query from.
+    Deliberately omits spi/rainfall_anomaly_pct from the query (score_entry
+    treats them as minor refinements, defaulting to 0.0 itself when absent)
+    -- hazard/risk_level/audience already carry the real primary matching
+    weight, and this endpoint's compact priority-area packet doesn't carry
+    those two raw indicator values through in the first place.
+    """
+    if not _ACTION_INTENT_PATTERN.search(message) or not target_area:
+        return None
+
+    hazard_type = target_area.get("hazard_type")
+    if not hazard_type:
+        return None
+
+    query = {
+        "hazard": "drought" if hazard_type == "drought" else "heavy_rainfall",
+        "risk_level": _ACTION_STATUS_TO_RISK_LEVEL.get(target_area.get("action_status"), "watch"),
+        "audience": _AUDIENCE_TO_LIBRARY_VALUE.get(audience, "any"),
+    }
+    try:
+        knowledge = build_knowledge_context(query, top_k=3, country="ethiopia")
+    except Exception:
+        return None
+    return knowledge.retrieved_items or None
+
+
 # Real, fixed reference material -- not period-specific evidence, so built
 # once at import time rather than re-serialized on every chat message.
 # Reuses the SAME definitions the report pipeline itself already shows a
@@ -271,6 +423,9 @@ def _build_chat_system_prompt(
     context_packet: Dict[str, Any],
     report_context: Optional[ReportContext],
     comparison_packets: Optional[Dict[str, Dict[str, Any]]] = None,
+    other_area_packets: Optional[Dict[str, Dict[str, Any]]] = None,
+    audience: Optional[str] = None,
+    action_guidance: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
     """Confirmed real gap, fixed: this used to serialize the WHOLE context_
     packet through one shared compact_json(..., max_chars=12000) call --
@@ -316,7 +471,31 @@ ALREADY-GENERATED REPORT NARRATIVE (real AI-authored text from a previous report
 CROSS-PERIOD COMPARISON EVIDENCE (the user's message mentioned {", ".join(comparison_packets.keys())} -- real evidence for those OTHER periods, kept smaller/scoped than the primary period's own evidence above. When comparing, ALWAYS name which period each number belongs to; never blend numbers from different periods into one unlabeled claim):
 {compact_json(comparison_packets, max_chars=len(comparison_packets) * _COMPARISON_PERIOD_MAX_CHARS)}"""
 
-    return f"""You are the Forecast2Action AI dashboard assistant, helping a decision-maker understand the {period} Ethiopia climate-risk forecast currently shown on their dashboard.
+    other_area_block = ""
+    if other_area_packets:
+        other_area_block = f"""
+
+OTHER AREA EVIDENCE (the user's message named {", ".join(other_area_packets.keys())} -- real region(s) that did NOT rank in this period's top-5-per-hazard PRIORITY AREAS above, so fewer real fields exist for them; each entry's own "note" field says so. Never imply a ranked priority area's full detail exists for one of these):
+{compact_json(other_area_packets, max_chars=len(other_area_packets) * _COMPARISON_AREA_MAX_CHARS)}"""
+
+    audience_block = ""
+    audience_instruction = _AUDIENCE_INSTRUCTIONS.get(audience or "")
+    if audience_instruction:
+        audience_block = f"\n\nAUDIENCE FOCUS: {audience_instruction}"
+
+    action_guidance_block = ""
+    if action_guidance:
+        action_guidance_block = f"""
+
+RETRIEVED EARLY-ACTION GUIDANCE (real entries from this app's own action knowledge base, data/knowledge/action_library.json -- the SAME source Stage 3 report generation draws from. Use these to inform what to recommend; do not invent an action not grounded in here or in the real evidence above, and say so if nothing relevant was retrieved):
+{compact_json(action_guidance, max_chars=4000)}"""
+
+    sms_char_budget = 70 if language_code in ("am", "ti") else 155
+    sms_rule = f"""
+
+SMS RULE: If the user asks for an SMS-ready / SMS version of an answer, write it as a separate block starting with "SMS:" on its own line, respecting a strict {sms_char_budget}-character budget (this app's own real per-segment budget for {get_language_label(language_code)} -- Amharic/Tigrinya require UCS-2 encoding at 70 chars/segment, other supported languages use GSM-7 at up to 155/segment, same rule Stage 3 report generation already follows). Count characters -- do not guess."""
+
+    return f"""You are the Forecast2Action AI dashboard assistant, helping a decision-maker understand the {period} Ethiopia climate-risk forecast currently shown on their dashboard.{audience_block}
 
 {get_language_instruction(language_code)}
 
@@ -330,7 +509,11 @@ NATIONAL VS AREA-LEVEL RULE: national_cross_indicator is its own real, independe
 
 COMMUNITY REPORTS RULE: REAL COMMUNITY GROUND-TRUTH REPORTS below (if present) is real, user-submitted field observations, keyed by area name -- corroborating evidence, not proof, unless a report's own verification_status shows it was actually reviewed. If that section is absent entirely from this prompt, you have NOT been given any community-report data at all -- say so plainly rather than guessing whether reports exist. If it IS present, an area with no entry in it has zero submitted reports.
 
-FORMATTING RULE: The chat UI renders only **bold** and `inline code` -- never use LaTeX/math notation (no $...$, \times, \text{{}}), tables, or headings. Write formulas as plain text (e.g. "risk score = 100 x hazard probability x severity x exposure x vulnerability").
+OTHER-AREA RULE: If OTHER AREA EVIDENCE is present below, treat it as real but genuinely thinner than PRIORITY AREAS -- never claim a rank, risk_class, or exposure number for one of those areas, since none was computed for it this period.
+
+ACTION-GUIDANCE RULE: If RETRIEVED EARLY-ACTION GUIDANCE is present below, ground any "what should be done" answer in it plus the real evidence above -- never invent an action beyond what's given in either. If it's absent and the user asks what to do, say you don't have retrieved action guidance for this question rather than improvising.
+
+FORMATTING RULE: The chat UI renders only **bold** and `inline code` -- never use LaTeX/math notation (no $...$, \times, \text{{}}), tables, or headings. Write formulas as plain text (e.g. "risk score = 100 x hazard probability x severity x exposure x vulnerability").{sms_rule}
 
 Keep answers conversational and concise (2-4 sentences) unless the user asks for more detail. If dashboard_selected_area is set below and the user's question doesn't name a specific area, assume they mean that one.
 
@@ -344,7 +527,7 @@ NATIONAL CROSS-INDICATOR AGGREGATE (its own real, independently-computed signal 
 {compact_json(context_packet.get("national_cross_indicator"), max_chars=1500)}
 
 AREA-LEVEL SIGNAL TALLY (real, deterministic counts by signal -- never count priority_areas yourself):
-{compact_json(context_packet.get("area_signal_tally"), max_chars=1500)}{selected_area_line}{community_block}{report_block}{comparison_block}{_METHODOLOGY_REFERENCE_BLOCK}
+{compact_json(context_packet.get("area_signal_tally"), max_chars=1500)}{selected_area_line}{community_block}{report_block}{comparison_block}{other_area_block}{action_guidance_block}{_METHODOLOGY_REFERENCE_BLOCK}
 """.strip()
 
 
@@ -450,6 +633,8 @@ def _build_context_summary(
     community_evidence: Dict[str, Any],
     report_context: Optional[ReportContext],
     comparison_packets: Optional[Dict[str, Dict[str, Any]]] = None,
+    other_area_packets: Optional[Dict[str, Dict[str, Any]]] = None,
+    action_guidance: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Real, deterministic accounting of what THIS message's context packet
     actually contained -- not a claim about which parts the model's reply
@@ -487,6 +672,8 @@ def _build_context_summary(
         "community_reports_truncated": community_reports_truncated,
         "included_report_narrative": bool(report_context and report_context.model_dump(exclude_none=True)),
         "comparison_periods": sorted(comparison_packets.keys()) if comparison_packets else [],
+        "other_areas_included": sorted(other_area_packets.keys()) if other_area_packets else [],
+        "action_guidance_count": len(action_guidance) if action_guidance else 0,
     }
 
 
@@ -503,6 +690,8 @@ class _PreparedChatPrompt(NamedTuple):
     context_packet: Dict[str, Any]
     community_evidence: Dict[str, Any]
     comparison_packets: Dict[str, Dict[str, Any]]
+    other_area_packets: Dict[str, Dict[str, Any]]
+    action_guidance: Optional[List[Dict[str, Any]]]
 
 
 def _prepare_chat_prompt(payload: DashboardChatRequest) -> _PreparedChatPrompt:
@@ -532,10 +721,34 @@ def _prepare_chat_prompt(payload: DashboardChatRequest) -> _PreparedChatPrompt:
         if comparison_packet:
             comparison_packets[comparison_period] = comparison_packet
 
+    other_area_names = _detect_other_areas(
+        payload.message, history, _real_admin1_area_names(evidence), priority_area_names,
+    )
+    other_area_packets: Dict[str, Dict[str, Any]] = {}
+    for other_area in other_area_names:
+        other_area_packet = _build_other_area_packet(evidence, other_area)
+        if other_area_packet:
+            other_area_packets[other_area] = other_area_packet
+
+    # Real target area for an action-guidance retrieval: the dashboard's own
+    # selected priority area if it's one of this period's real ranked areas,
+    # else the #1-ranked real priority area -- never an area with no real
+    # hazard_type/action_status to build a real query from.
+    priority_areas = context_packet.get("priority_areas") or []
+    target_area = next(
+        (item for item in priority_areas if item.get("area") == payload.selected_area),
+        next((item for item in priority_areas if item.get("rank") == 1), None),
+    )
+    action_guidance = _maybe_build_action_guidance(payload.message, target_area, payload.audience)
+
     system_prompt = _build_chat_system_prompt(
         period, language_code, context_packet, payload.report_context, comparison_packets,
+        other_area_packets, payload.audience, action_guidance,
     )
-    return _PreparedChatPrompt(period, system_prompt, history, context_packet, community_evidence, comparison_packets)
+    return _PreparedChatPrompt(
+        period, system_prompt, history, context_packet, community_evidence,
+        comparison_packets, other_area_packets, action_guidance,
+    )
 
 
 @router.post("/message", response_model=DashboardChatResponse)
@@ -570,6 +783,7 @@ def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
 
     context_summary = _build_context_summary(
         prepared.context_packet, prepared.community_evidence, payload.report_context, prepared.comparison_packets,
+        prepared.other_area_packets, prepared.action_guidance,
     )
     return DashboardChatResponse(reply=reply_text, period=prepared.period, context_summary=context_summary)
 
@@ -751,6 +965,7 @@ def post_chat_stream(payload: DashboardChatRequest) -> StreamingResponse:
 
         context_summary = _build_context_summary(
             prepared.context_packet, prepared.community_evidence, payload.report_context, prepared.comparison_packets,
+            prepared.other_area_packets, prepared.action_guidance,
         )
         yield _sse_line({
             "done": True,
