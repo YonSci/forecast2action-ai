@@ -542,6 +542,15 @@ function TrackRecord() {
   const scorableEvents = events.filter(
     (event) => event.spi !== null && event.spi !== undefined,
   );
+  // Further restricted to events GLIDE actually registered during JJAS
+  // itself -- matches the official hit-rate metric above, which only
+  // counts JJAS-registered events. Real events registered in other months
+  // are still real droughts (see the methodology text below), just not
+  // shown in these two tables since they aren't part of what's being
+  // scored as a "hit" or "miss".
+  const jjasScorableEvents = scorableEvents.filter(
+    (event) => event.month >= 6 && event.month <= 9,
+  );
   const regionSummary = Array.isArray(data?.region_summary)
     ? data.region_summary
     : [];
@@ -624,19 +633,20 @@ function TrackRecord() {
             <div className="lp-wrap">
               <h2>Every real event, by name</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Not a summary statistic in isolation: each real GLIDE drought
-                event this analysis matched, with its real reported date (month
-                flagged when it falls inside JJAS, this app's real forecast
-                season) and location, its real GLIDE "affected" figure (the only
-                real severity signal GLIDE captures for drought most events
-                report 0 killed, injured, or homeless), and the real SPI and
-                Rainfall Total values at that event's exact coordinate that
-                year, not a region average (Rainfall Percentile is compared
-                separately below; the 2026 event is
-                excluded here since it has no baseline yet). Click a column
-                heading to sort by it.
+                Not a summary statistic in isolation: every real GLIDE
+                drought event actually registered during JJAS itself,
+                matching the official hit rate above (real events
+                registered in other months are still real droughts, just
+                not shown in these two tables). Each row shows its real
+                reported date and location, its real GLIDE "affected"
+                figure (the only real severity signal GLIDE captures for
+                drought most events report 0 killed, injured, or
+                homeless), and the real SPI and Rainfall Total values at
+                that event's exact coordinate that year, not a region
+                average (Rainfall Percentile is compared separately
+                below). Click a column heading to sort by it.
               </p>
-              <SortableEventTable events={scorableEvents} />
+              <SortableEventTable events={jjasScorableEvents} />
             </div>
           </section>
 
@@ -758,15 +768,14 @@ function TrackRecord() {
             <div className="lp-wrap">
               <h2>Captured vs. missed, by year, month &amp; region</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Every real GLIDE drought event with a usable baseline (the
-                2026 event is excluded here since its year's CHIRPS rainfall
-                isn't downloaded yet), and whether SPI and Rainfall Total at
-                that exact pixel actually crossed the moderately-dry
-                threshold that year. Not the aggregate percentage above, but the
-                real event-by-event record it's built from. Click a column
-                heading to sort.
+                Every real GLIDE drought event actually registered during
+                JJAS itself with a usable baseline, and whether SPI and
+                Rainfall Total at that exact pixel actually crossed the
+                moderately-dry threshold that year. Not the aggregate
+                percentage above, but the real event-by-event record it's
+                built from. Click a column heading to sort.
               </p>
-              <CapturedVsMissedTable events={scorableEvents} />
+              <CapturedVsMissedTable events={jjasScorableEvents} />
             </div>
           </section>
 
