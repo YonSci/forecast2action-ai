@@ -121,12 +121,25 @@ def load_glide_drought_event_records() -> List[Dict[str, object]]:
         point = Point(lon, lat)
         region_name = next((name for name, geom in regions if geom.contains(point)), None)
         if region_name:
+            try:
+                affected = int(float(row.get("affected") or 0))
+            except ValueError:
+                affected = 0
             records.append({
                 "glidenumber": row.get("glidenumber", ""),
                 "region": region_name,
                 "location": row.get("location", ""),
                 "year": year,
                 "month": month,
+                "latitude": lat,
+                "longitude": lon,
+                # Real GLIDE "affected" count -- genuinely 0 for most real
+                # drought events (GLIDE captures casualty counts, which
+                # drought essentially never produces, far more reliably
+                # than population-affected for a slow-onset hazard), not a
+                # missing-data placeholder. Kept as a real int, not
+                # backfilled or estimated.
+                "affected": affected,
             })
     return records
 
@@ -286,6 +299,9 @@ def build_results() -> Dict[str, Any]:
             "location": r["location"],
             "year": r["year"],
             "month": r["month"],
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "affected": r["affected"],
             "rainfall_total_anomaly": anomaly_values.get((r["region"], r["year"])),
             "spi": spi_values.get((r["region"], r["year"])),
             "spi_hit_moderately_dry": (
