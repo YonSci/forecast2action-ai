@@ -125,12 +125,19 @@ def load_glide_drought_event_records() -> List[Dict[str, object]]:
                 affected = int(float(row.get("affected") or 0))
             except ValueError:
                 affected = 0
+            try:
+                # Real GLIDE day-of-month -- 0 means the source only
+                # reported month/year precision, not a missing value.
+                day = int(row.get("day") or 0)
+            except ValueError:
+                day = 0
             records.append({
                 "glidenumber": row.get("glidenumber", ""),
                 "region": region_name,
                 "location": row.get("location", ""),
                 "year": year,
                 "month": month,
+                "day": day,
                 "latitude": lat,
                 "longitude": lon,
                 # Real GLIDE "affected" count -- genuinely 0 for most real
@@ -299,6 +306,7 @@ def build_results() -> Dict[str, Any]:
             "location": r["location"],
             "year": r["year"],
             "month": r["month"],
+            "day": r["day"],
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "affected": r["affected"],

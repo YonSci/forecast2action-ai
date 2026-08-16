@@ -232,6 +232,35 @@ function formatCoord(value) {
   return value === null || value === undefined ? "N/A" : value.toFixed(3);
 }
 
+const MONTH_NAMES = [
+  "",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+// JJAS = this app's real forecast window -- flagged here so it's obvious
+// at a glance whether a real event's registered month falls inside or
+// outside the season this whole page's analysis actually tests.
+function formatMonth(month) {
+  if (!month || month < 1 || month > 12) return "Unknown";
+  const inSeason = month >= 6 && month <= 9;
+  return `${MONTH_NAMES[month]}${inSeason ? " (JJAS)" : ""}`;
+}
+
+function formatDay(day) {
+  return day ? String(day) : "Unknown";
+}
+
 function TrackRecord() {
   const [data, setData] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -420,10 +449,12 @@ function TrackRecord() {
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 Not a summary statistic in isolation: each real GLIDE
                 drought event this analysis matched, with its real reported
-                location, its real GLIDE "affected" figure (the only real
-                severity signal GLIDE captures for drought most events
-                report 0 killed, injured, or homeless), and its region's
-                real SPI and Rainfall Total anomaly that year.
+                date (month flagged when it falls inside JJAS, this app's
+                real forecast season) and location, its real GLIDE
+                "affected" figure (the only real severity signal GLIDE
+                captures for drought most events report 0 killed, injured,
+                or homeless), and its region's real SPI and Rainfall Total
+                anomaly that year.
               </p>
               <div className="lp-data-table-wrap">
                 <table className="lp-data-table">
@@ -432,6 +463,8 @@ function TrackRecord() {
                       <th>GLIDE ID</th>
                       <th>Region</th>
                       <th>Year</th>
+                      <th>Month</th>
+                      <th>Day</th>
                       <th>Latitude</th>
                       <th>Longitude</th>
                       <th>Affected</th>
@@ -448,6 +481,8 @@ function TrackRecord() {
                         </td>
                         <td className="lp-td-strong">{event.region}</td>
                         <td>{event.year}</td>
+                        <td>{formatMonth(event.month)}</td>
+                        <td>{formatDay(event.day)}</td>
                         <td>{formatCoord(event.latitude)}</td>
                         <td>{formatCoord(event.longitude)}</td>
                         <td>{formatAffected(event.affected)}</td>
