@@ -22,7 +22,10 @@ function loadStoredMessages() {
 
 function saveStoredMessages(messages) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)),
+    );
   } catch {
     // Storage full/unavailable (private browsing, quota) -- the
     // conversation just won't survive a refresh; not worth surfacing.
@@ -79,7 +82,12 @@ function IconChatBubble() {
 function IconClose() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -87,7 +95,13 @@ function IconClose() {
 function IconSend() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M3 11l17-8-8 17-2-7-7-2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+      <path
+        d="M3 11l17-8-8 17-2-7-7-2z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -114,7 +128,12 @@ function IconClearChat() {
  * aiReport is set (the user has generated a report this session), its real
  * narrative fields are sent too so the assistant can summarize/quote it.
  */
-function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage, aiReport }) {
+function ChatWidget({
+  forecastSelection,
+  selectedPriorityArea,
+  selectedLanguage,
+  aiReport,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState(loadStoredMessages);
   const [input, setInput] = useState("");
@@ -154,7 +173,10 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
     if (!trimmed || isSending) return;
 
     const nextMessages = [...messages, { role: "user", content: trimmed }];
-    setMessages([...nextMessages, { role: "assistant", content: "", streaming: true }]);
+    setMessages([
+      ...nextMessages,
+      { role: "assistant", content: "", streaming: true },
+    ]);
     setInput("");
     setIsSending(true);
     setError("");
@@ -163,7 +185,8 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
       ? {
           executive_summary: aiReport.executive_summary || null,
           national_spatial_overview: aiReport.national_spatial_overview || null,
-          compound_hazard_interpretation: aiReport.compound_hazard_interpretation || null,
+          compound_hazard_interpretation:
+            aiReport.compound_hazard_interpretation || null,
         }
       : null;
 
@@ -206,7 +229,9 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
         while (boundary !== -1) {
           const rawEvent = buffer.slice(0, boundary);
           buffer = buffer.slice(boundary + 2);
-          const line = rawEvent.startsWith("data: ") ? rawEvent.slice(6) : rawEvent;
+          const line = rawEvent.startsWith("data: ")
+            ? rawEvent.slice(6)
+            : rawEvent;
           boundary = buffer.indexOf("\n\n");
           if (!line.trim()) continue;
 
@@ -223,7 +248,10 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
           if (payload.delta) {
             receivedAnything = true;
             accumulated += payload.delta;
-            updateLastAssistantMessage({ content: accumulated, streaming: true });
+            updateLastAssistantMessage({
+              content: accumulated,
+              streaming: true,
+            });
           }
           if (payload.done) {
             // The server re-runs the SAME forecast-safe-language repair
@@ -239,7 +267,9 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
         }
       }
     } catch (err) {
-      setError("The assistant is unavailable right now. Please try again in a moment.");
+      setError(
+        "The assistant is unavailable right now. Please try again in a moment.",
+      );
       console.error(err);
       if (!receivedAnything) {
         // Never got any real content -- drop the empty placeholder bubble
@@ -264,17 +294,29 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
             <div>
               <strong>Dashboard assistant</strong>
               <span>
-                Grounded in this period's real evidence
-                {selectedPriorityArea?.area_name ? ` — ${selectedPriorityArea.area_name} selected` : ""}
+                {selectedPriorityArea?.area_name
+                  ? ` — ${selectedPriorityArea.area_name} selected`
+                  : ""}
               </span>
             </div>
             <div className="f2a-chat-panel-head-actions">
               {messages.length > 0 && (
-                <button type="button" className="f2a-chat-icon-btn" onClick={clearChatHistory} aria-label="Clear chat history" title="Clear chat history">
+                <button
+                  type="button"
+                  className="f2a-chat-icon-btn"
+                  onClick={clearChatHistory}
+                  aria-label="Clear chat history"
+                  title="Clear chat history"
+                >
                   <IconClearChat />
                 </button>
               )}
-              <button type="button" className="f2a-chat-icon-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
+              <button
+                type="button"
+                className="f2a-chat-icon-btn"
+                onClick={() => setIsOpen(false)}
+                aria-label="Close chat"
+              >
                 <IconClose />
               </button>
             </div>
@@ -283,10 +325,18 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
           <div className="f2a-chat-messages" ref={scrollRef}>
             {messages.length === 0 && (
               <div className="f2a-chat-empty">
-                <p>Ask about the priority areas, risk drivers, or exposure numbers currently shown on this dashboard.</p>
+                <p>
+                  Ask about the priority areas, risk drivers, or exposure
+                  numbers currently shown on this dashboard.
+                </p>
                 <div className="f2a-chat-starters">
                   {getStarterQuestions(selectedPriorityArea).map((question) => (
-                    <button key={question} type="button" onClick={() => sendText(question)} disabled={isSending}>
+                    <button
+                      key={question}
+                      type="button"
+                      onClick={() => sendText(question)}
+                      disabled={isSending}
+                    >
                       {question}
                     </button>
                   ))}
@@ -294,13 +344,18 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
               </div>
             )}
             {messages.map((message, index) => (
-              <div key={index} className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}>
+              <div
+                key={index}
+                className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}
+              >
                 {message.streaming && !message.content ? (
                   <span className="f2a-chat-typing-dots">Thinking…</span>
                 ) : (
                   renderInlineMarkdown(message.content)
                 )}
-                {message.streaming && message.content && <span className="f2a-chat-cursor" aria-hidden="true" />}
+                {message.streaming && message.content && (
+                  <span className="f2a-chat-cursor" aria-hidden="true" />
+                )}
               </div>
             ))}
           </div>
@@ -315,7 +370,12 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
               placeholder="Ask about this period's forecast…"
               disabled={isSending}
             />
-            <button type="submit" className="f2a-chat-icon-btn f2a-chat-send" disabled={isSending || !input.trim()} aria-label="Send">
+            <button
+              type="submit"
+              className="f2a-chat-icon-btn f2a-chat-send"
+              disabled={isSending || !input.trim()}
+              aria-label="Send"
+            >
               <IconSend />
             </button>
           </form>
@@ -326,7 +386,9 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
         type="button"
         className="f2a-chat-fab"
         onClick={() => setIsOpen((open) => !open)}
-        aria-label={isOpen ? "Close dashboard assistant" : "Open dashboard assistant"}
+        aria-label={
+          isOpen ? "Close dashboard assistant" : "Open dashboard assistant"
+        }
       >
         {isOpen ? <IconClose /> : <IconChatBubble />}
       </button>

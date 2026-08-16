@@ -1,6 +1,6 @@
 # Forecast2Action AI
 
-**Forecast2Action AI** is an ILRI product for impact-based early warning and anticipatory action in Ethiopia. It turns a seasonal/subseasonal climate forecast into a ranked list of priority areas, an AI-generated integrated risk report, and audience-specific advisories (farmer, agro-pastoral, humanitarian, SMS/WhatsApp) with every number in the report computed deterministically before any AI model sees it.
+**Forecast2Action AI** is an impact-based early warning and anticipatory action in Ethiopia. It turns a seasonal/subseasonal climate forecast into a ranked list of priority areas, an AI-generated integrated risk report, and audience-specific advisories (farmer, agro-pastoral, humanitarian, SMS/WhatsApp) with every number in the report computed deterministically before any AI model sees it.
 
 ## Live Demo
 
