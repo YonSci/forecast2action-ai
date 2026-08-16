@@ -5,28 +5,31 @@ Real diagnostic: does this app's own real SPI classification thresholds
 which of the real climate indicators this app offers (Rainfall Total, SPI,
 Rainfall Percentile) actually discriminates real drought years best?
 
-Consumes the real (region, year, month) rainfall table produced by
-app.data_pipeline.historical_rainfall_pipeline and the real drought (DR)
-events already geocoded from GLIDE (data/raw/historical_impact/
-eth_glide_events.csv). Computes real JJAS-seasonal (Jun-Sep) values for
-three real indicators, each derived independently from the same real
-monthly CHIRPS totals already downloaded. The reported hit rate is scoped
-to real GLIDE events actually registered during JJAS itself (deduplicated
-to unique region-years), since testing whether JJAS rainfall predicted a
-drought GLIDE logged in some other month isn't a fair test -- real events
-registered outside JJAS are still excluded from the false-alarm/no-event
-comparison pool, just not counted toward the hit rate:
+Consumes the real (lat, lon, year, month) pixel-level rainfall table
+produced by app.data_pipeline.historical_rainfall_pipeline.
+build_point_month_rainfall_table (sampled at each real GLIDE event's own
+exact reported coordinate, not averaged across the admin1 region it falls
+in) and the real drought (DR) events already geocoded from GLIDE
+(data/raw/historical_impact/eth_glide_events.csv). Computes real
+JJAS-seasonal (Jun-Sep) values for three real indicators, each derived
+independently from the same real monthly CHIRPS pixel values already
+sampled. The reported hit rate is scoped to real GLIDE events actually
+registered during JJAS itself (deduplicated to unique pixel-years), since
+testing whether JJAS rainfall predicted a drought GLIDE logged in some
+other month isn't a fair test -- real events registered outside JJAS are
+still excluded from the false-alarm/no-event comparison pool, just not
+counted toward the hit rate:
 
-- Rainfall Total: a real per-region z-score anomaly against a multi-year
+- Rainfall Total: a real per-pixel z-score anomaly against a multi-year
   baseline.
-- SPI: a real gamma-distribution fit per region (McKee et al. 1993
-  methodology -- probability integral transform via the region's own real
+- SPI: a real gamma-distribution fit per pixel (McKee et al. 1993
+  methodology -- probability integral transform via that pixel's own real
   fitted gamma CDF), not a simplified z-score. This app's live SPI product
   comes from a separate upstream project (see README's Real data sources);
   this is an independent, standard implementation of the same real
   methodology, not a reuse of that pipeline's code.
 - Rainfall Percentile: a real empirical percentile rank within each
-  region's own real seasonal-total history.
+  pixel's own real seasonal-total history.
 
 CDD, CWD, Rx1day, and Rx5day are NOT included -- they need real daily
 rainfall, which this repo has not downloaded (only monthly CHIRPS totals),
@@ -48,7 +51,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from shapely.geometry import Point, shape
 
-RAINFALL_CSV = Path("data/raw/historical_impact/eth_region_monthly_rainfall.csv")
+POINT_RAINFALL_CSV = Path("data/raw/historical_impact/eth_point_monthly_rainfall.csv")
 GLIDE_CSV = Path("data/raw/historical_impact/eth_glide_events.csv")
 ADMIN1_PATH = Path("data/sample/admin_boundaries/eth_admin1.json")
 
@@ -84,9 +87,9 @@ INDICATOR_THRESHOLDS: Dict[str, Dict[str, float]] = {
 }
 
 INDICATOR_LABELS: Dict[str, str] = {
-    "rainfall_total": "Rainfall Total (z-score anomaly)",
-    "spi": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology)",
-    "rainfall_percentile": "Rainfall Percentile (real empirical rank, within-region)",
+    "rainfall_total": "Rainfall Total (z-score anomaly, exact-pixel)",
+    "spi": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology, exact-pixel)",
+    "rainfall_percentile": "Rainfall Percentile (real empirical rank, exact-pixel)",
 }
 
 # Real reporting-lag tolerance retained for reference (droughts are
@@ -96,10 +99,24 @@ INDICATOR_LABELS: Dict[str, str] = {
 MONTH_TOLERANCE = 1
 
 
-def load_rainfall_table() -> List[Dict[str, object]]:
-    with open(RAINFALL_CSV, encoding="utf-8") as f:
+def _point_key(lat: float, lon: float) -> str:
+    return f"{lat:.4f},{lon:.4f}"
+
+
+def load_point_rainfall_table() -> List[Dict[str, object]]:
+    """Real rainfall sampled at the EXACT pixel of each real GLIDE event's
+    own reported coordinate (see historical_rainfall_pipeline.
+    build_point_month_rainfall_table) -- not averaged across the whole
+    admin1 region the event happens to fall in. Real regions like Oromia
+    span climatically distinct sub-areas (a real, previously-noted confound:
+    a severe localized drought gets diluted into a moderate area-wide
+    average); pixel-level sampling doesn't have that problem.
+    """
+    with open(POINT_RAINFALL_CSV, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     for row in rows:
+        row["latitude"] = float(row["latitude"])
+        row["longitude"] = float(row["longitude"])
         row["year"] = int(row["year"])
         row["month"] = int(row["month"])
         row["rainfall_mm"] = float(row["rainfall_mm"]) if row["rainfall_mm"] not in ("", "nan") else None
@@ -161,20 +178,19 @@ def load_glide_drought_event_records() -> List[Dict[str, object]]:
     return records
 
 
-def load_glide_drought_event_years_by_region(records: List[Dict[str, object]]) -> Set[Tuple[str, int]]:
-    return {(r["region"], r["year"]) for r in records}
+def load_glide_drought_event_years_by_point(records: List[Dict[str, object]]) -> Set[Tuple[str, int]]:
+    return {(_point_key(r["latitude"], r["longitude"]), r["year"]) for r in records}
 
 
-def compute_seasonal_totals(rows: List[Dict[str, object]]) -> Dict[Tuple[str, int], float]:
-    """Real per-region, per-year JJAS (Jun-Sep) total rainfall -- only kept
-    for a (region, year) when all 4 real season months are present, so a
-    partial season is never silently treated as a low total.
+def compute_seasonal_totals_by_point(rows: List[Dict[str, object]]) -> Dict[Tuple[str, int], float]:
+    """Same real JJAS-seasonal-total logic as compute_seasonal_totals, keyed
+    by the exact real pixel coordinate instead of admin1 region.
     """
     by_key: Dict[Tuple[str, int], Dict[int, float]] = {}
     for row in rows:
         if row["month"] not in SEASON_MONTHS or row["rainfall_mm"] is None:
             continue
-        key = (row["region"], row["year"])
+        key = (_point_key(row["latitude"], row["longitude"]), row["year"])
         by_key.setdefault(key, {})[row["month"]] = row["rainfall_mm"]
 
     return {
@@ -187,9 +203,11 @@ def compute_seasonal_totals(rows: List[Dict[str, object]]) -> Dict[Tuple[str, in
 def compute_seasonal_indicator_values(
     totals: Dict[Tuple[str, int], float],
 ) -> Dict[str, Dict[Tuple[str, int], float]]:
-    """Real per-region, per-year seasonal values for all 3 real indicators,
+    """Real per-group, per-year seasonal values for all 3 real indicators,
     each derived independently from the same real seasonal rainfall totals
-    -- no new data needed for any of these three.
+    -- no new data needed for any of these three. Grouping key is whatever
+    the first element of `totals`'s keys is (admin1 region name, or a real
+    exact-pixel coordinate string) -- this function doesn't care which.
     """
     import numpy as np
     from scipy.stats import gamma, norm
@@ -302,24 +320,29 @@ def build_results() -> Dict[str, Any]:
     JSON-serializable results object, plus an explicit, honest scope/
     methodology disclosure for the frontend to render verbatim.
     """
-    rows = load_rainfall_table()
     records = load_glide_drought_event_records()
+    point_rows = load_point_rainfall_table()
     # All real event-years (any registered month) -- kept out of the
     # no-event/false-alarm pool entirely, even the ones that don't count
-    # toward the hit rate below.
-    all_year_events = load_glide_drought_event_years_by_region(records)
+    # toward the hit rate below. Keyed by exact pixel now, not region: with
+    # only 7 real unique event coordinates, the no-event pool is the real
+    # rainfall history at those SAME 7 points in years GLIDE didn't log an
+    # event there -- not a random sample of Ethiopia, so the false-alarm
+    # rate below should be read as "at real drought-prone locations
+    # specifically", not "anywhere in the country".
+    all_point_year_events = load_glide_drought_event_years_by_point(records)
     # The real subset actually reported: only GLIDE events registered
-    # during JJAS itself, deduplicated to unique (region, year) pairs --
-    # a real drought episode logged as 3 separate GLIDE records (e.g. 2022
-    # South Ethiopia) is one real trial, not three.
+    # during JJAS itself, deduplicated to unique (point, year) pairs -- a
+    # real drought episode logged as 3 separate GLIDE records at the same
+    # coordinate (e.g. 2022 South Ethiopia) is one real trial, not three.
     jjas_records = [r for r in records if r["month"] in SEASON_MONTHS]
-    jjas_year_events = load_glide_drought_event_years_by_region(jjas_records)
+    jjas_point_year_events = load_glide_drought_event_years_by_point(jjas_records)
 
-    seasonal_totals = compute_seasonal_totals(rows)
+    seasonal_totals = compute_seasonal_totals_by_point(point_rows)
     indicator_values = compute_seasonal_indicator_values(seasonal_totals)
 
     indicators = {
-        name: build_indicator_analysis(name, values, jjas_year_events, all_year_events)
+        name: build_indicator_analysis(name, values, jjas_point_year_events, all_point_year_events)
         for name, values in indicator_values.items()
     }
 
@@ -337,33 +360,41 @@ def build_results() -> Dict[str, Any]:
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "affected": r["affected"],
-            "rainfall_total_anomaly": anomaly_values.get((r["region"], r["year"])),
-            "spi": spi_values.get((r["region"], r["year"])),
-            "rainfall_percentile": percentile_values.get((r["region"], r["year"])),
+            "rainfall_total_anomaly": anomaly_values.get((_point_key(r["latitude"], r["longitude"]), r["year"])),
+            "spi": spi_values.get((_point_key(r["latitude"], r["longitude"]), r["year"])),
+            "rainfall_percentile": percentile_values.get((_point_key(r["latitude"], r["longitude"]), r["year"])),
         }
         for r in sorted(records, key=lambda r: (r["year"], r["month"]))
     ]
 
+    unique_points = len({(r["latitude"], r["longitude"]) for r in records})
+
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "scope": "drought_only_v1_jjas_registered",
+        "scope": "drought_only_v1_jjas_registered_pixel_level",
         "methodology": {
             "summary": (
                 "Real historical CHIRPS rainfall (1997-2025, June-September) compared against "
-                "real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. "
+                "real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's "
+                "own reported coordinate -- not averaged across the whole admin1 region it falls "
+                f"in. Only {unique_points} real unique coordinates exist among this dataset's "
+                "matched events (several events share the same GLIDE-reported centroid), so this "
+                "is a real but small set of specific locations, not a general Ethiopia-wide sample. "
                 "Three real indicators are compared on the same real seasonal (JJAS) totals: "
                 "Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. "
-                "1993 methodology), and Rainfall Percentile (real empirical within-region rank). "
-                "The reported hit rate counts only real GLIDE events actually registered during "
-                "JJAS itself, deduplicated to unique (region, year) pairs so one real drought "
-                "episode logged as multiple GLIDE records isn't counted more than once; real "
-                f"events registered in other months ({len(all_year_events) - len(jjas_year_events)} "
-                "of this dataset's matched region-years) are real droughts too, so they're excluded "
-                "from the false-alarm/no-event comparison pool rather than being treated as clean "
-                "no-event cases, but they don't count toward the hit rate itself. CDD, CWD, Rx1day, "
-                "and Rx5day are not included -- they need real daily rainfall, which this repo has "
-                "not downloaded, and were scoped out of v1 rather than approximated from monthly "
-                "totals."
+                "1993 methodology), and Rainfall Percentile (real empirical rank at that exact "
+                "pixel). The reported hit rate counts only real GLIDE events actually registered "
+                "during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought "
+                "episode logged as multiple GLIDE records at the same coordinate isn't counted more "
+                "than once; real events registered in other months are real droughts too, so they're "
+                "excluded from the false-alarm/no-event comparison pool rather than being treated as "
+                "clean no-event cases, but they don't count toward the hit rate itself. The "
+                "false-alarm rate should be read as \"at these same real drought-prone pixels, in "
+                "years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event "
+                "pool is drawn from the same small set of locations, not a random sample. CDD, CWD, "
+                "Rx1day, and Rx5day are not included -- they need real daily rainfall, which this "
+                "repo has not downloaded, and were scoped out of v1 rather than approximated from "
+                "monthly totals."
             ),
             "thresholds_evaluated": (
                 "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry "
@@ -372,18 +403,20 @@ def build_results() -> Dict[str, Any]:
             ),
             "caveat": (
                 "Very small real sample size (n="
-                f"{len(jjas_year_events)} JJAS-registered event-years out of {len(all_year_events)} "
-                "real event-years total). A directionally consistent but statistically limited "
+                f"{len(jjas_point_year_events)} JJAS-registered event-years out of "
+                f"{len(all_point_year_events)} real event-years total, across only {unique_points} "
+                "real unique pixel locations). A directionally consistent but statistically limited "
                 "signal, not a validated forecast-skill score."
             ),
         },
         "data_provenance": {
-            "rainfall_source": "CHIRPS v2.0 monthly, real, downloaded from data.chc.ucsb.edu",
-            "rainfall_rows": len(rows),
+            "rainfall_source": "CHIRPS v2.0 monthly, real, sampled at exact event pixels, from data.chc.ucsb.edu",
+            "rainfall_rows": len(point_rows),
             "event_source": "GLIDE disaster events (via HDX), real, geocoded to admin1 by point-in-polygon",
             "drought_events_matched": len(records),
-            "event_years_total": len(all_year_events),
-            "event_years_jjas_registered": len(jjas_year_events),
+            "unique_pixel_locations": unique_points,
+            "event_years_total": len(all_point_year_events),
+            "event_years_jjas_registered": len(jjas_point_year_events),
             "baseline_years": "1997-2025",
         },
         "indicators": indicators,
@@ -400,8 +433,9 @@ def save_results(results: Dict[str, Any]) -> None:
 
 def run_diagnostic() -> None:
     results = build_results()
-    print(f"Real (region, year, month) rainfall rows: {results['data_provenance']['rainfall_rows']}")
+    print(f"Real (lat, lon, year, month) pixel rainfall rows: {results['data_provenance']['rainfall_rows']}")
     print(f"Real GLIDE drought events geocoded to a real admin1 region: {results['data_provenance']['drought_events_matched']}")
+    print(f"Real unique pixel locations: {results['data_provenance']['unique_pixel_locations']}")
 
     for name, analysis in results["indicators"].items():
         print()

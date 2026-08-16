@@ -148,6 +148,43 @@ def build_region_month_rainfall_table() -> List[Dict[str, object]]:
     return rows
 
 
+def build_point_month_rainfall_table(points: List[Tuple[float, float]]) -> List[Dict[str, object]]:
+    """Real per-point (exact lat/lon, not region-averaged), per-real-
+    historical-month rainfall (mm) -- reads the same real Ethiopia-window
+    array load_ethiopia_window already loads for the region table, but
+    samples the single real pixel a real GLIDE event's own coordinate falls
+    in, via the window's own real affine transform, instead of averaging
+    across the whole admin1 region. points are (lat, lon) pairs; real
+    coordinates outside the loaded window or landing on a real nodata pixel
+    are skipped for that month, not silently filled.
+    """
+    rows: List[Dict[str, object]] = []
+    for year in YEARS:
+        for month in MONTHS:
+            loaded = load_ethiopia_window(year, month)
+            if loaded is None:
+                continue
+            arr, transform = loaded
+            inverse = ~transform
+            for lat, lon in points:
+                col, row = inverse * (lon, lat)
+                row_i, col_i = int(row), int(col)
+                if row_i < 0 or row_i >= arr.shape[0] or col_i < 0 or col_i >= arr.shape[1]:
+                    continue
+                value = arr[row_i, col_i]
+                if np.isnan(value):
+                    continue
+                rows.append({
+                    "latitude": lat,
+                    "longitude": lon,
+                    "year": year,
+                    "month": month,
+                    "rainfall_mm": float(value),
+                })
+            print(f"  {year}-{month:02d}: real pixel rainfall sampled for {len(points)} points.")
+    return rows
+
+
 if __name__ == "__main__":
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     print(f"Fetching real CHIRPS rainfall for {YEARS[0]}-{YEARS[-1]}, months {MONTHS}...")
@@ -161,3 +198,18 @@ if __name__ == "__main__":
         writer.writeheader()
         writer.writerows(table)
     print(f"Wrote {output_path}")
+
+    from app.data_pipeline.drought_threshold_calibration import load_glide_drought_event_records
+
+    records = load_glide_drought_event_records()
+    points = sorted({(r["latitude"], r["longitude"]) for r in records})
+    print(f"\nSampling real pixel-level rainfall at {len(points)} real GLIDE event coordinates...")
+    point_table = build_point_month_rainfall_table(points)
+    print(f"Real (lat, lon, year, month) rainfall rows: {len(point_table)}")
+
+    point_output_path = RAW_DIR.parent / "eth_point_monthly_rainfall.csv"
+    with open(point_output_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["latitude", "longitude", "year", "month", "rainfall_mm"])
+        writer.writeheader()
+        writer.writerows(point_table)
+    print(f"Wrote {point_output_path}")

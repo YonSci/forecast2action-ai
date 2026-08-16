@@ -1,93 +1,94 @@
 {
-  "generated_at": "2026-08-16T21:21:46.402452+00:00",
-  "scope": "drought_only_v1_jjas_registered",
+  "generated_at": "2026-08-16T22:47:55.169582+00:00",
+  "scope": "drought_only_v1_jjas_registered_pixel_level",
   "methodology": {
-    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical within-region rank). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (region, year) pairs so one real drought episode logged as multiple GLIDE records isn't counted more than once; real events registered in other months (8 of this dataset's matched region-years) are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
+    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's own reported coordinate -- not averaged across the whole admin1 region it falls in. Only 7 real unique coordinates exist among this dataset's matched events (several events share the same GLIDE-reported centroid), so this is a real but small set of specific locations, not a general Ethiopia-wide sample. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical rank at that exact pixel). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought episode logged as multiple GLIDE records at the same coordinate isn't counted more than once; real events registered in other months are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. The false-alarm rate should be read as \"at these same real drought-prone pixels, in years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event pool is drawn from the same small set of locations, not a random sample. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
     "thresholds_evaluated": "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by this diagnostic.",
-    "caveat": "Very small real sample size (n=4 JJAS-registered event-years out of 12 real event-years total). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
+    "caveat": "Very small real sample size (n=4 JJAS-registered event-years out of 13 real event-years total, across only 7 real unique pixel locations). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
   },
   "data_provenance": {
-    "rainfall_source": "CHIRPS v2.0 monthly, real, downloaded from data.chc.ucsb.edu",
-    "rainfall_rows": 1740,
+    "rainfall_source": "CHIRPS v2.0 monthly, real, sampled at exact event pixels, from data.chc.ucsb.edu",
+    "rainfall_rows": 812,
     "event_source": "GLIDE disaster events (via HDX), real, geocoded to admin1 by point-in-polygon",
     "drought_events_matched": 18,
-    "event_years_total": 12,
+    "unique_pixel_locations": 7,
+    "event_years_total": 13,
     "event_years_jjas_registered": 4,
     "baseline_years": "1997-2025"
   },
   "indicators": {
     "rainfall_total": {
-      "label": "Rainfall Total (z-score anomaly)",
+      "label": "Rainfall Total (z-score anomaly, exact-pixel)",
       "event_years": 4,
-      "no_event_years": 424,
-      "mean_value_event": -0.6009482796607364,
-      "mean_value_no_event": 0.016172633683250344,
+      "no_event_years": 191,
+      "mean_value_event": -0.7100512517476004,
+      "mean_value_no_event": 0.032285010078076534,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
           "threshold_value": -1.0,
           "hit_rate": 0.5,
-          "false_alarm_rate": 0.17452830188679244
+          "false_alarm_rate": 0.06806282722513089
         },
         {
           "threshold_label": "severely_dry",
           "threshold_value": -1.5,
           "hit_rate": 0.25,
-          "false_alarm_rate": 0.054245283018867926
+          "false_alarm_rate": 0.005235602094240838
         },
         {
           "threshold_label": "extremely_dry",
           "threshold_value": -2.0,
           "hit_rate": 0.25,
-          "false_alarm_rate": 0.02122641509433962
+          "false_alarm_rate": 0.0
         }
       ]
     },
     "spi": {
-      "label": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology)",
+      "label": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology, exact-pixel)",
       "event_years": 4,
-      "no_event_years": 424,
-      "mean_value_event": -0.640002288849634,
-      "mean_value_no_event": 0.01650769215726811,
+      "no_event_years": 191,
+      "mean_value_event": -0.8127867695627002,
+      "mean_value_no_event": 0.03210248627969676,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
           "threshold_value": -1.0,
           "hit_rate": 0.5,
-          "false_alarm_rate": 0.16981132075471697
+          "false_alarm_rate": 0.08900523560209424
         },
         {
           "threshold_label": "severely_dry",
           "threshold_value": -1.5,
           "hit_rate": 0.25,
-          "false_alarm_rate": 0.06132075471698113
+          "false_alarm_rate": 0.010471204188481676
         },
         {
           "threshold_label": "extremely_dry",
           "threshold_value": -2.0,
           "hit_rate": 0.25,
-          "false_alarm_rate": 0.02830188679245283
+          "false_alarm_rate": 0.0
         }
       ]
     },
     "rainfall_percentile": {
-      "label": "Rainfall Percentile (real empirical rank, within-region)",
+      "label": "Rainfall Percentile (real empirical rank, exact-pixel)",
       "event_years": 4,
-      "no_event_years": 424,
-      "mean_value_event": 37.5,
-      "mean_value_no_event": 52.11477987421384,
+      "no_event_years": 191,
+      "mean_value_event": 35.0,
+      "mean_value_no_event": 52.469458987783604,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
           "threshold_value": 15.87,
           "hit_rate": 0.5,
-          "false_alarm_rate": 0.1320754716981132
+          "false_alarm_rate": 0.12041884816753927
         },
         {
           "threshold_label": "severely_dry",
           "threshold_value": 6.68,
           "hit_rate": 0.25,
-          "false_alarm_rate": 0.0330188679245283
+          "false_alarm_rate": 0.031413612565445025
         },
         {
           "threshold_label": "extremely_dry",
@@ -141,9 +142,9 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 986200,
-      "rainfall_total_anomaly": -1.0807567294171214,
-      "spi": -1.0837929546464642,
-      "rainfall_percentile": 18.333333333333332
+      "rainfall_total_anomaly": -1.1561573607179065,
+      "spi": -1.1364513582145315,
+      "rainfall_percentile": 15.0
     },
     {
       "glidenumber": "DR-1999-000148-ETH",
@@ -155,9 +156,9 @@
       "latitude": 6.66,
       "longitude": 43.79,
       "affected": 640000,
-      "rainfall_total_anomaly": -0.3321330153410187,
-      "spi": -0.2923807828303282,
-      "rainfall_percentile": 31.666666666666668
+      "rainfall_total_anomaly": -0.6049830529891832,
+      "spi": -0.6429227654834211,
+      "rainfall_percentile": 21.666666666666668
     },
     {
       "glidenumber": "DR-2000-000121-ETH",
@@ -169,9 +170,9 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 10500000,
-      "rainfall_total_anomaly": -0.6711640873389061,
-      "spi": -0.6548698892109671,
-      "rainfall_percentile": 28.333333333333332
+      "rainfall_total_anomaly": 0.8482675006699101,
+      "spi": 0.8383865386007762,
+      "rainfall_percentile": 85.0
     },
     {
       "glidenumber": "DR-2001-000265-ETH",
@@ -183,9 +184,9 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 1000000,
-      "rainfall_total_anomaly": -0.24701096326211786,
-      "spi": -0.2211098983332488,
-      "rainfall_percentile": 41.666666666666664
+      "rainfall_total_anomaly": 0.2712012889114532,
+      "spi": 0.30990797925785274,
+      "rainfall_percentile": 58.333333333333336
     },
     {
       "glidenumber": "DR-2002-000524-ETH",
@@ -197,9 +198,9 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 2000000,
-      "rainfall_total_anomaly": -1.3642234062061296,
-      "spi": -1.3867557952068905,
-      "rainfall_percentile": 15.0
+      "rainfall_total_anomaly": -1.8362789689733805,
+      "spi": -1.9156584930396654,
+      "rainfall_percentile": 8.333333333333334
     },
     {
       "glidenumber": "DR-2002-000105-ETH",
@@ -211,9 +212,9 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 14300000,
-      "rainfall_total_anomaly": -1.3642234062061296,
-      "spi": -1.3867557952068905,
-      "rainfall_percentile": 15.0
+      "rainfall_total_anomaly": -1.8362789689733805,
+      "spi": -1.9156584930396654,
+      "rainfall_percentile": 8.333333333333334
     },
     {
       "glidenumber": "DR-2006-000229-ETH",
@@ -225,9 +226,9 @@
       "latitude": 5.11,
       "longitude": 42.01,
       "affected": 11000000,
-      "rainfall_total_anomaly": 0.40640519286632587,
-      "spi": 0.4497797379230437,
-      "rainfall_percentile": 78.33333333333333
+      "rainfall_total_anomaly": -0.1796650221799195,
+      "spi": -0.1527736809213604,
+      "rainfall_percentile": 55.0
     },
     {
       "glidenumber": "DR-2008-000043-ETH",
@@ -239,8 +240,8 @@
       "latitude": 6.66,
       "longitude": 43.79,
       "affected": 8,
-      "rainfall_total_anomaly": -1.1645205543561956,
-      "spi": -1.199265786008732,
+      "rainfall_total_anomaly": -0.6808026160743166,
+      "spi": -0.7456052623760997,
       "rainfall_percentile": 15.0
     },
     {
@@ -253,9 +254,9 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 0,
-      "rainfall_total_anomaly": 1.0787742321691733,
-      "spi": 1.073045640585229,
-      "rainfall_percentile": 85.0
+      "rainfall_total_anomaly": 1.2039465881719909,
+      "spi": 1.1509391123446981,
+      "rainfall_percentile": 91.66666666666667
     },
     {
       "glidenumber": "DR-2015-000109-ETH",
@@ -267,8 +268,8 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 0,
-      "rainfall_total_anomaly": -2.064255601421989,
-      "spi": -2.1580108005433543,
+      "rainfall_total_anomaly": -2.524650350074617,
+      "spi": -2.7844530741478217,
       "rainfall_percentile": 5.0
     },
     {
@@ -281,9 +282,9 @@
       "latitude": 5.25,
       "longitude": 39.25,
       "affected": 0,
-      "rainfall_total_anomaly": -0.1554399141601258,
-      "spi": -0.1287930960985412,
-      "rainfall_percentile": 45.0
+      "rainfall_total_anomaly": 0.012186313431118121,
+      "spi": 0.09607095244480363,
+      "rainfall_percentile": 68.33333333333333
     },
     {
       "glidenumber": "DR-2022-000268-ETH",
@@ -295,9 +296,9 @@
       "latitude": 5.83,
       "longitude": 37.5,
       "affected": 0,
-      "rainfall_total_anomaly": -1.2628718352300043,
-      "spi": -1.3462508993418696,
-      "rainfall_percentile": 15.0
+      "rainfall_total_anomaly": -1.258846933904716,
+      "spi": -1.3998292134433656,
+      "rainfall_percentile": 8.333333333333334
     },
     {
       "glidenumber": "DR-2022-000257-ETH",
@@ -309,9 +310,9 @@
       "latitude": 7.65,
       "longitude": 39.04,
       "affected": 0,
-      "rainfall_total_anomaly": -0.1554399141601258,
-      "spi": -0.1287930960985412,
-      "rainfall_percentile": 45.0
+      "rainfall_total_anomaly": -0.2606543111830596,
+      "spi": -0.2178039030043117,
+      "rainfall_percentile": 35.0
     },
     {
       "glidenumber": "DR-2022-000250-ETH",
@@ -323,9 +324,9 @@
       "latitude": 7.65,
       "longitude": 39.04,
       "affected": 0,
-      "rainfall_total_anomaly": -0.1554399141601258,
-      "spi": -0.1287930960985412,
-      "rainfall_percentile": 45.0
+      "rainfall_total_anomaly": -0.2606543111830596,
+      "spi": -0.2178039030043117,
+      "rainfall_percentile": 35.0
     },
     {
       "glidenumber": "DR-2022-000247-ETH",
@@ -337,9 +338,9 @@
       "latitude": 7.65,
       "longitude": 39.04,
       "affected": 0,
-      "rainfall_total_anomaly": -0.1554399141601258,
-      "spi": -0.1287930960985412,
-      "rainfall_percentile": 45.0
+      "rainfall_total_anomaly": -0.2606543111830596,
+      "spi": -0.2178039030043117,
+      "rainfall_percentile": 35.0
     },
     {
       "glidenumber": "DR-2022-000285-ETH",
@@ -351,9 +352,9 @@
       "latitude": 5.83,
       "longitude": 37.5,
       "affected": 0,
-      "rainfall_total_anomaly": -1.2628718352300043,
-      "spi": -1.3462508993418696,
-      "rainfall_percentile": 15.0
+      "rainfall_total_anomaly": -1.258846933904716,
+      "spi": -1.3998292134433656,
+      "rainfall_percentile": 8.333333333333334
     },
     {
       "glidenumber": "DR-2022-000280-ETH",
@@ -365,9 +366,9 @@
       "latitude": 5.83,
       "longitude": 37.5,
       "affected": 0,
-      "rainfall_total_anomaly": -1.2628718352300043,
-      "spi": -1.3462508993418696,
-      "rainfall_percentile": 15.0
+      "rainfall_total_anomaly": -1.258846933904716,
+      "spi": -1.3998292134433656,
+      "rainfall_percentile": 8.333333333333334
     },
     {
       "glidenumber": "DR-2026-000117-ETH",

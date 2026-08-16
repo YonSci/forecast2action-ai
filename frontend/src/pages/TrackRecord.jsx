@@ -629,9 +629,10 @@ function TrackRecord() {
                 flagged when it falls inside JJAS, this app's real forecast
                 season) and location, its real GLIDE "affected" figure (the only
                 real severity signal GLIDE captures for drought most events
-                report 0 killed, injured, or homeless), and its region's real
-                SPI and Rainfall Total values that year (Rainfall Percentile
-                is compared separately below; the 2026 event is
+                report 0 killed, injured, or homeless), and the real SPI and
+                Rainfall Total values at that event's exact coordinate that
+                year, not a region average (Rainfall Percentile is compared
+                separately below; the 2026 event is
                 excluded here since it has no baseline yet). Click a column
                 heading to sort by it.
               </p>
@@ -645,15 +646,16 @@ function TrackRecord() {
             <div className="lp-wrap">
               <h2>The headline signal</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
-                For every real region-year where a real GLIDE drought event was
+                For every real location where a real GLIDE drought event was
                 actually registered during JJAS itself (this app's real
-                forecast season, not some other month), was that region's real
-                seasonal rainfall actually anomalously dry, using a real
-                gamma-fit SPI? Droughts are accumulation phenomena, so a
-                seasonal total is a more honest test than any single month.
-                Real events registered outside JJAS are real droughts too, so
-                they're still excluded from the "no event" comparison below,
-                just not counted toward this hit rate.
+                forecast season, not some other month), was the exact real
+                pixel at that event's own reported coordinate actually
+                anomalously dry that season, using a real gamma-fit SPI not
+                a region-wide average? Droughts are accumulation phenomena,
+                so a seasonal total is a more honest test than any single
+                month. Real events registered outside JJAS are real
+                droughts too, so they're still excluded from the "no event"
+                comparison below, just not counted toward this hit rate.
               </p>
               <div className="lp-feature-grid" style={{ marginBottom: 18 }}>
                 <div className="lp-feature-card">
@@ -669,8 +671,8 @@ function TrackRecord() {
                     {spi?.event_years ?? "N/A"}
                   </p>
                   <p style={{ margin: 0, color: "var(--lp-muted)" }}>
-                    region-years with a real drought event registered during
-                    JJAS itself
+                    real unique pixel-years with a drought event registered
+                    during JJAS itself
                   </p>
                 </div>
                 <div className="lp-feature-card">
@@ -758,9 +760,9 @@ function TrackRecord() {
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 Every real GLIDE drought event with a usable baseline (the
                 2026 event is excluded here since its year's CHIRPS rainfall
-                isn't downloaded yet), and whether SPI and Rainfall Total
-                actually crossed the moderately-dry threshold in that
-                region-year. Not the aggregate percentage above, but the
+                isn't downloaded yet), and whether SPI and Rainfall Total at
+                that exact pixel actually crossed the moderately-dry
+                threshold that year. Not the aggregate percentage above, but the
                 real event-by-event record it's built from. Click a column
                 heading to sort.
               </p>
