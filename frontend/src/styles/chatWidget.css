@@ -69,6 +69,13 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
+.f2a-chat-panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .f2a-chat-icon-btn {
   flex-shrink: 0;
   width: 30px;
@@ -188,9 +195,30 @@
   border-bottom-left-radius: 4px;
 }
 
-.f2a-chat-typing {
+.f2a-chat-typing-dots {
   color: var(--muted, #60708c);
   font-style: italic;
+}
+
+.f2a-chat-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: currentColor;
+  animation: f2a-chat-blink 0.9s steps(1) infinite;
+}
+
+@keyframes f2a-chat-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f2a-chat-cursor {
+    animation: none;
+  }
 }
 
 .f2a-chat-error {

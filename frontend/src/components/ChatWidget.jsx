@@ -4,6 +4,31 @@ import "../styles/chatWidget.css";
 
 const MAX_HISTORY_TURNS = 10;
 
+// Persists the conversation across a page refresh -- capped, not
+// unlimited, so a long-lived tab doesn't grow localStorage forever.
+const STORAGE_KEY = "f2a-chat-history";
+const MAX_STORED_MESSAGES = 40;
+
+function loadStoredMessages() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredMessages(messages) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+  } catch {
+    // Storage full/unavailable (private browsing, quota) -- the
+    // conversation just won't survive a refresh; not worth surfacing.
+  }
+}
+
 // Lightweight inline-markdown rendering for chat replies -- the model
 // naturally writes **bold** around key numbers/labels and `code` around
 // field names (both providers do this unprompted), but the bubble was
@@ -95,6 +120,14 @@ function IconSend() {
   );
 }
 
+function IconNewChat() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Floating chat widget for the Dashboard -- grounded strictly in this
  * period's real, already-computed evidence (see app/api/dashboard_chat.py),
  * never a general-purpose assistant. Sends the dashboard's own current
@@ -105,7 +138,7 @@ function IconSend() {
  */
 function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage, aiReport }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(loadStoredMessages);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
@@ -117,12 +150,33 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
     }
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    saveStoredMessages(messages);
+  }, [messages]);
+
+  function startNewConversation() {
+    setMessages([]);
+    setError("");
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  function updateLastAssistantMessage(patch) {
+    setMessages((current) => {
+      const updated = [...current];
+      const lastIndex = updated.length - 1;
+      if (lastIndex >= 0 && updated[lastIndex].role === "assistant") {
+        updated[lastIndex] = { ...updated[lastIndex], ...patch };
+      }
+      return updated;
+    });
+  }
+
   async function sendText(text) {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
 
     const nextMessages = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
+    setMessages([...nextMessages, { role: "assistant", content: "", streaming: true }]);
     setInput("");
     setIsSending(true);
     setError("");
@@ -135,31 +189,85 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
         }
       : null;
 
+    const requestBody = JSON.stringify({
+      message: trimmed,
+      history: nextMessages.slice(0, -1).slice(-MAX_HISTORY_TURNS),
+      forecast_selection: forecastSelection,
+      selected_area: selectedPriorityArea?.area_name || null,
+      target_language: selectedLanguage || "en",
+      report_context: reportContext,
+    });
+
+    let receivedAnything = false;
     try {
-      const response = await fetch(apiUrl("/api/chat/message"), {
+      const response = await fetch(apiUrl("/api/chat/stream"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: trimmed,
-          history: nextMessages.slice(0, -1).slice(-MAX_HISTORY_TURNS),
-          forecast_selection: forecastSelection,
-          selected_area: selectedPriorityArea?.area_name || null,
-          target_language: selectedLanguage || "en",
-          report_context: reportContext,
-        }),
+        body: requestBody,
       });
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         const detail = await response.text();
         throw new Error(detail || `Request failed ${response.status}`);
       }
-      const data = await response.json();
-      setMessages([
-        ...nextMessages,
-        { role: "assistant", content: data.reply, contextSummary: data.context_summary },
-      ]);
+
+      // Real Server-Sent-Events parsing: the network doesn't guarantee
+      // chunk boundaries line up with SSE event boundaries, so incoming
+      // bytes are buffered and split on the real "\n\n" event delimiter,
+      // not assumed to arrive as one event per read().
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const rawEvent = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const line = rawEvent.startsWith("data: ") ? rawEvent.slice(6) : rawEvent;
+          boundary = buffer.indexOf("\n\n");
+          if (!line.trim()) continue;
+
+          let payload;
+          try {
+            payload = JSON.parse(line);
+          } catch {
+            continue;
+          }
+
+          if (payload.error) {
+            throw new Error(payload.error);
+          }
+          if (payload.delta) {
+            receivedAnything = true;
+            accumulated += payload.delta;
+            updateLastAssistantMessage({ content: accumulated, streaming: true });
+          }
+          if (payload.done) {
+            // The server re-runs the SAME forecast-safe-language repair
+            // /message applies against the full accumulated text -- the
+            // streamed preview above is provisional; final_reply is the
+            // one actually committed, even if it differs (rare).
+            updateLastAssistantMessage({
+              content: payload.final_reply,
+              contextSummary: payload.context_summary,
+              streaming: false,
+            });
+          }
+        }
+      }
     } catch (err) {
       setError("The assistant is unavailable right now. Please try again in a moment.");
       console.error(err);
+      if (!receivedAnything) {
+        // Never got any real content -- drop the empty placeholder bubble
+        // rather than leaving a blank assistant turn in the transcript.
+        setMessages((current) => current.slice(0, -1));
+      }
     } finally {
       setIsSending(false);
     }
@@ -182,9 +290,16 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
                 {selectedPriorityArea?.area_name ? ` — ${selectedPriorityArea.area_name} selected` : ""}
               </span>
             </div>
-            <button type="button" className="f2a-chat-icon-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
-              <IconClose />
-            </button>
+            <div className="f2a-chat-panel-head-actions">
+              {messages.length > 0 && (
+                <button type="button" className="f2a-chat-icon-btn" onClick={startNewConversation} aria-label="Start new conversation" title="New conversation">
+                  <IconNewChat />
+                </button>
+              )}
+              <button type="button" className="f2a-chat-icon-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
+                <IconClose />
+              </button>
+            </div>
           </div>
 
           <div className="f2a-chat-messages" ref={scrollRef}>
@@ -202,11 +317,15 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
             )}
             {messages.map((message, index) => (
               <div key={index} className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}>
-                {renderInlineMarkdown(message.content)}
-                {message.role === "assistant" && renderContextSummary(message.contextSummary)}
+                {message.streaming && !message.content ? (
+                  <span className="f2a-chat-typing-dots">Thinking…</span>
+                ) : (
+                  renderInlineMarkdown(message.content)
+                )}
+                {message.streaming && message.content && <span className="f2a-chat-cursor" aria-hidden="true" />}
+                {message.role === "assistant" && !message.streaming && renderContextSummary(message.contextSummary)}
               </div>
             ))}
-            {isSending && <div className="f2a-chat-bubble f2a-chat-bubble-assistant f2a-chat-typing">Thinking…</div>}
           </div>
 
           {error && <div className="f2a-chat-error">{error}</div>}

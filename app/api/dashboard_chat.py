@@ -30,10 +30,13 @@ has its own small set of raw-call primitives rather than reusing those.
 
 from __future__ import annotations
 
+import json
 import os
-from typing import Any, Dict, List, Optional
+import re
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.api.ai_map_interpretation import (
@@ -47,8 +50,11 @@ from app.api.ai_map_interpretation import (
     normalize_language_code,
     resolve_report_period,
 )
+from app.api.report_stages import CLASSIFICATION_METHOD_LEGEND, _risk_definition_block
+from app.api.seasonal_catalog_shared import PERIODS
 from app.context.community_context import build_community_evidence_by_region
 from app.context.statistical_evidence import (
+    INDICATOR_DEFINITIONS,
     area_signal_counts,
     build_national_region_evidence,
     build_structured_indicator_summaries,
@@ -71,6 +77,20 @@ MAX_HISTORY_TURNS = 10
 _NATIONAL_INDICATORS_MAX_CHARS = 12000
 _PRIORITY_AREAS_MAX_CHARS = 14000
 _COMMUNITY_REPORTS_MAX_CHARS = 6000
+_COMPARISON_PERIOD_MAX_CHARS = 4000
+
+# Real, canonical seasonal period names this app's own raster catalog
+# actually serves (app.api.seasonal_catalog_shared.PERIODS) -- not a
+# separately-invented list, so a period this endpoint tries to compare
+# against is always one build_national_region_evidence can genuinely serve.
+_COMPARABLE_PERIODS = [p["value"] for p in PERIODS]
+_PERIOD_MENTION_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(p) for p in _COMPARABLE_PERIODS) + r")\b", re.IGNORECASE,
+)
+# Cross-period comparison is a real feature, not unlimited -- capping how
+# many EXTRA periods one message can pull in keeps a message that happens
+# to mention every month from quadrupling the prompt size.
+_MAX_COMPARISON_PERIODS = 2
 
 # Fields from build_priority_area_justifications' own real per-area object
 # actually useful for Q&A -- drops supporting_indicators/contradicting_
@@ -174,8 +194,83 @@ def _build_chat_context_packet(
     return packet
 
 
+def _detect_comparison_periods(message: str, history: List[Dict[str, str]], current_period: str) -> List[str]:
+    """Real, deterministic period-name detection (regex word-match against
+    app.api.seasonal_catalog_shared.PERIODS' own canonical values) -- not an
+    LLM guessing which periods the user means. Scans the current message
+    plus the last few history turns (a user might say "compare July" then,
+    next turn, "...to August" -- the mention could be a turn or two back).
+    Deliberately capped at _MAX_COMPARISON_PERIODS so a message that happens
+    to mention every month doesn't multiply the prompt size unboundedly.
+    """
+    recent_text = message + " " + " ".join(turn.get("content", "") for turn in history[-4:])
+    mentioned = {match.upper() if match.upper() == "JJAS" else match.title() for match in _PERIOD_MENTION_PATTERN.findall(recent_text)}
+    extra = [period for period in _COMPARABLE_PERIODS if period in mentioned and period.lower() != current_period.lower()]
+    return extra[:_MAX_COMPARISON_PERIODS]
+
+
+def _build_comparison_period_packet(period: str, selected_area: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Compact, real evidence for an OTHER period the user mentioned, for
+    cross-period comparison only -- deliberately much smaller than the
+    primary period's own packet (just the national aggregate, plus one
+    area's record if the dashboard has a selected area, or the real top-3-
+    ranked areas per hazard type otherwise) since a comparison question is
+    normally about one area or the national picture, not a full re-dump of
+    every area for a second period. Returns None if this period genuinely
+    has no real underlying raster data (build_national_region_evidence
+    raises/degrades for a period this app's catalog doesn't actually serve)
+    -- the caller skips it rather than sending the model a broken packet.
+    """
+    try:
+        evidence = build_national_region_evidence(period.lower(), admin_level="admin1", use_cache=True)
+    except Exception:
+        return None
+
+    packet: Dict[str, Any] = {
+        "national_cross_indicator": next(
+            (item for item in evidence.get("cross_indicator_findings") or [] if item.get("area") == "National"),
+            None,
+        ),
+    }
+    priority_areas = evidence.get("priority_area_justifications") or []
+    if selected_area:
+        match = next((item for item in priority_areas if item.get("area") == selected_area), None)
+        if match:
+            packet["selected_area_record"] = {key: match.get(key) for key in _CHAT_PRIORITY_AREA_FIELDS}
+    else:
+        packet["top_ranked_areas"] = [
+            {key: item.get(key) for key in _CHAT_PRIORITY_AREA_FIELDS}
+            for item in priority_areas
+            if isinstance(item.get("rank"), int) and item["rank"] <= 3
+        ]
+    return packet
+
+
+# Real, fixed reference material -- not period-specific evidence, so built
+# once at import time rather than re-serialized on every chat message.
+# Reuses the SAME definitions the report pipeline itself already shows a
+# reader (INDICATOR_DEFINITIONS's own real indicator interpretations,
+# report_stages._risk_definition_block's real risk formula/classes,
+# CLASSIFICATION_METHOD_LEGEND's real relative-vs-absolute distinction) --
+# not new copy invented for the chatbot, so this can never drift from what
+# the report itself already says.
+_METHODOLOGY_REFERENCE = {
+    "indicator_definitions": INDICATOR_DEFINITIONS,
+    "risk_score_formula": _risk_definition_block(),
+    "classification_methods": CLASSIFICATION_METHOD_LEGEND,
+}
+_METHODOLOGY_REFERENCE_BLOCK = f"""
+
+METHODOLOGY REFERENCE (real, fixed definitions from this app's own documentation -- use these to answer "what is X" / "how is X computed" / "what does classification_method Y mean" questions. This is NOT period-specific evidence -- never cite a value from here as if it were real forecast data for the current period, and never let it override a real number given elsewhere in this prompt):
+{compact_json(_METHODOLOGY_REFERENCE, max_chars=6000)}"""
+
+
 def _build_chat_system_prompt(
-    period: str, language_code: str, context_packet: Dict[str, Any], report_context: Optional[ReportContext],
+    period: str,
+    language_code: str,
+    context_packet: Dict[str, Any],
+    report_context: Optional[ReportContext],
+    comparison_packets: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> str:
     """Confirmed real gap, fixed: this used to serialize the WHOLE context_
     packet through one shared compact_json(..., max_chars=12000) call --
@@ -214,19 +309,28 @@ REAL COMMUNITY GROUND-TRUTH REPORTS (field observations submitted by community m
 ALREADY-GENERATED REPORT NARRATIVE (real AI-authored text from a previous report generation, already checked by this app's own response validator -- you may quote or summarize it, but if it ever conflicts with REAL EVIDENCE below, the evidence wins; the evidence is always the more authoritative, more current source):
 {compact_json(report_narrative, max_chars=4000)}"""
 
+    comparison_block = ""
+    if comparison_packets:
+        comparison_block = f"""
+
+CROSS-PERIOD COMPARISON EVIDENCE (the user's message mentioned {", ".join(comparison_packets.keys())} -- real evidence for those OTHER periods, kept smaller/scoped than the primary period's own evidence above. When comparing, ALWAYS name which period each number belongs to; never blend numbers from different periods into one unlabeled claim):
+{compact_json(comparison_packets, max_chars=len(comparison_packets) * _COMPARISON_PERIOD_MAX_CHARS)}"""
+
     return f"""You are the Forecast2Action AI dashboard assistant, helping a decision-maker understand the {period} Ethiopia climate-risk forecast currently shown on their dashboard.
 
 {get_language_instruction(language_code)}
 
-STRICT GROUNDING RULE: You may ONLY answer using the real, already-computed evidence given below -- never invent, estimate, or guess a number, ranking, or comparison that isn't directly present in it. If a question can't be answered from this evidence (general knowledge, a different period, a different country, or anything requiring speculation), say so plainly and offer what you CAN answer instead -- never guess to seem helpful.
+STRICT GROUNDING RULE: You may ONLY answer using the real, already-computed evidence and METHODOLOGY REFERENCE given below -- never invent, estimate, or guess a number, ranking, or comparison that isn't directly present in them. If a question still can't be answered (general knowledge outside this project, a different country, anything requiring speculation), say so plainly and offer what you CAN answer instead -- never guess to seem helpful.
 
-FORECAST-SAFE LANGUAGE: Everything below describes a FORECAST for {period}, not something that has already happened. Never say a hazard "has occurred," "was observed," or is "ongoing" -- describe it as forecast, projected, or expected.
+FORECAST-SAFE LANGUAGE: Everything below describes a FORECAST for {period} (and, if present, the other real periods in CROSS-PERIOD COMPARISON EVIDENCE), not something that has already happened. Never say a hazard "has occurred," "was observed," or is "ongoing" -- describe it as forecast, projected, or expected.
 
 SUPERLATIVE RULE: Only say an area has the "highest"/"lowest" value of a metric (hazard_probability, vulnerability, population_exposed_pct, risk_score) if that exact metric name appears in that area's own real highest_among_group/lowest_among_group list below -- you cannot reliably compare raw numbers across areas yourself.
 
 NATIONAL VS AREA-LEVEL RULE: national_cross_indicator is its own real, independently-computed aggregate -- never describe it as "strong" just because several individual areas are; use area_signal_tally for any area-level count, and never count the priority_areas list yourself.
 
 COMMUNITY REPORTS RULE: REAL COMMUNITY GROUND-TRUTH REPORTS below (if present) is real, user-submitted field observations, keyed by area name -- corroborating evidence, not proof, unless a report's own verification_status shows it was actually reviewed. If that section is absent entirely from this prompt, you have NOT been given any community-report data at all -- say so plainly rather than guessing whether reports exist. If it IS present, an area with no entry in it has zero submitted reports.
+
+FORMATTING RULE: The chat UI renders only **bold** and `inline code` -- never use LaTeX/math notation (no $...$, \times, \text{{}}), tables, or headings. Write formulas as plain text (e.g. "risk score = 100 x hazard probability x severity x exposure x vulnerability").
 
 Keep answers conversational and concise (2-4 sentences) unless the user asks for more detail. If dashboard_selected_area is set below and the user's question doesn't name a specific area, assume they mean that one.
 
@@ -240,7 +344,7 @@ NATIONAL CROSS-INDICATOR AGGREGATE (its own real, independently-computed signal 
 {compact_json(context_packet.get("national_cross_indicator"), max_chars=1500)}
 
 AREA-LEVEL SIGNAL TALLY (real, deterministic counts by signal -- never count priority_areas yourself):
-{compact_json(context_packet.get("area_signal_tally"), max_chars=1500)}{selected_area_line}{community_block}{report_block}
+{compact_json(context_packet.get("area_signal_tally"), max_chars=1500)}{selected_area_line}{community_block}{report_block}{comparison_block}{_METHODOLOGY_REFERENCE_BLOCK}
 """.strip()
 
 
@@ -342,7 +446,10 @@ def _chat_provider_attempts(system_prompt: str, history: List[Dict[str, str]], u
 
 
 def _build_context_summary(
-    context_packet: Dict[str, Any], community_evidence: Dict[str, Any], report_context: Optional[ReportContext],
+    context_packet: Dict[str, Any],
+    community_evidence: Dict[str, Any],
+    report_context: Optional[ReportContext],
+    comparison_packets: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Real, deterministic accounting of what THIS message's context packet
     actually contained -- not a claim about which parts the model's reply
@@ -379,14 +486,26 @@ def _build_context_summary(
         "community_reports_areas": community_reports_areas,
         "community_reports_truncated": community_reports_truncated,
         "included_report_narrative": bool(report_context and report_context.model_dump(exclude_none=True)),
+        "comparison_periods": sorted(comparison_packets.keys()) if comparison_packets else [],
     }
 
 
-@router.post("/message", response_model=DashboardChatResponse)
-def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
-    if not payload.message.strip():
-        raise HTTPException(status_code=422, detail="message must not be empty.")
+class _PreparedChatPrompt(NamedTuple):
+    """Everything both /message and /stream need to actually call a
+    provider and, afterward, build a context_summary -- extracted once so
+    the two endpoints can never build the evidence/prompt two different
+    ways and quietly drift apart.
+    """
 
+    period: str
+    system_prompt: str
+    history: List[Dict[str, str]]
+    context_packet: Dict[str, Any]
+    community_evidence: Dict[str, Any]
+    comparison_packets: Dict[str, Dict[str, Any]]
+
+
+def _prepare_chat_prompt(payload: DashboardChatRequest) -> _PreparedChatPrompt:
     period = resolve_report_period(AIMapInterpretationRequest(forecast_selection=payload.forecast_selection))
 
     try:
@@ -404,12 +523,31 @@ def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
 
     context_packet = _build_chat_context_packet(evidence, payload.selected_area, community_evidence)
     language_code = normalize_language_code(payload.target_language)
-    system_prompt = _build_chat_system_prompt(period, language_code, context_packet, payload.report_context)
     history = [turn.model_dump() for turn in payload.history[-MAX_HISTORY_TURNS:]]
+
+    comparison_period_names = _detect_comparison_periods(payload.message, history, period)
+    comparison_packets: Dict[str, Dict[str, Any]] = {}
+    for comparison_period in comparison_period_names:
+        comparison_packet = _build_comparison_period_packet(comparison_period, payload.selected_area)
+        if comparison_packet:
+            comparison_packets[comparison_period] = comparison_packet
+
+    system_prompt = _build_chat_system_prompt(
+        period, language_code, context_packet, payload.report_context, comparison_packets,
+    )
+    return _PreparedChatPrompt(period, system_prompt, history, context_packet, community_evidence, comparison_packets)
+
+
+@router.post("/message", response_model=DashboardChatResponse)
+def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
+    if not payload.message.strip():
+        raise HTTPException(status_code=422, detail="message must not be empty.")
+
+    prepared = _prepare_chat_prompt(payload)
 
     reply_text: Optional[str] = None
     errors: List[str] = []
-    for provider_label, call in _chat_provider_attempts(system_prompt, history, payload.message):
+    for provider_label, call in _chat_provider_attempts(prepared.system_prompt, prepared.history, payload.message):
         try:
             reply_text = call()
             if reply_text:
@@ -430,5 +568,208 @@ def post_chat_message(payload: DashboardChatRequest) -> DashboardChatResponse:
     reply_text, _ = _repair_confirmed_language_in_text(reply_text)
     reply_text, _ = _repair_observational_present_in_text(reply_text)
 
-    context_summary = _build_context_summary(context_packet, community_evidence, payload.report_context)
-    return DashboardChatResponse(reply=reply_text, period=period, context_summary=context_summary)
+    context_summary = _build_context_summary(
+        prepared.context_packet, prepared.community_evidence, payload.report_context, prepared.comparison_packets,
+    )
+    return DashboardChatResponse(reply=reply_text, period=prepared.period, context_summary=context_summary)
+
+
+def _stream_gemini_chat_raw(model: str, system_prompt: str, history: List[Dict[str, str]], user_message: str):
+    """Streaming counterpart to _call_gemini_chat_raw -- yields real text
+    deltas as Gemini generates them (confirmed live: generate_content_
+    stream yields GenerateContentResponse chunks, .text per chunk), instead
+    of blocking for the full response. Same auth/contents/config
+    construction as the non-streaming call.
+    """
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ProviderError("GEMINI_API_KEY or GOOGLE_API_KEY is not set.")
+
+    try:
+        from google import genai
+        from google.genai import types
+    except Exception as exc:
+        raise ProviderError("Google Gen AI package is required. Run: pip install google-genai") from exc
+
+    client = genai.Client(api_key=api_key)
+
+    contents: List[Any] = []
+    for turn in history:
+        role = "model" if turn.get("role") == "assistant" else "user"
+        contents.append(types.Content(role=role, parts=[types.Part.from_text(text=turn.get("content", ""))]))
+    contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_message)]))
+
+    config_kwargs = {
+        "system_instruction": system_prompt,
+        "temperature": float(os.getenv("AI_CHAT_TEMPERATURE", "0.3")),
+        "top_p": float(os.getenv("AI_TOP_P", "0.8")),
+        "max_output_tokens": int(os.getenv("AI_CHAT_MAX_TOKENS", "1024")),
+    }
+    try:
+        stream = client.models.generate_content_stream(
+            model=model, contents=contents, config=types.GenerateContentConfig(**config_kwargs),
+        )
+    except TypeError:
+        stream = client.models.generate_content_stream(model=model, contents=contents, config=config_kwargs)
+
+    for chunk in stream:
+        if chunk.text:
+            yield chunk.text
+
+
+def _stream_openai_compatible_chat_raw(
+    *, api_key_env: str, base_url: Optional[str], model: str,
+    system_prompt: str, history: List[Dict[str, str]], user_message: str,
+):
+    """Streaming counterpart to _call_openai_compatible_chat_raw -- confirmed
+    live: client.responses.create(..., stream=True) returns an iterator of
+    typed events; only "response.output_text.delta" events carry real text
+    (the others are lifecycle markers -- created/in_progress/output_item.*/
+    content_part.*/output_text.done/completed), so those are the only ones
+    yielded here.
+    """
+    api_key = os.getenv(api_key_env)
+    if not api_key:
+        raise ProviderError(f"{api_key_env} is not set.")
+
+    try:
+        from openai import OpenAI
+    except Exception as exc:
+        raise ProviderError("OpenAI Python package is required. Run: pip install openai") from exc
+
+    client = OpenAI(base_url=base_url, api_key=api_key) if base_url else OpenAI(api_key=api_key)
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for turn in history:
+        role = "assistant" if turn.get("role") == "assistant" else "user"
+        messages.append({"role": role, "content": turn.get("content", "")})
+    messages.append({"role": "user", "content": user_message})
+
+    stream = client.responses.create(
+        model=model, input=messages, stream=True,
+        max_output_tokens=int(os.getenv("AI_CHAT_MAX_TOKENS", "1024")),
+    )
+    for event in stream:
+        if event.type == "response.output_text.delta":
+            yield event.delta
+
+
+# Same ordering/resilience story as _chat_provider_attempts, streaming
+# variant -- each factory returns a GENERATOR (not yet started), so the
+# caller can tell a provider that fails before yielding anything (safe to
+# just try the next one) apart from a provider that fails PARTWAY through
+# (already streamed real content to the client -- can't silently restart
+# with a different provider without the UI showing a broken half-answer).
+def _chat_provider_stream_attempts(system_prompt: str, history: List[Dict[str, str]], user_message: str):
+    for model in GEMINI_MODEL_TIERS["lite"]:
+        if model:
+            yield f"gemini:{model}", lambda m=model: _stream_gemini_chat_raw(m, system_prompt, history, user_message)
+    openai_model = os.getenv("OPENAI_MAP_AI_MODEL", "gpt-5")
+    yield f"openai:{openai_model}", lambda: _stream_openai_compatible_chat_raw(
+        api_key_env="OPENAI_API_KEY", base_url=None, model=openai_model,
+        system_prompt=system_prompt, history=history, user_message=user_message,
+    )
+    openrouter_model = os.getenv("OPENROUTER_AI_MODEL", "google/gemini-2.5-flash-lite")
+    yield f"openrouter:{openrouter_model}", lambda: _stream_openai_compatible_chat_raw(
+        api_key_env="OPENROUTER_API_KEY",
+        base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+        model=openrouter_model,
+        system_prompt=system_prompt, history=history, user_message=user_message,
+    )
+
+
+def _sse_line(payload: Dict[str, Any]) -> str:
+    """Real Server-Sent-Events framing (data: <json>\\n\\n), not bare NDJSON.
+    Confirmed real gap, fixed while first testing this endpoint: with
+    media_type="application/x-ndjson", every delta arrived at once instead
+    of progressively (measured directly against a real local server, byte
+    offsets included) -- root cause was app.api.main's global
+    GZipMiddleware(minimum_size=1000), whose underlying gzip.GzipFile
+    buffers small writes internally and only flushes near the end,
+    defeating streaming for a response made of many tiny chunks.
+    "text/event-stream" is in Starlette's own GZipMiddleware
+    DEFAULT_EXCLUDED_CONTENT_TYPES (confirmed by reading its source), so
+    switching to real SSE framing/media type skips compression for this
+    endpoint entirely -- no main.py middleware change needed. Real SSE
+    framing is also the standards-correct choice for surviving a reverse
+    proxy in front of the deployed backend, several of which specifically
+    special-case text/event-stream to avoid buffering it too.
+    """
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+@router.post("/stream")
+def post_chat_stream(payload: DashboardChatRequest) -> StreamingResponse:
+    """Streaming twin of /message -- same evidence/prompt, real upstream
+    token streaming for perceived-latency (report generation and manual
+    testing both showed 5-14s full-response waits; a floating chat widget
+    with no progress indicator reads as broken far sooner than that).
+
+    Still safety-first, not "stream whatever the model says": the client is
+    told to treat streamed deltas as a live PREVIEW only, never the final
+    committed text -- the SAME forecast-safe-language repair /message
+    applies runs here too, against the full accumulated text once the
+    stream ends, and the real, possibly-corrected final_reply is sent as
+    the closing SSE event. A rare visible "flash" correction beats silently
+    skipping the repair just to keep every streamed token final.
+    """
+    if not payload.message.strip():
+        raise HTTPException(status_code=422, detail="message must not be empty.")
+
+    prepared = _prepare_chat_prompt(payload)
+
+    def event_stream():
+        chunks: List[str] = []
+        started = False
+        errors: List[str] = []
+        for provider_label, make_stream in _chat_provider_stream_attempts(
+            prepared.system_prompt, prepared.history, payload.message,
+        ):
+            try:
+                for delta in make_stream():
+                    started = True
+                    chunks.append(delta)
+                    yield _sse_line({"delta": delta})
+                if started:
+                    break
+            except Exception as exc:  # noqa: BLE001 -- same "try next provider" reasoning as _chat_provider_attempts
+                if started:
+                    yield _sse_line({"error": f"{provider_label} stream failed partway through: {exc}"})
+                    return
+                errors.append(f"{provider_label}: {exc}")
+                continue
+
+        if not started:
+            yield _sse_line({"error": f"Chat assistant is unavailable right now: {' | '.join(errors)}"})
+            return
+
+        from app.advisory.response_validator import _repair_confirmed_language_in_text, _repair_observational_present_in_text
+
+        full_text = "".join(chunks).strip()
+        repaired_text, changed_1 = _repair_confirmed_language_in_text(full_text)
+        repaired_text, changed_2 = _repair_observational_present_in_text(repaired_text)
+
+        context_summary = _build_context_summary(
+            prepared.context_packet, prepared.community_evidence, payload.report_context, prepared.comparison_packets,
+        )
+        yield _sse_line({
+            "done": True,
+            "final_reply": repaired_text,
+            "was_repaired": changed_1 or changed_2,
+            "period": prepared.period,
+            "context_summary": context_summary,
+        })
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            # Disables response buffering in nginx-style reverse proxies --
+            # a real, common gotcha for streaming responses deployed behind
+            # one (Render's own edge may or may not proxy this way, but the
+            # header is a documented no-op when it doesn't apply, so there's
+            # no real downside to setting it defensively).
+            "X-Accel-Buffering": "no",
+        },
+    )
