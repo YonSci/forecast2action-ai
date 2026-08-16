@@ -5,9 +5,9 @@ import { apiUrl } from "../config.js";
 
 const THRESHOLD_ORDER = ["moderately_dry", "severely_dry", "extremely_dry"];
 const THRESHOLD_LABELS = {
-  moderately_dry: "Moderately dry (SPI ≤ −1.0)",
-  severely_dry: "Severely dry (SPI ≤ −1.5)",
-  extremely_dry: "Extremely dry (SPI ≤ −2.0)",
+  moderately_dry: "Moderately dry (anomaly ≤ −1.0)",
+  severely_dry: "Severely dry (anomaly ≤ −1.5)",
+  extremely_dry: "Extremely dry (anomaly ≤ −2.0)",
 };
 
 function formatPct(value) {
@@ -84,7 +84,6 @@ function TrackRecord() {
   }, []);
 
   const seasonal = data?.seasonal_analysis;
-  const monthly = data?.monthly_analysis;
   const events = Array.isArray(data?.events) ? data.events : [];
   const eventCount = data?.data_provenance?.drought_events_matched ?? events.length;
 
@@ -168,28 +167,11 @@ function TrackRecord() {
                 </div>
               </div>
               <p className="lp-prose" style={{ marginBottom: 10, fontWeight: 700 }}>
-                Hit rate vs. false-alarm rate at this app's own real SPI thresholds:
+                Hit rate vs. false-alarm rate, using the same threshold values
+                as this app's real SPI classification bands applied to the
+                rainfall anomaly, not to a computed SPI:
               </p>
               <ThresholdTable analysis={seasonal} />
-            </div>
-          </section>
-
-          <hr className="lp-article-divider" />
-
-          <section className="lp-article-section">
-            <div className="lp-wrap">
-              <h2>Single-month comparison</h2>
-              <p className="lp-prose" style={{ marginBottom: 18 }}>
-                The same real comparison at single-month resolution a
-                weaker, secondary check, since a single registered month
-                doesn't capture a drought's real accumulation.
-              </p>
-              <div className="lp-meta-line" style={{ marginBottom: 12 }}>
-                Real event months: <strong>{monthly?.event_months ?? "N/A"}</strong> · Mean
-                anomaly: <strong>{formatAnomaly(monthly?.mean_anomaly_event)}</strong> vs{" "}
-                <strong>{formatAnomaly(monthly?.mean_anomaly_no_event)}</strong> for no-event months
-              </div>
-              <ThresholdTable analysis={monthly} />
             </div>
           </section>
 
