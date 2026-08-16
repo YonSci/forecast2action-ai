@@ -3,8 +3,22 @@ import SubPageLayout from "../components/SubPageLayout.jsx";
 
 const MAIL_ICON = (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
-    <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <rect
+      x="3"
+      y="5"
+      width="18"
+      height="14"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.6"
+    />
+    <path
+      d="M4 7l8 6 8-6"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -19,9 +33,21 @@ const CONTACT_LINKS = [
     label: "Yonas Mersha",
     icon: MAIL_ICON,
     emails: [
-      { tag: "CGIAR", value: "Y.Mersha@cgiar.org", href: "mailto:Y.Mersha@cgiar.org" },
-      { tag: "personal", value: "yonas.mersha14@gmail.com", href: "mailto:yonas.mersha14@gmail.com" },
-      { tag: "work", value: "yonas@grace-resilience.com", href: "mailto:yonas@grace-resilience.com" },
+      {
+        tag: "",
+        value: "Y.Mersha@cgiar.org",
+        href: "mailto:Y.Mersha@cgiar.org",
+      },
+      {
+        tag: "",
+        value: "yonas.mersha14@gmail.com",
+        href: "mailto:yonas.mersha14@gmail.com",
+      },
+      {
+        tag: "",
+        value: "yonas@grace-resilience.com",
+        href: "mailto:yonas@grace-resilience.com",
+      },
     ],
   },
   {
@@ -43,9 +69,27 @@ const CONTACT_LINKS = [
     href: "https://linkedin.com/in/yonas-mersha-baab561b5",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M7.5 10v6.5M7.5 7.5v.01M12 16.5V13c0-1.5 1-2.5 2.25-2.5S16.5 11.5 16.5 13v3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        <path d="M12 10v6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <rect
+          x="3"
+          y="3"
+          width="18"
+          height="18"
+          rx="3"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+        <path
+          d="M7.5 10v6.5M7.5 7.5v.01M12 16.5V13c0-1.5 1-2.5 2.25-2.5S16.5 11.5 16.5 13v3.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <path
+          d="M12 10v6.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -55,8 +99,18 @@ const CONTACT_LINKS = [
     href: "https://github.com/YonSci/forecast2action-ai",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M4 4v11a2 2 0 002 2h4l3 3 3-3h2a2 2 0 002-2V4" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M8 9h8M8 12.5h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path
+          d="M4 4v11a2 2 0 002 2h4l3 3 3-3h2a2 2 0 002-2V4"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M8 9h8M8 12.5h5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -67,7 +121,11 @@ const CONTACT_LINKS = [
     icon: (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M3 12h18M12 3c2.5 2.5 3.5 6 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-6-3.5-9s1-6.5 3.5-9z" stroke="currentColor" strokeWidth="1.6" />
+        <path
+          d="M3 12h18M12 3c2.5 2.5 3.5 6 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-6-3.5-9s1-6.5 3.5-9z"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
       </svg>
     ),
   },
@@ -86,8 +144,8 @@ function Contact() {
           </span>
           <h1>Get in touch</h1>
           <p className="lp-hero-sub">
-            Questions about the methodology, the data, or the platform —
-            reach out directly, or explore the project on GitHub.
+            Questions about the methodology, the data, or the platform — reach
+            out directly, or explore the project on GitHub.
           </p>
         </div>
       </section>
@@ -97,13 +155,20 @@ function Contact() {
           <div className="lp-contact-grid">
             {CONTACT_LINKS.map((item) =>
               item.emails ? (
-                <div key={item.label} className="lp-contact-card lp-contact-card-group">
+                <div
+                  key={item.label}
+                  className="lp-contact-card lp-contact-card-group"
+                >
                   <span className="lp-contact-icon">{item.icon}</span>
                   <span>
                     <span className="lp-contact-label">{item.label}</span>
                     <span className="lp-contact-emails">
                       {item.emails.map((email) => (
-                        <a key={email.href} href={email.href} className="lp-contact-value">
+                        <a
+                          key={email.href}
+                          href={email.href}
+                          className="lp-contact-value"
+                        >
                           {email.value} <em>({email.tag})</em>
                         </a>
                       ))}
