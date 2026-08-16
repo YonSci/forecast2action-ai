@@ -645,6 +645,86 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function normalizeMapImageUrl(url) {
+  if (!url) return "";
+  const value = String(url);
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:")) {
+    return value;
+  }
+  return apiUrl(value);
+}
+
+async function fetchImageAsDataUrl(url) {
+  if (!url) return null;
+  try {
+    const response = await fetch(normalizeMapImageUrl(url));
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Real map images for the bulletin. The climate-indicator and risk-layer
+// maps reuse the SAME map objects (with the same image_url) already fetched
+// and rendered on-screen by ForecastLayerMap.jsx and lifted into Dashboard's
+// forecastSelection state -- so the bulletin literally shows what's already
+// on screen. The priority-areas map has no on-screen equivalent yet, so it's
+// fetched fresh from the same real /api/hazard-risk/map endpoint, using the
+// population_risk_class layer -- the actual risk-tier classification that
+// priority-area ranking is built from.
+async function collectBulletinMaps(forecastSelection = {}) {
+  const priorityPeriod = forecastSelection?.hazardRiskPeriod || "JJAS";
+
+  const [climateDataUrl, riskDataUrl, priorityImageUrl] = await Promise.all([
+    fetchImageAsDataUrl(forecastSelection?.seasonalMap?.image_url),
+    fetchImageAsDataUrl(forecastSelection?.hazardRiskMap?.image_url),
+    (async () => {
+      try {
+        const response = await fetch(
+          apiUrl(
+            `/api/hazard-risk/map?layer=population_risk_class&period=${encodeURIComponent(priorityPeriod)}`,
+          ),
+        );
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data?.map?.image_url || null;
+      } catch {
+        return null;
+      }
+    })(),
+  ]);
+  const priorityDataUrl = await fetchImageAsDataUrl(priorityImageUrl);
+
+  return [
+    {
+      title: "Climate indicator",
+      label: [forecastSelection?.seasonalIndicatorLabel, forecastSelection?.seasonalPeriodLabel]
+        .filter(Boolean)
+        .join(" · "),
+      dataUrl: climateDataUrl,
+    },
+    {
+      title: "Risk layer",
+      label: [forecastSelection?.hazardRiskLayerLabel, forecastSelection?.hazardRiskPeriodLabel]
+        .filter(Boolean)
+        .join(" · "),
+      dataUrl: riskDataUrl,
+    },
+    {
+      title: "Priority intervention areas",
+      label: `Risk classification · ${forecastSelection?.hazardRiskPeriodLabel || priorityPeriod}`,
+      dataUrl: priorityDataUrl,
+    },
+  ];
+}
+
 // Converts the same plain-text line arrays copyReport() already builds
 // (from formatStructuredSummaryForCopy/formatStructuredAdvisory/etc, all
 // real report fields, no fabricated content) into a bulletin-friendly HTML
@@ -734,7 +814,12 @@ function buildBulletinHtml(report, context) {
   th { background: #f3f7fd; }
   .disclosure { margin-top: 44px; padding-top: 14px; border-top: 1px solid #dbe7f7; font-size: 0.74rem; color: #8492a6; }
   .print-hint { font-size: 0.78rem; color: #5d6b85; margin-bottom: 4px; }
-  @media print { .print-hint { display: none; } body { padding: 0 8px; } }
+  .bulletin-maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 4px; }
+  .bulletin-maps figure { margin: 0; border: 1px solid #dbe7f7; border-radius: 12px; overflow: hidden; background: #f8fafc; }
+  .bulletin-maps img { width: 100%; height: 200px; object-fit: contain; display: block; background: #0b1c33; }
+  .bulletin-maps figcaption { padding: 8px 10px; font-size: 0.76rem; color: #5d6b85; }
+  .bulletin-maps figcaption strong { display: block; color: #16233a; font-size: 0.8rem; }
+  @media print { .print-hint { display: none; } body { padding: 0 8px; } .bulletin-maps img { height: 160px; } }
 </style>
 </head>
 <body>
@@ -751,6 +836,26 @@ function buildBulletinHtml(report, context) {
     <h2>Executive summary</h2>
     <div class="exec-summary">${escapeHtml(report.executive_summary || "Not available.")}</div>
   </section>
+
+  ${
+    Array.isArray(context.maps) && context.maps.some((item) => item.dataUrl)
+      ? `<section>
+    <h2>Maps</h2>
+    <div class="bulletin-maps">
+      ${context.maps
+        .filter((item) => item.dataUrl)
+        .map(
+          (item) => `
+      <figure>
+        <img src="${item.dataUrl}" alt="${escapeHtml(item.title)}" />
+        <figcaption><strong>${escapeHtml(item.title)}</strong>${item.label ? escapeHtml(item.label) : ""}</figcaption>
+      </figure>`,
+        )
+        .join("")}
+    </div>
+  </section>`
+      : ""
+  }
 
   ${
     priorityRowsHtml
@@ -838,6 +943,7 @@ function AIMapInterpretation({
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [contextInfo, setContextInfo] = useState(null);
+  const [preparingBulletin, setPreparingBulletin] = useState(false);
 
   const normalizedLanguage = useMemo(
     () => normalizeLanguageCode(selectedLanguage),
@@ -1339,23 +1445,31 @@ function AIMapInterpretation({
               <button
                 type="button"
                 className="ai-secondary-action ai-bulletin-action"
-                onClick={() =>
-                  downloadBulletin(report, {
-                    areaName: selectedPriorityArea?.area_name || "Ethiopia (national)",
-                    areaSubtitle: selectedPriorityArea?.zone
-                      ? `${selectedPriorityArea.zone} · ${selectedPriorityArea.region}`
-                      : selectedPriorityArea?.region || "",
-                    forecastScaleLabel:
-                      forecastSelection?.seasonalScaleLabel ||
-                      getForecastScaleLabel(forecastSelection.forecastScale),
-                    leadLabel:
-                      forecastSelection?.seasonalPeriodLabel ||
-                      getLeadLabel(forecastSelection.lead, forecastSelection.seasonalPeriod),
-                    languageLabel: getLanguageLabel(normalizedLanguage),
-                  })
-                }
+                disabled={preparingBulletin}
+                onClick={async () => {
+                  setPreparingBulletin(true);
+                  try {
+                    const maps = await collectBulletinMaps(forecastSelection);
+                    downloadBulletin(report, {
+                      areaName: selectedPriorityArea?.area_name || "Ethiopia (national)",
+                      areaSubtitle: selectedPriorityArea?.zone
+                        ? `${selectedPriorityArea.zone} · ${selectedPriorityArea.region}`
+                        : selectedPriorityArea?.region || "",
+                      forecastScaleLabel:
+                        forecastSelection?.seasonalScaleLabel ||
+                        getForecastScaleLabel(forecastSelection.forecastScale),
+                      leadLabel:
+                        forecastSelection?.seasonalPeriodLabel ||
+                        getLeadLabel(forecastSelection.lead, forecastSelection.seasonalPeriod),
+                      languageLabel: getLanguageLabel(normalizedLanguage),
+                      maps,
+                    });
+                  } finally {
+                    setPreparingBulletin(false);
+                  }
+                }}
               >
-                Download bulletin
+                {preparingBulletin ? "Preparing bulletin..." : "Download bulletin"}
               </button>
             </div>
           </div>

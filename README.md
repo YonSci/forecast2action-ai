@@ -257,7 +257,7 @@ Full interactive documentation is available at `/docs` on the running backend.
 
 ## 10. Contact
 
-- **Dr. Teferi Demissie** T.Demissie@cgiar.org
+- **Dr. Teferi Demissie** T.Demissie@cgiar.org · teferidem@grace-resilience.com
 - **Yonas Mersha** Y.Mersha@cgiar.org
 - GitHub: [github.com/YonSci](https://github.com/YonSci)
 - Project repository: [github.com/YonSci/forecast2action-ai](https://github.com/YonSci/forecast2action-ai)

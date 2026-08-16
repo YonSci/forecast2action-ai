@@ -117,24 +117,6 @@ function IconPin() {
   );
 }
 
-function IconShield() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3 20 6v6c0 5-3.3 8.3-8 9-4.7-.7-8-4-8-9V6l8-3Z" />
-      <path d="m8.5 12 2.2 2.2 4.8-5" />
-    </svg>
-  );
-}
-
-function IconChat() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 5.8A3.8 3.8 0 0 1 7.8 2h8.4A3.8 3.8 0 0 1 20 5.8v5.4a3.8 3.8 0 0 1-3.8 3.8H10l-5.5 4v-4.7A3.8 3.8 0 0 1 4 11.2V5.8Z" />
-      <path d="M8 8h8M8 11h5" />
-    </svg>
-  );
-}
-
 function IconUsers() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -187,6 +169,15 @@ function IconFileDown() {
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" />
       <path d="M14 2v6h6" />
       <path d="M12 11v7M9 15l3 3 3-3" />
+    </svg>
+  );
+}
+
+function IconSparkle() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />
+      <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z" />
     </svg>
   );
 }
@@ -331,38 +322,38 @@ function DashboardHero({
         <div className="f2a-workflow-row">
           <WorkflowPill
             icon={<IconLayers />}
-            label="Forecast layers"
+            label="Climate indicators"
             tone="blue"
           />
           <em>›</em>
           <WorkflowPill
+            icon={<IconAlert />}
+            label="Risk layers"
+            tone="red"
+          />
+          <em>›</em>
+          <WorkflowPill
             icon={<IconPin />}
-            label="Priority intervention areas"
+            label="Priority areas"
             tone="green"
           />
           <em>›</em>
           <WorkflowPill
             icon={<IconUsers />}
             label="Ground-truth reports"
-            tone="blue"
-          />
-          <em>›</em>
-          <WorkflowPill
-            icon={<IconShield />}
-            label="Selected area advisory"
-            tone="purple"
-          />
-          <em>›</em>
-          <WorkflowPill
-            icon={<IconChat />}
-            label="SMS-ready messages"
             tone="cyan"
           />
           <em>›</em>
           <WorkflowPill
+            icon={<IconSparkle />}
+            label="AI-based interpretation & advisory"
+            tone="purple"
+          />
+          <em>›</em>
+          <WorkflowPill
             icon={<IconFileDown />}
-            label="Bulletin export"
-            tone="green"
+            label="Bulletin generation"
+            tone="amber"
           />
         </div>
       </div>
