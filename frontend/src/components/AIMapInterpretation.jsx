@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiUrl } from "../config.js";
 import {
   CLIMATE_INDICATORS,
+  VISIBLE_CLIMATE_INDICATORS,
   getCurrentSeasonalPeriod,
 } from "../constants/climateIndicators.js";
 import ContextAuditDrawer from "./context/ContextAuditDrawer.jsx";
@@ -671,58 +672,168 @@ async function fetchImageAsDataUrl(url) {
   }
 }
 
-// Real map images for the bulletin. The climate-indicator and risk-layer
-// maps reuse the SAME map objects (with the same image_url) already fetched
-// and rendered on-screen by ForecastLayerMap.jsx and lifted into Dashboard's
-// forecastSelection state -- so the bulletin literally shows what's already
-// on screen. The priority-areas map has no on-screen equivalent yet, so it's
-// fetched fresh from the same real /api/hazard-risk/map endpoint, using the
-// population_risk_class layer -- the actual risk-tier classification that
-// priority-area ranking is built from.
+// Real risk/hazard layer tokens (see LAYER_BY_VALUE in
+// hazard_risk_catalog_shared.py) covering both hazard types for a full
+// national picture, not just whichever one happens to be selected on
+// screen -- a bulletin should show drought AND wet risk regardless of the
+// dashboard's current toggle state.
+const BULLETIN_RISK_LAYERS = [
+  "h_dry_mean",
+  "p_drought",
+  "v_drought",
+  "population_r_drought",
+  "h_wet_mean",
+  "p_wet",
+  "v_wet",
+  "population_r_wet",
+];
+
+// The two real categorical layers priority-area ranking is actually built
+// from: the 0-4 risk tier, and which hazard dominates that tier.
+const BULLETIN_PRIORITY_LAYERS = ["population_risk_class", "population_dominant_code"];
+
+async function fetchSeasonalMapEntry(indicatorValue, indicatorLabel, period, product) {
+  try {
+    const params = new URLSearchParams({ indicator: indicatorValue, period, product });
+    const response = await fetch(apiUrl(`/api/seasonal-raster/map?${params.toString()}`));
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data?.map?.image_url) return null;
+    return {
+      title: data.map.indicator_label || indicatorLabel,
+      subtitle: [data.map.period_label, data.map.product_label].filter(Boolean).join(" · "),
+      imageUrl: data.map.image_url,
+      legend: data.map.legend || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchHazardRiskMapEntry(layer, period) {
+  try {
+    const params = new URLSearchParams({ layer, period });
+    const response = await fetch(apiUrl(`/api/hazard-risk/map?${params.toString()}`));
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data?.map?.image_url) return null;
+    return {
+      title: data.map.label || data.map.legend?.title || layer,
+      subtitle: data.map.period_label || period,
+      imageUrl: data.map.image_url,
+      legend: data.map.legend || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function resolveMapEntryImage(entryPromise) {
+  const entry = await entryPromise;
+  if (!entry) return null;
+  const dataUrl = await fetchImageAsDataUrl(entry.imageUrl);
+  if (!dataUrl) return null;
+  return { ...entry, dataUrl };
+}
+
+// Real map images for the bulletin, grouped the same way the request asked
+// for them: Climate indicators (all 7 real, currently-offered indicators --
+// same list ForecastLayerMap's own dropdown shows), Risk layers (hazard,
+// probability, vulnerability, and risk score, for both drought and wet), and
+// Priority intervention areas (the real risk-tier classification and
+// dominant-hazard layers priority ranking is built from). Each image comes
+// with its own real backend-computed legend (build_legend in
+// seasonal_raster_maps.py / hazard_risk_maps.py) -- the exact same legend
+// data ForecastLayerMap.jsx's on-screen RasterLegend renders -- so the
+// bulletin gets a real colorbar/title/units instead of a bare raster copy.
 async function collectBulletinMaps(forecastSelection = {}) {
-  const priorityPeriod = forecastSelection?.hazardRiskPeriod || "JJAS";
+  const seasonalPeriod = forecastSelection?.seasonalPeriod || "JJAS";
+  const seasonalProduct = forecastSelection?.seasonalProduct || "forecast";
+  const hazardRiskPeriod = forecastSelection?.hazardRiskPeriod || "JJAS";
 
-  const [climateDataUrl, riskDataUrl, priorityImageUrl] = await Promise.all([
-    fetchImageAsDataUrl(forecastSelection?.seasonalMap?.image_url),
-    fetchImageAsDataUrl(forecastSelection?.hazardRiskMap?.image_url),
-    (async () => {
-      try {
-        const response = await fetch(
-          apiUrl(
-            `/api/hazard-risk/map?layer=population_risk_class&period=${encodeURIComponent(priorityPeriod)}`,
-          ),
-        );
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data?.map?.image_url || null;
-      } catch {
-        return null;
-      }
-    })(),
+  const [climateIndicators, riskLayers, priorityAreas] = await Promise.all([
+    Promise.all(
+      VISIBLE_CLIMATE_INDICATORS.map((item) =>
+        resolveMapEntryImage(
+          fetchSeasonalMapEntry(item.value, item.label, seasonalPeriod, seasonalProduct),
+        ),
+      ),
+    ),
+    Promise.all(
+      BULLETIN_RISK_LAYERS.map((layer) =>
+        resolveMapEntryImage(fetchHazardRiskMapEntry(layer, hazardRiskPeriod)),
+      ),
+    ),
+    Promise.all(
+      BULLETIN_PRIORITY_LAYERS.map((layer) =>
+        resolveMapEntryImage(fetchHazardRiskMapEntry(layer, hazardRiskPeriod)),
+      ),
+    ),
   ]);
-  const priorityDataUrl = await fetchImageAsDataUrl(priorityImageUrl);
 
-  return [
-    {
-      title: "Climate indicator",
-      label: [forecastSelection?.seasonalIndicatorLabel, forecastSelection?.seasonalPeriodLabel]
-        .filter(Boolean)
-        .join(" · "),
-      dataUrl: climateDataUrl,
-    },
-    {
-      title: "Risk layer",
-      label: [forecastSelection?.hazardRiskLayerLabel, forecastSelection?.hazardRiskPeriodLabel]
-        .filter(Boolean)
-        .join(" · "),
-      dataUrl: riskDataUrl,
-    },
-    {
-      title: "Priority intervention areas",
-      label: `Risk classification · ${forecastSelection?.hazardRiskPeriodLabel || priorityPeriod}`,
-      dataUrl: priorityDataUrl,
-    },
-  ];
+  return {
+    climateIndicators: climateIndicators.filter(Boolean),
+    riskLayers: riskLayers.filter(Boolean),
+    priorityAreas: priorityAreas.filter(Boolean),
+  };
+}
+
+// Mirrors ForecastLayerMap.jsx's RasterLegend rendering (same real
+// legend.items/type/units/low_label/high_label fields) as static HTML for
+// the standalone bulletin -- a real colorbar with real tick values for
+// continuous layers, real swatches for categorical ones.
+function legendToHtml(legend) {
+  if (!legend) return "";
+  if (legend.type === "categorical" && Array.isArray(legend.items) && legend.items.length) {
+    const swatches = legend.items
+      .map(
+        (item) =>
+          `<span class="bulletin-legend-swatch"><i style="background:${escapeHtml(item.color)}"></i>${escapeHtml(item.label)}</span>`,
+      )
+      .join("");
+    return `<div class="bulletin-legend bulletin-legend-categorical">${swatches}</div>`;
+  }
+
+  const items = Array.isArray(legend.items) ? legend.items : [];
+  if (!items.length) return "";
+  const gradient = items.map((item) => item.color).join(", ");
+  const low = items[0];
+  const mid = items[Math.floor((items.length - 1) / 2)];
+  const high = items[items.length - 1];
+
+  return `
+      <div class="bulletin-legend bulletin-legend-continuous">
+        <div class="bulletin-legend-bar" style="background: linear-gradient(to right, ${gradient})"></div>
+        <div class="bulletin-legend-ticks">
+          <span>${escapeHtml(low?.label ?? "")}</span>
+          <span>${escapeHtml(mid?.label ?? "")}</span>
+          <span>${escapeHtml(high?.label ?? "")}</span>
+        </div>
+        ${legend.units ? `<div class="bulletin-legend-units">${escapeHtml(legend.units)}</div>` : ""}
+      </div>`;
+}
+
+function bulletinMapGroupHtml(title, entries) {
+  if (!entries || entries.length === 0) return "";
+  return `
+    <div class="bulletin-map-group">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="bulletin-maps">
+        ${entries
+          .map(
+            (item) => `
+        <figure>
+          <img src="${item.dataUrl}" alt="${escapeHtml(item.title)}" />
+          <figcaption>
+            <strong>${escapeHtml(item.title)}</strong>
+            ${item.subtitle ? `<span>${escapeHtml(item.subtitle)}</span>` : ""}
+            ${legendToHtml(item.legend)}
+          </figcaption>
+        </figure>`,
+          )
+          .join("")}
+      </div>
+    </div>`;
 }
 
 // Converts the same plain-text line arrays copyReport() already builds
@@ -814,12 +925,23 @@ function buildBulletinHtml(report, context) {
   th { background: #f3f7fd; }
   .disclosure { margin-top: 44px; padding-top: 14px; border-top: 1px solid #dbe7f7; font-size: 0.74rem; color: #8492a6; }
   .print-hint { font-size: 0.78rem; color: #5d6b85; margin-bottom: 4px; }
-  .bulletin-maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 4px; }
+  .bulletin-map-group { margin-top: 20px; }
+  .bulletin-map-group:first-child { margin-top: 0; }
+  .bulletin-map-group h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #5d6b85; margin: 0 0 10px; }
+  .bulletin-maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 4px; }
   .bulletin-maps figure { margin: 0; border: 1px solid #dbe7f7; border-radius: 12px; overflow: hidden; background: #f8fafc; }
-  .bulletin-maps img { width: 100%; height: 200px; object-fit: contain; display: block; background: #0b1c33; }
-  .bulletin-maps figcaption { padding: 8px 10px; font-size: 0.76rem; color: #5d6b85; }
+  .bulletin-maps img { width: 100%; height: 170px; object-fit: contain; display: block; background: #0b1c33; }
+  .bulletin-maps figcaption { padding: 8px 10px 10px; font-size: 0.76rem; color: #5d6b85; }
   .bulletin-maps figcaption strong { display: block; color: #16233a; font-size: 0.8rem; }
-  @media print { .print-hint { display: none; } body { padding: 0 8px; } .bulletin-maps img { height: 160px; } }
+  .bulletin-maps figcaption > span { display: block; font-size: 0.68rem; margin-top: 1px; }
+  .bulletin-legend { margin-top: 8px; }
+  .bulletin-legend-bar { height: 7px; border-radius: 999px; }
+  .bulletin-legend-ticks { display: flex; justify-content: space-between; font-size: 0.62rem; color: #5d6b85; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .bulletin-legend-units { font-size: 0.6rem; color: #8492a6; margin-top: 1px; }
+  .bulletin-legend-categorical { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .bulletin-legend-swatch { display: inline-flex; align-items: center; gap: 4px; font-size: 0.66rem; color: #16233a; }
+  .bulletin-legend-swatch i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+  @media print { .print-hint { display: none; } body { padding: 0 8px; } .bulletin-maps img { height: 140px; } .bulletin-map-group { break-inside: avoid; } }
 </style>
 </head>
 <body>
@@ -838,21 +960,15 @@ function buildBulletinHtml(report, context) {
   </section>
 
   ${
-    Array.isArray(context.maps) && context.maps.some((item) => item.dataUrl)
+    context.maps &&
+    (context.maps.climateIndicators?.length ||
+      context.maps.riskLayers?.length ||
+      context.maps.priorityAreas?.length)
       ? `<section>
     <h2>Maps</h2>
-    <div class="bulletin-maps">
-      ${context.maps
-        .filter((item) => item.dataUrl)
-        .map(
-          (item) => `
-      <figure>
-        <img src="${item.dataUrl}" alt="${escapeHtml(item.title)}" />
-        <figcaption><strong>${escapeHtml(item.title)}</strong>${item.label ? escapeHtml(item.label) : ""}</figcaption>
-      </figure>`,
-        )
-        .join("")}
-    </div>
+    ${bulletinMapGroupHtml("Climate indicators", context.maps.climateIndicators)}
+    ${bulletinMapGroupHtml("Risk layers", context.maps.riskLayers)}
+    ${bulletinMapGroupHtml("Priority intervention areas", context.maps.priorityAreas)}
   </section>`
       : ""
   }
