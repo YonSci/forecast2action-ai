@@ -287,10 +287,6 @@ function formatDay(day) {
   return day ? String(day) : "Unknown";
 }
 
-function formatPercentile(value) {
-  return value === null || value === undefined ? "N/A" : value.toFixed(1);
-}
-
 // Sortable event-table columns. "string" columns sort with localeCompare;
 // everything else sorts numerically, with real nulls (e.g. no baseline for
 // the 2026 event, or day=0 meaning GLIDE only reported month/year
@@ -307,7 +303,6 @@ const EVENT_COLUMNS = [
   { key: "affected", label: "Affected", type: "number" },
   { key: "spi", label: "SPI", type: "number" },
   { key: "rainfall_total_anomaly", label: "Rainfall Total anomaly", type: "number" },
-  { key: "rainfall_percentile", label: "Rainfall Percentile", type: "number" },
 ];
 
 function sortEvents(events, sortKey, sortDir) {
@@ -379,7 +374,6 @@ function SortableEventTable({ events }) {
               <td>{formatAffected(event.affected)}</td>
               <td>{formatValue(event.spi)}</td>
               <td>{formatValue(event.rainfall_total_anomaly)}</td>
-              <td>{formatPercentile(event.rainfall_percentile)}</td>
             </tr>
           ))}
         </tbody>
@@ -479,7 +473,6 @@ function CapturedVsMissedTable({ events }) {
             ))}
             <th>SPI</th>
             <th>Rainfall Total</th>
-            <th>Rainfall Percentile</th>
           </tr>
         </thead>
         <tbody>
@@ -496,13 +489,6 @@ function CapturedVsMissedTable({ events }) {
                   value={event.rainfall_total_anomaly}
                   indicatorKey="rainfall_total_anomaly"
                   formatter={formatValue}
-                />
-              </td>
-              <td>
-                <HitBadge
-                  value={event.rainfall_percentile}
-                  indicatorKey="rainfall_percentile"
-                  formatter={formatPercentile}
                 />
               </td>
             </tr>
@@ -549,6 +535,13 @@ function TrackRecord() {
   const indicators = data?.indicators;
   const spi = indicators?.spi;
   const events = Array.isArray(data?.events) ? data.events : [];
+  // Excludes real events with no baseline yet (currently just the 2026
+  // Somali event -- that year's CHIRPS rainfall isn't downloaded/complete
+  // yet, not a data-quality issue), so the per-event tables below only show
+  // rows that can actually be scored.
+  const scorableEvents = events.filter(
+    (event) => event.spi !== null && event.spi !== undefined,
+  );
   const regionSummary = Array.isArray(data?.region_summary)
     ? data.region_summary
     : [];
@@ -742,13 +735,15 @@ function TrackRecord() {
             <div className="lp-wrap">
               <h2>Captured vs. missed, by year, month &amp; region</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Every real GLIDE drought event, and whether each real
-                indicator actually crossed its moderately-dry threshold in
-                that region-year. Not the aggregate percentage above, but
-                the real event-by-event record it's built from. Click a
-                column heading to sort.
+                Every real GLIDE drought event with a usable baseline (the
+                2026 event is excluded here since its year's CHIRPS rainfall
+                isn't downloaded yet), and whether SPI and Rainfall Total
+                actually crossed the moderately-dry threshold in that
+                region-year. Not the aggregate percentage above, but the
+                real event-by-event record it's built from. Click a column
+                heading to sort.
               </p>
-              <CapturedVsMissedTable events={events} />
+              <CapturedVsMissedTable events={scorableEvents} />
             </div>
           </section>
 
@@ -764,10 +759,12 @@ function TrackRecord() {
                 season) and location, its real GLIDE "affected" figure (the only
                 real severity signal GLIDE captures for drought most events
                 report 0 killed, injured, or homeless), and its region's real
-                value for all 3 comparable indicators that year. Click a
-                column heading to sort by it.
+                SPI and Rainfall Total values that year (Rainfall Percentile
+                is compared separately above; the 2026 event is
+                excluded here since it has no baseline yet). Click a column
+                heading to sort by it.
               </p>
-              <SortableEventTable events={events} />
+              <SortableEventTable events={scorableEvents} />
             </div>
           </section>
 
