@@ -10,7 +10,12 @@ app.data_pipeline.historical_rainfall_pipeline and the real drought (DR)
 events already geocoded from GLIDE (data/raw/historical_impact/
 eth_glide_events.csv). Computes real JJAS-seasonal (Jun-Sep) values for
 three real indicators, each derived independently from the same real
-monthly CHIRPS totals already downloaded:
+monthly CHIRPS totals already downloaded. The reported hit rate is scoped
+to real GLIDE events actually registered during JJAS itself (deduplicated
+to unique region-years), since testing whether JJAS rainfall predicted a
+drought GLIDE logged in some other month isn't a fair test -- real events
+registered outside JJAS are still excluded from the false-alarm/no-event
+comparison pool, just not counted toward the hit rate:
 
 - Rainfall Total: a real per-region z-score anomaly against a multi-year
   baseline.
@@ -55,10 +60,15 @@ ADMIN1_PATH = Path("data/sample/admin_boundaries/eth_admin1.json")
 RESULTS_PATH = Path("data/historical_validation/drought_validation_v1.json")
 
 # JJAS = the app's real forecast window (June-September), matching what the
-# live product actually forecasts -- an event-YEAR is flagged if any real
-# GLIDE drought (DR) event was registered for that region in that year,
-# regardless of which specific month (droughts are accumulation phenomena,
-# not single-month events).
+# live product actually forecasts. Used two ways: (1) to build each real
+# region-year's seasonal rainfall total, and (2) to define which real
+# GLIDE-registered event-years count toward the reported hit rate -- only
+# events GLIDE actually logged during June-September, not any real drought
+# registered in some other month, since testing "did JJAS rainfall predict
+# a drought GLIDE reported in January" isn't a fair test of a JJAS-season
+# indicator. Real event-years registered in OTHER months are still real
+# droughts, though, so they're excluded from the no-event/false-alarm pool
+# rather than being counted as a clean "nothing happened" comparator.
 SEASON_MONTHS = {6, 7, 8, 9}
 
 # Real per-indicator thresholds for "moderately/severely/extremely dry",
@@ -235,12 +245,19 @@ def _rate(values: List[float], threshold: float) -> float:
 def build_indicator_analysis(
     indicator: str,
     values_by_key: Dict[Tuple[str, int], float],
-    year_events: Set[Tuple[str, int]],
+    hit_year_events: Set[Tuple[str, int]],
+    exclude_from_no_event: Set[Tuple[str, int]],
 ) -> Dict[str, Any]:
+    """hit_year_events is the real JJAS-registered event-year set the hit
+    rate is computed over. exclude_from_no_event is the broader set of ALL
+    real event-years (any month) -- kept separate so a real drought
+    registered outside JJAS is never counted as a clean "no event" case for
+    the false-alarm side, even though it doesn't count toward the hit rate.
+    """
     import numpy as np
 
-    event_values = [v for key, v in values_by_key.items() if key in year_events]
-    no_event_values = [v for key, v in values_by_key.items() if key not in year_events]
+    event_values = [v for key, v in values_by_key.items() if key in hit_year_events]
+    no_event_values = [v for key, v in values_by_key.items() if key not in exclude_from_no_event]
     thresholds = INDICATOR_THRESHOLDS[indicator]
 
     return {
@@ -287,13 +304,22 @@ def build_results() -> Dict[str, Any]:
     """
     rows = load_rainfall_table()
     records = load_glide_drought_event_records()
-    year_events = load_glide_drought_event_years_by_region(records)
+    # All real event-years (any registered month) -- kept out of the
+    # no-event/false-alarm pool entirely, even the ones that don't count
+    # toward the hit rate below.
+    all_year_events = load_glide_drought_event_years_by_region(records)
+    # The real subset actually reported: only GLIDE events registered
+    # during JJAS itself, deduplicated to unique (region, year) pairs --
+    # a real drought episode logged as 3 separate GLIDE records (e.g. 2022
+    # South Ethiopia) is one real trial, not three.
+    jjas_records = [r for r in records if r["month"] in SEASON_MONTHS]
+    jjas_year_events = load_glide_drought_event_years_by_region(jjas_records)
 
     seasonal_totals = compute_seasonal_totals(rows)
     indicator_values = compute_seasonal_indicator_values(seasonal_totals)
 
     indicators = {
-        name: build_indicator_analysis(name, values, year_events)
+        name: build_indicator_analysis(name, values, jjas_year_events, all_year_events)
         for name, values in indicator_values.items()
     }
 
@@ -318,11 +344,9 @@ def build_results() -> Dict[str, Any]:
         for r in sorted(records, key=lambda r: (r["year"], r["month"]))
     ]
 
-    event_year_count = len({key for key in anomaly_values if key in year_events})
-
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "scope": "drought_only_v1",
+        "scope": "drought_only_v1_jjas_registered",
         "methodology": {
             "summary": (
                 "Real historical CHIRPS rainfall (1997-2025, June-September) compared against "
@@ -330,9 +354,16 @@ def build_results() -> Dict[str, Any]:
                 "Three real indicators are compared on the same real seasonal (JJAS) totals: "
                 "Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. "
                 "1993 methodology), and Rainfall Percentile (real empirical within-region rank). "
-                "CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, "
-                "which this repo has not downloaded, and were scoped out of v1 rather than "
-                "approximated from monthly totals."
+                "The reported hit rate counts only real GLIDE events actually registered during "
+                "JJAS itself, deduplicated to unique (region, year) pairs so one real drought "
+                "episode logged as multiple GLIDE records isn't counted more than once; real "
+                f"events registered in other months ({len(all_year_events) - len(jjas_year_events)} "
+                "of this dataset's matched region-years) are real droughts too, so they're excluded "
+                "from the false-alarm/no-event comparison pool rather than being treated as clean "
+                "no-event cases, but they don't count toward the hit rate itself. CDD, CWD, Rx1day, "
+                "and Rx5day are not included -- they need real daily rainfall, which this repo has "
+                "not downloaded, and were scoped out of v1 rather than approximated from monthly "
+                "totals."
             ),
             "thresholds_evaluated": (
                 "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry "
@@ -340,9 +371,10 @@ def build_results() -> Dict[str, Any]:
                 "this diagnostic."
             ),
             "caveat": (
-                "Small real sample size, especially at the seasonal/event-year level (n="
-                f"{event_year_count} event-years). A directionally consistent but statistically "
-                "limited signal, not a validated forecast-skill score."
+                "Very small real sample size (n="
+                f"{len(jjas_year_events)} JJAS-registered event-years out of {len(all_year_events)} "
+                "real event-years total). A directionally consistent but statistically limited "
+                "signal, not a validated forecast-skill score."
             ),
         },
         "data_provenance": {
@@ -350,6 +382,8 @@ def build_results() -> Dict[str, Any]:
             "rainfall_rows": len(rows),
             "event_source": "GLIDE disaster events (via HDX), real, geocoded to admin1 by point-in-polygon",
             "drought_events_matched": len(records),
+            "event_years_total": len(all_year_events),
+            "event_years_jjas_registered": len(jjas_year_events),
             "baseline_years": "1997-2025",
         },
         "indicators": indicators,

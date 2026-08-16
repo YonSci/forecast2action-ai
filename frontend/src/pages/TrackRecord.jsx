@@ -474,10 +474,14 @@ function TrackRecord() {
               <h2>The headline signal</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 For every real region-year where a real GLIDE drought event was
-                registered, was that region's real JJAS (June–September)
+                actually registered during JJAS itself (this app's real
+                forecast season, not some other month), was that region's real
                 seasonal rainfall actually anomalously dry, using a real
                 gamma-fit SPI? Droughts are accumulation phenomena, so a
                 seasonal total is a more honest test than any single month.
+                Real events registered outside JJAS are real droughts too, so
+                they're still excluded from the "no event" comparison below,
+                just not counted toward this hit rate.
               </p>
               <div className="lp-feature-grid" style={{ marginBottom: 18 }}>
                 <div className="lp-feature-card">
@@ -493,7 +497,8 @@ function TrackRecord() {
                     {spi?.event_years ?? "N/A"}
                   </p>
                   <p style={{ margin: 0, color: "var(--lp-muted)" }}>
-                    region-years with a real registered drought event
+                    region-years with a real drought event registered during
+                    JJAS itself
                   </p>
                 </div>
                 <div className="lp-feature-card">
@@ -528,7 +533,7 @@ function TrackRecord() {
                     {eventCount}
                   </p>
                   <p style={{ margin: 0, color: "var(--lp-muted)" }}>
-                    GLIDE events, 1997–2025, geocoded to a real admin1 region
+                    GLIDE events, 1997–2025 (all months, not just JJAS)
                   </p>
                 </div>
               </div>
@@ -560,10 +565,15 @@ function TrackRecord() {
                 className="lp-prose"
                 style={{ marginTop: 14, fontSize: "0.9rem" }}
               >
-                Real SPI and Rainfall Total perform almost identically at every
-                threshold: a real gamma-distribution correction barely changes
-                the classification at this sample size. Rainfall Percentile
-                trails both on hit rate at the moderately-dry threshold.
+                At this sample size, and scoped to real events registered
+                during JJAS itself, all three indicators tie exactly at the
+                moderately- and severely-dry thresholds a real
+                gamma-distribution correction or percentile ranking doesn't
+                change which real events get flagged there. They diverge at
+                the extremely-dry threshold: SPI and Rainfall Total still
+                catch a real event Percentile misses entirely (0% hit rate),
+                the one place in this comparison where indicator choice
+                actually matters.
               </p>
             </div>
           </section>
