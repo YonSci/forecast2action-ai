@@ -1,191 +1,186 @@
-import { useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import ethiopiaAdmin1 from "../data/ethiopiaAdmin1.json";
 import "../styles/landing.css";
 
-// Animated stylized hazard-risk grid -- deterministic pseudo-data (stable
-// seed) so it reads as structured hazard data rather than noise, with a
-// radar-style scan sweep and mouse-hover cell highlighting. Not a screenshot
-// of the real dashboard maps -- an illustrative hero visual.
-function HeroRiskCanvas() {
-  const canvasRef = useRef(null);
+const ETH_MAP_SIZE = 640;
+const ETH_MAP_PADDING = 34;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const W = canvas.width;
-    const H = canvas.height;
-    const cols = 13;
-    const rows = 13;
-    const cellW = W / cols;
-    const cellH = H / rows;
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+// Illustrative per-region hazard shading -- deterministic pseudo-data (stable
+// seed) so it reads as structured hazard data rather than noise. The shape
+// itself is real (simplified real Ethiopia admin1 boundaries), but the fill
+// values are NOT live risk data -- see EthiopiaRiskMap below.
+function seededRandom(seed) {
+  let s = seed;
+  return function next() {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
 
-    function seededRandom(seed) {
-      let s = seed;
-      return function next() {
-        s = (s * 9301 + 49297) % 233280;
-        return s / 233280;
-      };
+function colorForValue(v) {
+  const stops = [
+    [0, [6, 20, 38]],
+    [0.35, [40, 70, 60]],
+    [0.55, [247, 144, 9]],
+    [0.78, [225, 26, 28]],
+    [1, [128, 0, 38]],
+  ];
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i];
+    const b = stops[i + 1];
+    if (v >= a[0] && v <= b[0]) {
+      const t = (v - a[0]) / (b[0] - a[0] || 1);
+      const c = a[1].map((ch, idx) => Math.round(ch + (b[1][idx] - ch) * t));
+      return `rgb(${c.join(",")})`;
     }
-    const rand = seededRandom(42);
+  }
+  return "rgb(6,20,38)";
+}
 
-    const mask = [];
-    const field = [];
-    for (let y = 0; y < rows; y++) {
-      mask.push([]);
-      field.push([]);
-      for (let x = 0; x < cols; x++) {
-        const cx = (x + 0.5) / cols - 0.5;
-        const cy = (y + 0.5) / rows - 0.5;
-        const d = Math.sqrt(cx * cx * 1.15 + cy * cy * 1.7);
-        mask[y].push(d < 0.46 + rand() * 0.05);
-        const base = Math.max(0, 0.75 - d * 1.3) + rand() * 0.35;
-        field[y].push(Math.min(1, base));
+// Builds a real, aspect-ratio-preserving equirectangular projection (with a
+// cos(latitude) correction) from the real lon/lat bounds of the supplied
+// features, so the true shape of Ethiopia is never distorted.
+function buildProjection(features, size, padding) {
+  let lonMin = Infinity;
+  let lonMax = -Infinity;
+  let latMin = Infinity;
+  let latMax = -Infinity;
+  for (const feat of features) {
+    const rings =
+      feat.geometry.type === "Polygon"
+        ? feat.geometry.coordinates
+        : feat.geometry.coordinates.flat();
+    for (const ring of rings) {
+      for (const [lon, lat] of ring) {
+        if (lon < lonMin) lonMin = lon;
+        if (lon > lonMax) lonMax = lon;
+        if (lat < latMin) latMin = lat;
+        if (lat > latMax) latMax = lat;
       }
     }
-
-    function colorForValue(v) {
-      const stops = [
-        [0, [6, 20, 38]],
-        [0.35, [40, 70, 60]],
-        [0.55, [247, 144, 9]],
-        [0.78, [225, 26, 28]],
-        [1, [128, 0, 38]],
+  }
+  const avgLatRad = ((latMin + latMax) / 2) * (Math.PI / 180);
+  const cosLat = Math.cos(avgLatRad);
+  const lonSpan = (lonMax - lonMin) * cosLat;
+  const latSpan = latMax - latMin;
+  const inner = size - padding * 2;
+  const scale = Math.min(inner / lonSpan, inner / latSpan);
+  const drawnW = lonSpan * scale;
+  const drawnH = latSpan * scale;
+  const offsetX = padding + (inner - drawnW) / 2;
+  const offsetY = padding + (inner - drawnH) / 2;
+  return {
+    project(lon, lat) {
+      return [
+        offsetX + (lon - lonMin) * cosLat * scale,
+        offsetY + (latMax - lat) * scale,
       ];
-      for (let i = 0; i < stops.length - 1; i++) {
-        const a = stops[i];
-        const b = stops[i + 1];
-        if (v >= a[0] && v <= b[0]) {
-          const t = (v - a[0]) / (b[0] - a[0] || 1);
-          const c = a[1].map((ch, idx) =>
-            Math.round(ch + (b[1][idx] - ch) * t),
-          );
-          return `rgb(${c.join(",")})`;
-        }
+    },
+  };
+}
+
+function ringToPathD(ring, projection) {
+  return (
+    ring
+      .map(([lon, lat], i) => {
+        const [x, y] = projection.project(lon, lat);
+        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ") + " Z"
+  );
+}
+
+function geometryToPathD(geometry, projection) {
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates
+      .map((ring) => ringToPathD(ring, projection))
+      .join(" ");
+  }
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .map((poly) => poly.map((ring) => ringToPathD(ring, projection)).join(" "))
+      .join(" ");
+  }
+  return "";
+}
+
+// A handful of real drought-corridor regions get a deterministic boost so
+// the map reliably reads as "several regions currently elevated," echoing
+// the trigger chip -- still illustrative shading, not a live query.
+const ETH_MAP_HOT_REGIONS = new Set([
+  "somali",
+  "afar",
+  "south_ethiopia",
+  "oromia",
+  "sidama",
+]);
+
+// Real, simplified Ethiopia admin1 boundaries rendered as SVG, shaded with
+// illustrative (not live) per-region hazard values -- replaces the old
+// abstract grid with the country's actual shape while keeping the same
+// "honestly disclosed as illustrative" approach.
+function EthiopiaRiskMap() {
+  const regionFeatures = useMemo(
+    () =>
+      ethiopiaAdmin1.features.filter(
+        (feat) => feat.properties.region_id !== "contested",
+      ),
+    [],
+  );
+  const contestedFeature = useMemo(
+    () =>
+      ethiopiaAdmin1.features.find(
+        (feat) => feat.properties.region_id === "contested",
+      ),
+    [],
+  );
+  const projection = useMemo(
+    () => buildProjection(ethiopiaAdmin1.features, ETH_MAP_SIZE, ETH_MAP_PADDING),
+    [],
+  );
+  const regionValues = useMemo(() => {
+    const rand = seededRandom(1337);
+    const byId = {};
+    for (const feat of regionFeatures) {
+      let value = 0.2 + rand() * 0.55;
+      if (ETH_MAP_HOT_REGIONS.has(feat.properties.region_id)) {
+        value = Math.min(1, value + 0.32);
       }
-      return "rgb(6,20,38)";
+      byId[feat.properties.region_id] = value;
     }
+    return byId;
+  }, [regionFeatures]);
 
-    const hover = { x: -1, y: -1 };
-    let frameId = null;
-    let t = 0;
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#071021";
-      ctx.fillRect(0, 0, W, H);
-
-      ctx.strokeStyle = "rgba(148,178,219,0.06)";
-      ctx.lineWidth = 1;
-      for (let gx = 0; gx <= cols; gx++) {
-        ctx.beginPath();
-        ctx.moveTo(gx * cellW, 0);
-        ctx.lineTo(gx * cellW, H);
-        ctx.stroke();
-      }
-      for (let gy = 0; gy <= rows; gy++) {
-        ctx.beginPath();
-        ctx.moveTo(0, gy * cellH);
-        ctx.lineTo(W, gy * cellH);
-        ctx.stroke();
-      }
-
-      const pulse = reduceMotion ? 0 : Math.sin(t / 38) * 0.5 + 0.5;
-
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          if (!mask[y][x]) continue;
-          const isHovered = x === hover.x && y === hover.y;
-          const v = field[y][x];
-          const isHot = v > 0.82;
-          let vv = isHot ? Math.min(1, v + pulse * 0.14) : v;
-          if (isHovered) vv = Math.min(1, vv + 0.12);
-          ctx.fillStyle = colorForValue(vv);
-          const pad = 1.4;
-          ctx.fillRect(
-            x * cellW + pad,
-            y * cellH + pad,
-            cellW - pad * 2,
-            cellH - pad * 2,
-          );
-          if (isHot) {
-            ctx.strokeStyle = `rgba(255,255,255,${0.25 + pulse * 0.35})`;
-            ctx.lineWidth = 1.4;
-            ctx.strokeRect(
-              x * cellW + pad,
-              y * cellH + pad,
-              cellW - pad * 2,
-              cellH - pad * 2,
-            );
-          }
-          if (isHovered) {
-            ctx.save();
-            ctx.shadowColor = "rgba(53,212,199,0.9)";
-            ctx.shadowBlur = 14;
-            ctx.strokeStyle = "rgba(234,241,251,0.95)";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
-              x * cellW + pad,
-              y * cellH + pad,
-              cellW - pad * 2,
-              cellH - pad * 2,
-            );
-            ctx.restore();
-          }
-        }
-      }
-
-      if (!reduceMotion) {
-        const scanY = ((t * 1.6) % (H + 120)) - 60;
-        const grad = ctx.createLinearGradient(0, scanY - 60, 0, scanY + 60);
-        grad.addColorStop(0, "rgba(53,212,199,0)");
-        grad.addColorStop(0.5, "rgba(53,212,199,0.10)");
-        grad.addColorStop(1, "rgba(53,212,199,0)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, scanY - 60, W, 120);
-      }
-
-      t += 1;
-      if (!reduceMotion) {
-        frameId = requestAnimationFrame(draw);
-      }
-    }
-
-    function handleMouseMove(e) {
-      const rect = canvas.getBoundingClientRect();
-      const px = ((e.clientX - rect.left) / rect.width) * W;
-      const py = ((e.clientY - rect.top) / rect.height) * H;
-      const hx = Math.floor(px / cellW);
-      const hy = Math.floor(py / cellH);
-      if (hx !== hover.x || hy !== hover.y) {
-        hover.x = hx;
-        hover.y = hy;
-        if (reduceMotion) draw();
-      }
-    }
-
-    function handleMouseLeave() {
-      hover.x = -1;
-      hover.y = -1;
-      if (reduceMotion) draw();
-    }
-
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("mouseleave", handleMouseLeave);
-    draw();
-
-    return () => {
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("mouseleave", handleMouseLeave);
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} width={640} height={640} />;
+  return (
+    <svg
+      className="lp-eth-map"
+      viewBox={`0 0 ${ETH_MAP_SIZE} ${ETH_MAP_SIZE}`}
+      role="presentation"
+      aria-hidden="true"
+    >
+      {contestedFeature ? (
+        <path
+          d={geometryToPathD(contestedFeature.geometry, projection)}
+          className="lp-eth-region lp-eth-contested"
+        />
+      ) : null}
+      {regionFeatures.map((feat) => {
+        const value = regionValues[feat.properties.region_id] ?? 0.3;
+        const isHot = value > 0.82;
+        return (
+          <path
+            key={feat.properties.region_id}
+            d={geometryToPathD(feat.geometry, projection)}
+            className={`lp-eth-region${isHot ? " lp-eth-hot" : ""}`}
+            style={{ fill: colorForValue(value) }}
+          >
+            <title>{feat.properties.name}</title>
+          </path>
+        );
+      })}
+    </svg>
+  );
 }
 
 function LaunchDashboardIcon() {
@@ -346,9 +341,10 @@ function Landing() {
             <div
               className="lp-hero-visual"
               role="img"
-              aria-label="Animated stylized hazard-risk grid visualization with pulsing high-risk zones, representing the platform's geospatial risk mapping."
+              aria-label="Stylized map of Ethiopia's real administrative regions with illustrative pulsing high-risk zones, representing the platform's geospatial risk mapping."
             >
-              <HeroRiskCanvas />
+              <EthiopiaRiskMap />
+              <div className="lp-eth-scan" aria-hidden="true" />
               <span className="lp-hv-frame-label">
                 SEASONAL · <b>JJAS 2026</b> · DROUGHT RISK
               </span>
