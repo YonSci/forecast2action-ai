@@ -224,71 +224,18 @@ function DroughtEventMap({ regionSummary }) {
 }
 
 function formatAffected(value) {
-  if (!value) return "No population-affected figure reported for this event";
-  return `${value.toLocaleString()} people affected (real GLIDE figure)`;
+  if (!value) return "0";
+  return value.toLocaleString();
 }
 
-// Log scale, since real GLIDE "affected" figures in this dataset span 8
-// people to 14.3 million -- a linear scale would make every event but the
-// single largest invisible.
-function bubbleRadius(affected) {
-  if (!affected) return 4;
-  return Math.min(5 + Math.log10(affected + 1) * 3.2, 26);
-}
-
-function EventPointMap({ events, selectedYear }) {
-  const projection = useMemo(
-    () => buildEthMapProjection(ethiopiaAdmin1.features, MAP_SIZE, MAP_PADDING),
-    [],
-  );
-  const visibleEvents = useMemo(
-    () => events.filter((event) => event.year <= selectedYear),
-    [events, selectedYear],
-  );
-
-  return (
-    <svg
-      viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
-      role="img"
-      aria-label={`Map of real drought events reported through ${selectedYear}, bubble-sized by real people-affected counts where reported`}
-      style={{ width: "100%", maxWidth: 420, display: "block", margin: "0 auto" }}
-    >
-      {ethiopiaAdmin1.features.map((feat) => (
-        <path
-          key={feat.properties.region_id}
-          d={ethGeometryToPathD(feat.geometry, projection)}
-          fill="rgba(148,178,219,0.06)"
-          stroke="rgba(148,178,219,0.3)"
-          strokeWidth="1"
-        />
-      ))}
-      {visibleEvents.map((event) => {
-        const [x, y] = projection.project(event.longitude, event.latitude);
-        return (
-          <circle
-            key={event.glidenumber}
-            cx={x}
-            cy={y}
-            r={bubbleRadius(event.affected)}
-            fill={event.affected ? "rgba(239,74,61,0.55)" : "rgba(247,144,9,0.45)"}
-            stroke={event.affected ? "rgba(239,74,61,0.9)" : "rgba(247,144,9,0.85)"}
-            strokeWidth="1"
-          >
-            <title>
-              {`${event.glidenumber} · ${event.region} · ${event.year}\n${formatAffected(event.affected)}`}
-            </title>
-          </circle>
-        );
-      })}
-    </svg>
-  );
+function formatCoord(value) {
+  return value === null || value === undefined ? "N/A" : value.toFixed(3);
 }
 
 function TrackRecord() {
   const [data, setData] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,13 +268,6 @@ function TrackRecord() {
   const events = Array.isArray(data?.events) ? data.events : [];
   const regionSummary = Array.isArray(data?.region_summary) ? data.region_summary : [];
   const eventCount = data?.data_provenance?.drought_events_matched ?? events.length;
-
-  const eventYears = events.map((event) => event.year);
-  const minYear = eventYears.length ? Math.min(...eventYears) : 1997;
-  const maxYear = eventYears.length ? Math.max(...eventYears) : 2026;
-  // Derived, not synced via an effect: defaults to showing every real event
-  // until the user actually drags the slider.
-  const effectiveYear = selectedYear ?? maxYear;
 
   return (
     <SubPageLayout>
@@ -476,54 +416,14 @@ function TrackRecord() {
 
           <section className="lp-article-section">
             <div className="lp-wrap">
-              <h2>Every event, over time</h2>
-              <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Each real event at its real reported coordinates, not a
-                region average, bubble-sized by the real number of people
-                GLIDE reports as affected, where a figure was reported. Most
-                real drought events in this dataset report 0 killed,
-                injured, or homeless, so "affected" is the only real
-                severity signal GLIDE captures for drought. Drag the slider
-                to watch real events accumulate from {minYear} through{" "}
-                {maxYear}.
-              </p>
-              <div style={{ maxWidth: 420, margin: "0 auto 6px" }}>
-                <input
-                  type="range"
-                  min={minYear}
-                  max={maxYear}
-                  value={effectiveYear}
-                  onChange={(event) => setSelectedYear(Number(event.target.value))}
-                  style={{ width: "100%" }}
-                  aria-label="Show real drought events reported through this year"
-                />
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.72rem",
-                    color: "var(--lp-muted)",
-                    marginTop: 4,
-                  }}
-                >
-                  <span>{minYear}</span>
-                  <strong style={{ color: "var(--lp-teal)" }}>Through {effectiveYear}</strong>
-                  <span>{maxYear}</span>
-                </div>
-              </div>
-              <EventPointMap events={events} selectedYear={effectiveYear} />
-            </div>
-          </section>
-
-          <hr className="lp-article-divider" />
-
-          <section className="lp-article-section">
-            <div className="lp-wrap">
               <h2>Every real event, by name</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 Not a summary statistic in isolation: each real GLIDE
-                drought event this analysis matched, with its region's real
-                SPI and Rainfall Total anomaly that year.
+                drought event this analysis matched, with its real reported
+                location, its real GLIDE "affected" figure (the only real
+                severity signal GLIDE captures for drought most events
+                report 0 killed, injured, or homeless), and its region's
+                real SPI and Rainfall Total anomaly that year.
               </p>
               <div className="lp-data-table-wrap">
                 <table className="lp-data-table">
@@ -532,6 +432,9 @@ function TrackRecord() {
                       <th>GLIDE ID</th>
                       <th>Region</th>
                       <th>Year</th>
+                      <th>Latitude</th>
+                      <th>Longitude</th>
+                      <th>Affected</th>
                       <th>SPI</th>
                       <th>Rainfall Total anomaly</th>
                       <th>Crossed moderately-dry (SPI)?</th>
@@ -545,6 +448,9 @@ function TrackRecord() {
                         </td>
                         <td className="lp-td-strong">{event.region}</td>
                         <td>{event.year}</td>
+                        <td>{formatCoord(event.latitude)}</td>
+                        <td>{formatCoord(event.longitude)}</td>
+                        <td>{formatAffected(event.affected)}</td>
                         <td>{formatValue(event.spi)}</td>
                         <td>{formatValue(event.rainfall_total_anomaly)}</td>
                         <td>
