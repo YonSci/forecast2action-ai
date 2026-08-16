@@ -94,7 +94,11 @@ function getStarterQuestions(selectedPriorityArea) {
 function getFollowUpQuestions(selectedPriorityArea) {
   const areaName = selectedPriorityArea?.area_name;
   const questions = areaName
-    ? [`Compare ${areaName} to last period`, `What should be done about this?`, `Give me an SMS-ready version`]
+    ? [
+        `Compare ${areaName} to last period`,
+        `What should be done about this?`,
+        `Give me an SMS-ready version`,
+      ]
     : ["What's changed since last period?", "What should be done about this?"];
   return questions.slice(0, 3);
 }
@@ -103,11 +107,15 @@ function getFollowUpQuestions(selectedPriorityArea) {
 // already used elsewhere on the dashboard for the same real definitions),
 // phrased as natural questions the grounded assistant can actually answer
 // via its own METHODOLOGY REFERENCE block -- not invented terminology.
-const GLOSSARY_CHIP_LAYERS = ["population_risk_class", "v_drought", "p_drought"];
+const GLOSSARY_CHIP_LAYERS = [
+  "population_risk_class",
+  "v_drought",
+  "p_drought",
+];
 function getGlossaryQuestions() {
-  return GLOSSARY_CHIP_LAYERS
-    .filter((layer) => HAZARD_RISK_TERM_DEFINITIONS[layer])
-    .map((layer) => `What does ${layer} mean?`);
+  return GLOSSARY_CHIP_LAYERS.filter(
+    (layer) => HAZARD_RISK_TERM_DEFINITIONS[layer],
+  ).map((layer) => `What does ${layer} mean?`);
 }
 
 function IconChatBubble() {
@@ -206,7 +214,9 @@ function ChatWidget({
       if (event.key !== "/" || isOpen) return;
       const target = event.target;
       const isTyping =
-        target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
       if (isTyping) return;
       event.preventDefault();
       setIsOpen(true);
@@ -393,16 +403,22 @@ function ChatWidget({
             </div>
           </div>
 
-          <div className="f2a-chat-messages" ref={scrollRef} role="log" aria-live="polite">
+          <div
+            className="f2a-chat-messages"
+            ref={scrollRef}
+            role="log"
+            aria-live="polite"
+          >
             {messages.length === 0 && (
               <div className="f2a-chat-empty">
                 <p className="f2a-chat-greeting">
-                  {getTimeBasedGreeting()}! I'm your AI assistant — how can I help you today?
+                  {getTimeBasedGreeting()}! I'm your AI assistant, how can I
+                  help you today?
                 </p>
-                <p>
+                {/* <p>
                   Ask about the priority areas, risk drivers, or exposure
                   numbers currently shown on this dashboard.
-                </p>
+                </p> */}
                 <div className="f2a-chat-starters">
                   {getStarterQuestions(selectedPriorityArea).map((question) => (
                     <button
@@ -431,10 +447,15 @@ function ChatWidget({
             {messages.map((message, index) => {
               const isLast = index === messages.length - 1;
               const showFollowUps =
-                isLast && message.role === "assistant" && !message.streaming && !isSending;
+                isLast &&
+                message.role === "assistant" &&
+                !message.streaming &&
+                !isSending;
               return (
                 <div key={index}>
-                  <div className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}>
+                  <div
+                    className={`f2a-chat-bubble f2a-chat-bubble-${message.role}`}
+                  >
                     {message.streaming && !message.content ? (
                       <span className="f2a-chat-typing-dots">Thinking…</span>
                     ) : (
@@ -446,11 +467,17 @@ function ChatWidget({
                   </div>
                   {showFollowUps && (
                     <div className="f2a-chat-starters f2a-chat-followups">
-                      {getFollowUpQuestions(selectedPriorityArea).map((question) => (
-                        <button key={question} type="button" onClick={() => sendText(question)}>
-                          {question}
-                        </button>
-                      ))}
+                      {getFollowUpQuestions(selectedPriorityArea).map(
+                        (question) => (
+                          <button
+                            key={question}
+                            type="button"
+                            onClick={() => sendText(question)}
+                          >
+                            {question}
+                          </button>
+                        ),
+                      )}
                     </div>
                   )}
                 </div>
