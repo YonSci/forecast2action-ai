@@ -275,19 +275,17 @@
   display: grid;
   grid-template-columns:
     minmax(150px, 0.86fr)
-    14px
+    16px
     minmax(220px, 1.28fr)
-    14px
+    16px
     minmax(176px, 0.98fr)
-    14px
+    16px
     minmax(205px, 1.18fr)
-    14px
+    16px
     minmax(188px, 1.08fr)
-    14px
-    minmax(138px, 0.76fr)
-    14px
+    16px
     minmax(150px, 0.86fr);
-  gap: 6px;
+  gap: 7px;
   align-items: center;
 }
 
@@ -548,17 +546,15 @@
     right: 30px;
     grid-template-columns:
       minmax(130px, 0.86fr)
-      10px
+      12px
       minmax(194px, 1.28fr)
-      10px
+      12px
       minmax(152px, 0.98fr)
-      10px
+      12px
       minmax(178px, 1.18fr)
-      10px
+      12px
       minmax(165px, 1.08fr)
-      10px
-      minmax(125px, 0.76fr)
-      10px
+      12px
       minmax(130px, 0.86fr);
   }
 

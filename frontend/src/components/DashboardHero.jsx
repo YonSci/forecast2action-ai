@@ -135,15 +135,6 @@ function IconChat() {
   );
 }
 
-function IconClipboard() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9 3h6l1 2h3v16H5V5h3l1-2Z" />
-      <path d="M9 10h6M9 14h6M9 18h4" />
-    </svg>
-  );
-}
-
 function IconUsers() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -366,12 +357,6 @@ function DashboardHero({
             icon={<IconChat />}
             label="SMS-ready messages"
             tone="cyan"
-          />
-          <em>›</em>
-          <WorkflowPill
-            icon={<IconClipboard />}
-            label="Action tracker"
-            tone="amber"
           />
           <em>›</em>
           <WorkflowPill

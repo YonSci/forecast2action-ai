@@ -99,7 +99,9 @@ function geometryToPathD(geometry, projection) {
   }
   if (geometry.type === "MultiPolygon") {
     return geometry.coordinates
-      .map((poly) => poly.map((ring) => ringToPathD(ring, projection)).join(" "))
+      .map((poly) =>
+        poly.map((ring) => ringToPathD(ring, projection)).join(" "),
+      )
       .join(" ");
   }
   return "";
@@ -136,7 +138,8 @@ function EthiopiaRiskMap() {
     [],
   );
   const projection = useMemo(
-    () => buildProjection(ethiopiaAdmin1.features, ETH_MAP_SIZE, ETH_MAP_PADDING),
+    () =>
+      buildProjection(ethiopiaAdmin1.features, ETH_MAP_SIZE, ETH_MAP_PADDING),
     [],
   );
   const regionValues = useMemo(() => {
@@ -255,8 +258,7 @@ function Landing() {
           <div className="lp-wrap lp-hero-grid">
             <div>
               <span className="lp-eyebrow">
-                <span className="lp-dot" /> Live ensemble forecasting · East
-                Africa
+                <span className="lp-dot" /> Live ensemble forecasting · Ethiopia
               </span>
               <h1>
                 Forecast2Action AI{" "}
