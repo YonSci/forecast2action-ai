@@ -589,6 +589,60 @@ function TrackRecord() {
         <>
           <section className="lp-article-section">
             <div className="lp-wrap">
+              <h2>Real drought events, by region</h2>
+              <p className="lp-prose" style={{ marginBottom: 18 }}>
+                Where the real matched GLIDE drought events actually happened,
+                not a national average, but the real regional concentration.
+              </p>
+              <DroughtEventMap regionSummary={regionSummary} />
+              <div className="lp-data-table-wrap" style={{ marginTop: 22 }}>
+                <table className="lp-data-table">
+                  <thead>
+                    <tr>
+                      <th>Region</th>
+                      <th>Real events</th>
+                      <th>Years</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {regionSummary.map((item) => (
+                      <tr key={item.region}>
+                        <td className="lp-td-strong">{item.region}</td>
+                        <td>{item.event_count}</td>
+                        <td>{item.years.join(", ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <hr className="lp-article-divider" />
+
+          <section className="lp-article-section">
+            <div className="lp-wrap">
+              <h2>Every real event, by name</h2>
+              <p className="lp-prose" style={{ marginBottom: 18 }}>
+                Not a summary statistic in isolation: each real GLIDE drought
+                event this analysis matched, with its real reported date (month
+                flagged when it falls inside JJAS, this app's real forecast
+                season) and location, its real GLIDE "affected" figure (the only
+                real severity signal GLIDE captures for drought most events
+                report 0 killed, injured, or homeless), and its region's real
+                SPI and Rainfall Total values that year (Rainfall Percentile
+                is compared separately below; the 2026 event is
+                excluded here since it has no baseline yet). Click a column
+                heading to sort by it.
+              </p>
+              <SortableEventTable events={scorableEvents} />
+            </div>
+          </section>
+
+          <hr className="lp-article-divider" />
+
+          <section className="lp-article-section">
+            <div className="lp-wrap">
               <h2>The headline signal</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 For every real region-year where a real GLIDE drought event was
@@ -700,39 +754,6 @@ function TrackRecord() {
 
           <section className="lp-article-section">
             <div className="lp-wrap">
-              <h2>Real drought events, by region</h2>
-              <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Where the real matched GLIDE drought events actually happened,
-                not a national average, but the real regional concentration.
-              </p>
-              <DroughtEventMap regionSummary={regionSummary} />
-              <div className="lp-data-table-wrap" style={{ marginTop: 22 }}>
-                <table className="lp-data-table">
-                  <thead>
-                    <tr>
-                      <th>Region</th>
-                      <th>Real events</th>
-                      <th>Years</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {regionSummary.map((item) => (
-                      <tr key={item.region}>
-                        <td className="lp-td-strong">{item.region}</td>
-                        <td>{item.event_count}</td>
-                        <td>{item.years.join(", ")}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <hr className="lp-article-divider" />
-
-          <section className="lp-article-section">
-            <div className="lp-wrap">
               <h2>Captured vs. missed, by year, month &amp; region</h2>
               <p className="lp-prose" style={{ marginBottom: 18 }}>
                 Every real GLIDE drought event with a usable baseline (the
@@ -744,27 +765,6 @@ function TrackRecord() {
                 heading to sort.
               </p>
               <CapturedVsMissedTable events={scorableEvents} />
-            </div>
-          </section>
-
-          <hr className="lp-article-divider" />
-
-          <section className="lp-article-section">
-            <div className="lp-wrap">
-              <h2>Every real event, by name</h2>
-              <p className="lp-prose" style={{ marginBottom: 18 }}>
-                Not a summary statistic in isolation: each real GLIDE drought
-                event this analysis matched, with its real reported date (month
-                flagged when it falls inside JJAS, this app's real forecast
-                season) and location, its real GLIDE "affected" figure (the only
-                real severity signal GLIDE captures for drought most events
-                report 0 killed, injured, or homeless), and its region's real
-                SPI and Rainfall Total values that year (Rainfall Percentile
-                is compared separately above; the 2026 event is
-                excluded here since it has no baseline yet). Click a column
-                heading to sort by it.
-              </p>
-              <SortableEventTable events={scorableEvents} />
             </div>
           </section>
 
