@@ -45,7 +45,14 @@ Each stage sees only what it needs never raw ensemble data, never an invented ra
 - **Stage 2 Integrated risk synthesis** (strong model tier): synthesizes Stage 1's findings with the real, already-computed priority ranking and cross-indicator agreement into a national narrative. Explains the ranking never reorders or invents it.
 - **Stage 3 Action translation** (fast model tier): translates the validated findings into farmer, agro-pastoral, and humanitarian advisories and SMS/WhatsApp messages, split by whether an area is actually actionable this period.
 
-AI providers: Google Gemini (primary), OpenRouter and an OpenAI-compatible API (fallback), selected automatically with per-stage model tiering.
+AI providers: Google Gemini (primary), OpenRouter and an OpenAI-compatible API (fallback), selected automatically with per-stage model tiering. The dashboard's model picker exposes an **Automatic** option (Gemini, then OpenRouter/OpenAI on failure) plus these specific models tested against the full comprehensive map payload:
+
+| Provider       | Models                                                                                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Google Gemini  | Gemini Flash-Lite (latest, fastest) · Gemini 3.5 Flash-Lite (1M context) · Gemini Flash (latest)                                                       |
+| OpenRouter     | Gemini 2.5 Flash-Lite (1M context) · GPT-5.6 Luna (vision, 1M context) · Llama 4 Scout (vision, 1.3M context) · GPT-5.6 Terra (vision, 1M context) · GLM-4.6V (vision, 131K context) |
+
+The dashboard chat assistant (see [§5 Dashboard features](#5-dashboard-features)) runs its own separate provider chain (Gemini's lite tier, then OpenAI, then OpenRouter), tuned for fast conversational responses rather than the full map-image payload above.
 
 ---
 

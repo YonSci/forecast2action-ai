@@ -117,6 +117,18 @@ function Platform() {
               forecast-vs-observed confusion are flagged automatically, not just
               trusted.
             </p>
+            <p>
+              The report generator's provider is selectable per run{" "}
+              <strong>Automatic</strong> (Gemini first, then OpenRouter/OpenAI
+              on failure), <strong>Google Gemini</strong> (Gemini Flash-Lite,
+              Gemini 3.5 Flash-Lite, Gemini Flash), or{" "}
+              <strong>OpenRouter</strong> (Gemini 2.5 Flash-Lite, GPT-5.6
+              Luna, Llama 4 Scout, GPT-5.6 Terra, GLM-4.6V) each option
+              confirmed via live testing to handle the full comprehensive map
+              payload sent with every report. The dashboard chat assistant
+              runs its own separate, faster provider chain (Gemini's lite
+              tier, then OpenAI, then OpenRouter).
+            </p>
           </div>
         </div>
       </section>
