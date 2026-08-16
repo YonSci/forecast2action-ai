@@ -26,6 +26,16 @@ Forecast2Action AI covers Ethiopia at the national scale (admin1/admin2/admin3),
 
 Every generated report is validated against the same evidence it was built from before it reaches a user see [§4 The response validator](#4-the-response-validator).
 
+### Who it's for
+
+Built for anyone who has to decide, fund, or act on early-warning signals before a hazard becomes a confirmed emergency, not just view a forecast:
+
+- **National**: federal disaster risk management and early-warning coordination bodies, national meteorological/hydrological services, and federal agriculture/livestock ministries, who need a ranked, country-wide priority list rather than a raw forecast grid.
+- **Regional / sub-national**: regional, zonal, and woreda disaster risk management offices, kebele focal points, and agricultural extension officers. The real "Extension officer" and "Disaster manager" audience tuning built into the chat assistant and advisories exists specifically for this tier.
+- **International**: UN and multilateral agencies (e.g. food-security, health, and humanitarian coordination bodies), regional intergovernmental early-warning initiatives, and donors funding anticipatory-action programs, who need auditable, reproducible evidence, not an opaque AI judgment behind a funding trigger.
+- **NGOs**: humanitarian and anticipatory-action organizations translating a forecast into pre-positioning, early-action protocols, and community messaging. The "NGO planner" audience tuning, the action implementation tracker, and the SMS/WhatsApp-ready messages are built directly for this workflow.
+- **Researchers & data providers**: Forecast2Action AI is developed at ILRI (a CGIAR research center), and every layer traces to a named, versioned dataset (see [§3 Real data sources](#3-real-data-sources)), so the same evidence base is reusable for further analysis, not locked inside a black-box report.
+
 ---
 
 ## 2. How it works
@@ -53,6 +63,18 @@ AI providers: Google Gemini (primary), OpenRouter and an OpenAI-compatible API (
 | OpenRouter     | Gemini 2.5 Flash-Lite (1M context) · GPT-5.6 Luna (vision, 1M context) · Llama 4 Scout (vision, 1.3M context) · GPT-5.6 Terra (vision, 1M context) · GLM-4.6V (vision, 131K context) |
 
 The dashboard chat assistant (see [§5 Dashboard features](#5-dashboard-features)) runs its own separate provider chain (Gemini's lite tier, then OpenAI, then OpenRouter), tuned for fast conversational responses rather than the full map-image payload above.
+
+### Context engineering, not prompt engineering
+
+Every AI call in this project is built on the same idea: an LLM should never have to reconstruct context it could instead be handed already-assembled and already-verified. Concretely, before any model runs, the backend builds a **Decision Context Envelope** (`app/context/context_builder.py`), a single structured object combining:
+
+- **Forecast, geography, and impact evidence**: the same real hazard/exposure/vulnerability numbers the ranking table and maps use, resolved through `app.context.forecast_context`.
+- **Community context**: real, currently-submitted ground-truth reports for the area, and whether they corroborate or contradict the forecast signal.
+- **Policy context**: the real trigger/warning/watch status for that area's dominant hazard, resolved from the same classification the dashboard displays, not re-derived by the model.
+- **Knowledge context**: the top-k results of a hybrid retrieval pipeline (`app/retrieval/hybrid_retriever.py`), metadata filtering, then keyword scoring, then rerank/dedupe over the real action-guidance library (`data/knowledge/action_library.json`), scoped to the area's real hazard, risk level, audience, and community feedback signal.
+- **Operational context**: the requested audience, language, and AI provider/model for this run.
+
+Every component is content-hashed (forecast/exposure/community/knowledge/policy), combined into one `context_fingerprint`, and the whole envelope is scored for completeness (`quality_score` / `quality_flags`, e.g. `no_community_reports`, `no_knowledge_match`) so a caller can see exactly what evidence a given advisory was and wasn't grounded in, not just trust the output. The 3-stage pipeline above, the action tracker, and the chat assistant all consume this same envelope (or the equivalent real-time evidence it's built from), each stage or feature seeing only the slice it needs, never raw ensemble data and never another component's AI-generated text.
 
 ---
 
