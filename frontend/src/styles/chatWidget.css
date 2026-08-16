@@ -116,6 +116,12 @@
   margin: 0 0 12px;
 }
 
+.f2a-chat-greeting {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text, #0f274d);
+}
+
 .f2a-chat-starters {
   display: flex;
   flex-direction: column;

@@ -66,6 +66,16 @@ function renderInlineMarkdown(text) {
   });
 }
 
+// Real local device time, not a server round-trip -- a greeting doesn't
+// need to be grounded in anything, so this stays a plain client-side
+// function rather than a backend field.
+function getTimeBasedGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 function getStarterQuestions(selectedPriorityArea) {
   const areaName = selectedPriorityArea?.area_name;
   const questions = [];
@@ -386,6 +396,9 @@ function ChatWidget({
           <div className="f2a-chat-messages" ref={scrollRef} role="log" aria-live="polite">
             {messages.length === 0 && (
               <div className="f2a-chat-empty">
+                <p className="f2a-chat-greeting">
+                  {getTimeBasedGreeting()}! I'm your AI assistant — how can I help you today?
+                </p>
                 <p>
                   Ask about the priority areas, risk drivers, or exposure
                   numbers currently shown on this dashboard.
