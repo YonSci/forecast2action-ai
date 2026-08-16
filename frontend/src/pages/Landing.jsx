@@ -245,6 +245,7 @@ function Landing() {
             <Link to="/how-it-works">How it works</Link>
             <Link to="/data-sources">Data sources</Link>
             <Link to="/docs">Docs</Link>
+            <Link to="/track-record">Track record</Link>
             <Link to="/about">About</Link>
           </div>
           <Link to="/dashboard" className="lp-btn lp-btn-ghost lp-btn-small">

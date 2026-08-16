@@ -58,6 +58,23 @@ function About() {
 
       <section className="lp-article-section">
         <div className="lp-wrap">
+          <div className="lp-callout">
+            <h4>Checked against real history</h4>
+            <p>
+              Every SPI drought threshold this platform uses is checked
+              against real CHIRPS rainfall (1997-2025) compared to real
+              GLIDE-recorded drought events for Ethiopia, region by region
+              not just asserted.{" "}
+              <Link to="/track-record" style={{ color: "var(--lp-teal)" }}>
+                See the real numbers, honest caveats included →
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-article-section">
+        <div className="lp-wrap">
           <h2>Who it's for</h2>
           <div className="lp-prose">
             <p>

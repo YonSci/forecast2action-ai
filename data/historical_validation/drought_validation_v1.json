@@ -1,0 +1,232 @@
+{
+  "generated_at": "2026-08-16T14:36:56.581431+00:00",
+  "scope": "drought_only_v1",
+  "methodology": {
+    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. Anomaly is a simplified per-region z-score against a multi-year baseline, NOT the full McKee et al. 1993 gamma-distribution SPI this app's live forecast product uses -- disclosed as an approximation, not presented as exact.",
+    "thresholds_evaluated": "This app's own real SPI_CATEGORY_BANDS (moderately/severely/extremely dry) -- not modified by this diagnostic.",
+    "caveat": "Small real sample size, especially at the seasonal/event-year level (n=11 event-years). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
+  },
+  "data_provenance": {
+    "rainfall_source": "CHIRPS v2.0 monthly, real, downloaded from data.chc.ucsb.edu",
+    "rainfall_rows": 1740,
+    "event_source": "GLIDE disaster events (via HDX), real, geocoded to admin1 by point-in-polygon",
+    "drought_events_matched": 18,
+    "baseline_years": "1997-2025"
+  },
+  "monthly_analysis": {
+    "event_months": 12,
+    "no_event_months": 1728,
+    "mean_anomaly_event": -0.32220985878629765,
+    "mean_anomaly_no_event": 0.0022375684637937323,
+    "thresholds": [
+      {
+        "threshold_label": "moderately_dry",
+        "threshold_value": -1.0,
+        "hit_rate": 0.25,
+        "false_alarm_rate": 0.16203703703703703
+      },
+      {
+        "threshold_label": "severely_dry",
+        "threshold_value": -1.5,
+        "hit_rate": 0.08333333333333333,
+        "false_alarm_rate": 0.05324074074074074
+      },
+      {
+        "threshold_label": "extremely_dry",
+        "threshold_value": -2.0,
+        "hit_rate": 0.0,
+        "false_alarm_rate": 0.015046296296296295
+      }
+    ]
+  },
+  "seasonal_analysis": {
+    "event_years": 11,
+    "no_event_years": 424,
+    "mean_anomaly_event": -0.6233815165180098,
+    "mean_anomaly_no_event": 0.016172633683250327,
+    "thresholds": [
+      {
+        "threshold_label": "moderately_dry",
+        "threshold_value": -1.0,
+        "hit_rate": 0.45454545454545453,
+        "false_alarm_rate": 0.17452830188679244
+      },
+      {
+        "threshold_label": "severely_dry",
+        "threshold_value": -1.5,
+        "hit_rate": 0.09090909090909091,
+        "false_alarm_rate": 0.054245283018867926
+      },
+      {
+        "threshold_label": "extremely_dry",
+        "threshold_value": -2.0,
+        "hit_rate": 0.09090909090909091,
+        "false_alarm_rate": 0.02122641509433962
+      }
+    ]
+  },
+  "events": [
+    {
+      "glidenumber": "DR-1997-000091-ETH",
+      "region": "Oromia",
+      "location": "Somali state + Borena, Bale (Oromiya state) +South Ome zone",
+      "year": 1997,
+      "month": 4,
+      "seasonal_anomaly": -1.0807567294171214,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-1999-000148-ETH",
+      "region": "Somali",
+      "location": "Somali Region",
+      "year": 1999,
+      "month": 4,
+      "seasonal_anomaly": -0.3321330153410187,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2000-000121-ETH",
+      "region": "Oromia",
+      "location": "Ambassel, Kutaber (South Wollo),  North Borena, East Haraghe, South Tigre, Welayita, Konso, Ogaden, Somali, Amhara, Oromiya, Tigray regions",
+      "year": 2000,
+      "month": 3,
+      "seasonal_anomaly": -0.6711640873389061,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2001-000265-ETH",
+      "region": "Oromia",
+      "location": "Liben, Afder, Gode, Warder, Degah Bur, Siq (Somalia state)",
+      "year": 2001,
+      "month": 3,
+      "seasonal_anomaly": -0.24701096326211786,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2002-000524-ETH",
+      "region": "Oromia",
+      "location": "Afar region, East, North and South",
+      "year": 2002,
+      "month": 0,
+      "seasonal_anomaly": -1.3642234062061296,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2002-000105-ETH",
+      "region": "Oromia",
+      "location": "Amhara, Oromiya, Tigray, Somali, SNNPR, Afar",
+      "year": 2002,
+      "month": 1,
+      "seasonal_anomaly": -1.3642234062061296,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2006-000229-ETH",
+      "region": "Somali",
+      "location": "southern and south-eastern Oromiya and Somali regions",
+      "year": 2006,
+      "month": 2,
+      "seasonal_anomaly": 0.40640519286632587,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2008-000043-ETH",
+      "region": "Somali",
+      "location": "Somali Region",
+      "year": 2008,
+      "month": 4,
+      "seasonal_anomaly": -1.1645205543561956,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2011-000029-ETH",
+      "region": "Oromia",
+      "location": "",
+      "year": 2011,
+      "month": 8,
+      "seasonal_anomaly": 1.0787742321691733,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2015-000109-ETH",
+      "region": "Oromia",
+      "location": "",
+      "year": 2015,
+      "month": 6,
+      "seasonal_anomaly": -2.064255601421989,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2022-000168-ETH",
+      "region": "Oromia",
+      "location": "Ethiopia",
+      "year": 2022,
+      "month": 2,
+      "seasonal_anomaly": -0.1554399141601258,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2022-000268-ETH",
+      "region": "South Ethiopia",
+      "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
+      "year": 2022,
+      "month": 7,
+      "seasonal_anomaly": -1.2628718352300043,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2022-000257-ETH",
+      "region": "Oromia",
+      "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
+      "year": 2022,
+      "month": 7,
+      "seasonal_anomaly": -0.1554399141601258,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2022-000250-ETH",
+      "region": "Oromia",
+      "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
+      "year": 2022,
+      "month": 7,
+      "seasonal_anomaly": -0.1554399141601258,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2022-000247-ETH",
+      "region": "Oromia",
+      "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
+      "year": 2022,
+      "month": 7,
+      "seasonal_anomaly": -0.1554399141601258,
+      "seasonal_hit_moderately_dry": false
+    },
+    {
+      "glidenumber": "DR-2022-000285-ETH",
+      "region": "South Ethiopia",
+      "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
+      "year": 2022,
+      "month": 8,
+      "seasonal_anomaly": -1.2628718352300043,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2022-000280-ETH",
+      "region": "South Ethiopia",
+      "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
+      "year": 2022,
+      "month": 8,
+      "seasonal_anomaly": -1.2628718352300043,
+      "seasonal_hit_moderately_dry": true
+    },
+    {
+      "glidenumber": "DR-2026-000117-ETH",
+      "region": "Somali",
+      "location": "Ethiopia, Kenya, Somalia",
+      "year": 2026,
+      "month": 4,
+      "seasonal_anomaly": null,
+      "seasonal_hit_moderately_dry": null
+    }
+  ]
+}

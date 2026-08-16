@@ -6,6 +6,7 @@ import HowItWorks from "./pages/HowItWorks.jsx";
 import DataSources from "./pages/DataSources.jsx";
 import About from "./pages/About.jsx";
 import TechnicalDocumentation from "./pages/TechnicalDocumentation.jsx";
+import TrackRecord from "./pages/TrackRecord.jsx";
 import Contact from "./pages/Contact.jsx";
 import "./styles/main.css";
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="/data-sources" element={<DataSources />} />
         <Route path="/about" element={<About />} />
         <Route path="/docs" element={<TechnicalDocumentation />} />
+        <Route path="/track-record" element={<TrackRecord />} />
         <Route path="/contact" element={<Contact />} />
       </Routes>
     </BrowserRouter>

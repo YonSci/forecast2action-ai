@@ -26,14 +26,29 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from shapely.geometry import Point, shape
 
 RAINFALL_CSV = Path("data/raw/historical_impact/eth_region_monthly_rainfall.csv")
 GLIDE_CSV = Path("data/raw/historical_impact/eth_glide_events.csv")
 ADMIN1_PATH = Path("data/sample/admin_boundaries/eth_admin1.json")
+
+# Where the v1 (drought-only) results this app's frontend reads are
+# persisted -- served read-only via GET /api/validation/historical-skill,
+# never recomputed live (the CHIRPS download + zonal stats behind
+# eth_region_monthly_rainfall.csv is a heavy, periodic offline job -- see
+# historical_rainfall_pipeline.py).
+RESULTS_PATH = Path("data/historical_validation/drought_validation_v1.json")
+
+# JJAS = the app's real forecast window (June-September), matching what the
+# live product actually forecasts -- an event-YEAR is flagged if any real
+# GLIDE drought (DR) event was registered for that region in that year,
+# regardless of which specific month (droughts are accumulation phenomena,
+# not single-month events).
+SEASON_MONTHS = {6, 7, 8, 9}
 
 # Same real bands this app's own real SPI classification already uses --
 # see app.context.statistical_evidence.SPI_CATEGORY_BANDS. Only the dry
@@ -81,11 +96,12 @@ def compute_baselines(rows: List[Dict[str, object]]) -> Dict[Tuple[str, int], Tu
     }
 
 
-def load_glide_drought_events_by_region() -> Set[Tuple[str, int, int]]:
-    """Real (region, year, month) tuples for every real GLIDE drought (DR)
-    event that geocodes to a specific real admin1 region -- same point-in-
-    polygon matching already done earlier this session, redone here so
-    this script is self-contained and reproducible on its own.
+def load_glide_drought_event_records() -> List[Dict[str, object]]:
+    """Full detail for every real GLIDE drought (DR) event that geocodes to
+    a specific real admin1 region -- point-in-polygon matched against this
+    app's own real admin1 boundaries. Kept as full records (not just a
+    deduplicated set) so the results JSON can list each real event by name/
+    date for the frontend's per-event table, not just aggregate stats.
     """
     admin1 = json.loads(ADMIN1_PATH.read_text(encoding="utf-8"))
     regions = [(f["properties"].get("region"), shape(f["geometry"])) for f in admin1["features"]]
@@ -93,7 +109,7 @@ def load_glide_drought_events_by_region() -> Set[Tuple[str, int, int]]:
     with open(GLIDE_CSV, encoding="utf-8") as f:
         glide_rows = list(csv.DictReader(f))
 
-    events: Set[Tuple[str, int, int]] = set()
+    records: List[Dict[str, object]] = []
     for row in glide_rows:
         if row["event"] != "DR":
             continue
@@ -105,8 +121,22 @@ def load_glide_drought_events_by_region() -> Set[Tuple[str, int, int]]:
         point = Point(lon, lat)
         region_name = next((name for name, geom in regions if geom.contains(point)), None)
         if region_name:
-            events.add((region_name, year, month))
-    return events
+            records.append({
+                "glidenumber": row.get("glidenumber", ""),
+                "region": region_name,
+                "location": row.get("location", ""),
+                "year": year,
+                "month": month,
+            })
+    return records
+
+
+def load_glide_drought_events_by_region(records: List[Dict[str, object]]) -> Set[Tuple[str, int, int]]:
+    return {(r["region"], r["year"], r["month"]) for r in records}
+
+
+def load_glide_drought_event_years_by_region(records: List[Dict[str, object]]) -> Set[Tuple[str, int]]:
+    return {(r["region"], r["year"]) for r in records}
 
 
 def is_event_month(region: str, year: int, month: int, events: Set[Tuple[str, int, int]]) -> bool:
@@ -116,16 +146,74 @@ def is_event_month(region: str, year: int, month: int, events: Set[Tuple[str, in
     )
 
 
-def run_diagnostic() -> None:
+def compute_seasonal_totals(rows: List[Dict[str, object]]) -> Dict[Tuple[str, int], float]:
+    """Real per-region, per-year JJAS (Jun-Sep) total rainfall -- only kept
+    for a (region, year) when all 4 real season months are present, so a
+    partial season is never silently treated as a low total.
+    """
+    by_key: Dict[Tuple[str, int], Dict[int, float]] = {}
+    for row in rows:
+        if row["month"] not in SEASON_MONTHS or row["rainfall_mm"] is None:
+            continue
+        key = (row["region"], row["year"])
+        by_key.setdefault(key, {})[row["month"]] = row["rainfall_mm"]
+
+    return {
+        key: sum(months.values())
+        for key, months in by_key.items()
+        if set(months.keys()) == SEASON_MONTHS
+    }
+
+
+def compute_seasonal_baselines(totals: Dict[Tuple[str, int], float]) -> Dict[str, Tuple[float, float]]:
+    import numpy as np
+
+    by_region: Dict[str, List[float]] = {}
+    for (region, _year), total in totals.items():
+        by_region.setdefault(region, []).append(total)
+
+    return {
+        region: (float(np.mean(values)), float(np.std(values)))
+        for region, values in by_region.items()
+        if len(values) >= 3
+    }
+
+
+def _rate(anomalies: List[float], threshold: float) -> float:
+    return sum(1 for a in anomalies if a <= threshold) / len(anomalies) if anomalies else float("nan")
+
+
+def _threshold_table(event_anomalies: List[float], no_event_anomalies: List[float]) -> List[Dict[str, Any]]:
+    return [
+        {
+            "threshold_label": label,
+            "threshold_value": threshold,
+            "hit_rate": _rate(event_anomalies, threshold),
+            "false_alarm_rate": _rate(no_event_anomalies, threshold),
+        }
+        for label, threshold in DRY_THRESHOLDS.items()
+    ]
+
+
+def build_results() -> Dict[str, Any]:
+    """Assembles both the single-month and JJAS-seasonal analyses (the
+    seasonal one is the stronger, more presentable signal -- droughts are
+    accumulation phenomena, not single-month events) into one JSON-
+    serializable results object, plus the real per-event detail and an
+    explicit, honest scope/methodology disclosure for the frontend to
+    render verbatim rather than paraphrase.
+    """
+    import numpy as np
+
     rows = load_rainfall_table()
     baselines = compute_baselines(rows)
-    events = load_glide_drought_events_by_region()
-    print(f"Real (region, year, month) rainfall rows: {len(rows)}")
-    print(f"Real GLIDE drought events geocoded to a real admin1 region: {len(events)}")
+    records = load_glide_drought_event_records()
+    month_events = load_glide_drought_events_by_region(records)
+    year_events = load_glide_drought_event_years_by_region(records)
 
-    event_anomalies: List[float] = []
-    no_event_anomalies: List[float] = []
-
+    # Single-month analysis
+    month_event_anomalies: List[float] = []
+    month_no_event_anomalies: List[float] = []
     for row in rows:
         if row["rainfall_mm"] is None:
             continue
@@ -136,27 +224,118 @@ def run_diagnostic() -> None:
         if std == 0:
             continue
         anomaly = (row["rainfall_mm"] - mean) / std
-
-        if is_event_month(row["region"], row["year"], row["month"], events):
-            event_anomalies.append(anomaly)
+        if is_event_month(row["region"], row["year"], row["month"], month_events):
+            month_event_anomalies.append(anomaly)
         else:
-            no_event_anomalies.append(anomaly)
+            month_no_event_anomalies.append(anomaly)
 
-    import numpy as np
+    # JJAS-seasonal analysis
+    seasonal_totals = compute_seasonal_totals(rows)
+    seasonal_baselines = compute_seasonal_baselines(seasonal_totals)
+    season_event_anomalies: List[float] = []
+    season_no_event_anomalies: List[float] = []
+    event_year_anomaly_by_key: Dict[Tuple[str, int], float] = {}
+    for (region, year), total in seasonal_totals.items():
+        if region not in seasonal_baselines:
+            continue
+        mean, std = seasonal_baselines[region]
+        if std == 0:
+            continue
+        anomaly = (total - mean) / std
+        if (region, year) in year_events:
+            season_event_anomalies.append(anomaly)
+            event_year_anomaly_by_key[(region, year)] = anomaly
+        else:
+            season_no_event_anomalies.append(anomaly)
 
+    per_event = [
+        {
+            "glidenumber": r["glidenumber"],
+            "region": r["region"],
+            "location": r["location"],
+            "year": r["year"],
+            "month": r["month"],
+            "seasonal_anomaly": event_year_anomaly_by_key.get((r["region"], r["year"])),
+            "seasonal_hit_moderately_dry": (
+                event_year_anomaly_by_key[(r["region"], r["year"])] <= DRY_THRESHOLDS["moderately_dry"]
+                if (r["region"], r["year"]) in event_year_anomaly_by_key
+                else None
+            ),
+        }
+        for r in sorted(records, key=lambda r: (r["year"], r["month"]))
+    ]
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "scope": "drought_only_v1",
+        "methodology": {
+            "summary": (
+                "Real historical CHIRPS rainfall (1997-2025, June-September) compared against "
+                "real GLIDE drought (DR) events geocoded to this app's own real admin1 boundaries. "
+                "Anomaly is a simplified per-region z-score against a multi-year baseline, NOT the "
+                "full McKee et al. 1993 gamma-distribution SPI this app's live forecast product uses "
+                "-- disclosed as an approximation, not presented as exact."
+            ),
+            "thresholds_evaluated": "This app's own real SPI_CATEGORY_BANDS (moderately/severely/extremely dry) -- not modified by this diagnostic.",
+            "caveat": (
+                "Small real sample size, especially at the seasonal/event-year level (n="
+                f"{len(season_event_anomalies)} event-years). A directionally consistent but "
+                "statistically limited signal, not a validated forecast-skill score."
+            ),
+        },
+        "data_provenance": {
+            "rainfall_source": "CHIRPS v2.0 monthly, real, downloaded from data.chc.ucsb.edu",
+            "rainfall_rows": len(rows),
+            "event_source": "GLIDE disaster events (via HDX), real, geocoded to admin1 by point-in-polygon",
+            "drought_events_matched": len(records),
+            "baseline_years": "1997-2025",
+        },
+        "monthly_analysis": {
+            "event_months": len(month_event_anomalies),
+            "no_event_months": len(month_no_event_anomalies),
+            "mean_anomaly_event": float(np.mean(month_event_anomalies)) if month_event_anomalies else None,
+            "mean_anomaly_no_event": float(np.mean(month_no_event_anomalies)) if month_no_event_anomalies else None,
+            "thresholds": _threshold_table(month_event_anomalies, month_no_event_anomalies),
+        },
+        "seasonal_analysis": {
+            "event_years": len(season_event_anomalies),
+            "no_event_years": len(season_no_event_anomalies),
+            "mean_anomaly_event": float(np.mean(season_event_anomalies)) if season_event_anomalies else None,
+            "mean_anomaly_no_event": float(np.mean(season_no_event_anomalies)) if season_no_event_anomalies else None,
+            "thresholds": _threshold_table(season_event_anomalies, season_no_event_anomalies),
+        },
+        "events": per_event,
+    }
+
+
+def save_results(results: Dict[str, Any]) -> None:
+    RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RESULTS_PATH.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"\nSaved real validation results -> {RESULTS_PATH}")
+
+
+def run_diagnostic() -> None:
+    results = build_results()
+    print(f"Real (region, year, month) rainfall rows: {results['data_provenance']['rainfall_rows']}")
+    print(f"Real GLIDE drought events geocoded to a real admin1 region: {results['data_provenance']['drought_events_matched']}")
+
+    m = results["monthly_analysis"]
     print()
-    print(f"Real event months: {len(event_anomalies)} | Real no-event months: {len(no_event_anomalies)}")
-    print(f"Mean anomaly (event months):    {np.mean(event_anomalies):+.2f}")
-    print(f"Median anomaly (event months):  {np.median(event_anomalies):+.2f}")
-    print(f"Mean anomaly (no-event months): {np.mean(no_event_anomalies):+.2f}")
-    print(f"Median anomaly (no-event months): {np.median(no_event_anomalies):+.2f}")
+    print(f"[Monthly] Real event months: {m['event_months']} | Real no-event months: {m['no_event_months']}")
+    print(f"[Monthly] Mean anomaly (event months):    {m['mean_anomaly_event']:+.2f}")
+    print(f"[Monthly] Mean anomaly (no-event months): {m['mean_anomaly_no_event']:+.2f}")
+    for row in m["thresholds"]:
+        print(f"  {row['threshold_value']:<6.1f} {row['threshold_label']:16s} hit={row['hit_rate']:.1%}  false_alarm={row['false_alarm_rate']:.1%}")
+
+    s = results["seasonal_analysis"]
     print()
-    print("Real hit-rate / false-alarm-rate at each of this app's own real SPI band thresholds:")
-    print(f"{'threshold':18s} {'label':16s} {'hit rate (event months below)':32s} {'false-alarm rate (no-event months below)':42s}")
-    for label, threshold in DRY_THRESHOLDS.items():
-        hit_rate = sum(1 for a in event_anomalies if a <= threshold) / len(event_anomalies) if event_anomalies else float("nan")
-        false_alarm_rate = sum(1 for a in no_event_anomalies if a <= threshold) / len(no_event_anomalies) if no_event_anomalies else float("nan")
-        print(f"{threshold:<18.1f} {label:16s} {hit_rate:<32.1%} {false_alarm_rate:<42.1%}")
+    print(f"[Seasonal/JJAS] Real event years: {s['event_years']} | Real no-event years: {s['no_event_years']}")
+    print(f"[Seasonal/JJAS] Mean anomaly (event years):    {s['mean_anomaly_event']:+.2f}")
+    print(f"[Seasonal/JJAS] Mean anomaly (no-event years): {s['mean_anomaly_no_event']:+.2f}")
+    for row in s["thresholds"]:
+        print(f"  {row['threshold_value']:<6.1f} {row['threshold_label']:16s} hit={row['hit_rate']:.1%}  false_alarm={row['false_alarm_rate']:.1%}")
+
+    save_results(results)
 
 
 if __name__ == "__main__":

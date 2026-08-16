@@ -41,6 +41,7 @@ from app.api.hazard_risk_ranking import router as hazard_risk_ranking_router
 from app.api.seasonal_maps import router as seasonal_maps_router
 from app.api.seasonal_raster_maps import prewarm_all_maps
 from app.api.seasonal_raster_maps import router as seasonal_raster_maps_router
+from app.api.validation_api import router as validation_router
 from app.api.action_tracker_shape import (
     canonicalize_context_task,
     canonicalize_legacy_task,
@@ -89,6 +90,7 @@ app.include_router(hazard_risk_ranking_router)
 app.include_router(context_router)
 app.include_router(decision_router)
 app.include_router(dashboard_chat_router)
+app.include_router(validation_router)
 
 
 @app.on_event("startup")
