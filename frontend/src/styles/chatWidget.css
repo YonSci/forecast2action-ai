@@ -145,15 +145,6 @@
   cursor: not-allowed;
 }
 
-.f2a-chat-context-summary {
-  margin-top: 8px;
-  padding-top: 7px;
-  border-top: 1px dashed var(--line, #d9e3f2);
-  font-size: 0.72rem;
-  color: var(--muted, #60708c);
-  line-height: 1.4;
-}
-
 .f2a-chat-bubble {
   max-width: 86%;
   padding: 10px 13px;

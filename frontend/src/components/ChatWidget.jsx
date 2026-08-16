@@ -51,34 +51,6 @@ function renderInlineMarkdown(text) {
   });
 }
 
-// Real, deterministic "grounded in" caption from the backend's own
-// context_summary (see app/api/dashboard_chat.py's _build_context_summary)
-// -- describes what evidence was actually available for that reply, not a
-// guess about which sentences the model drew on.
-function renderContextSummary(summary) {
-  if (!summary) return null;
-  const parts = [];
-  if (summary.priority_area_count) {
-    parts.push(`${summary.priority_area_count} priority areas`);
-  }
-  if (summary.national_cross_indicator_signal) {
-    parts.push(`national signal: ${summary.national_cross_indicator_signal.replace(/_/g, " ")}`);
-  }
-  if (summary.selected_area) {
-    parts.push(`focused on ${summary.selected_area}`);
-  }
-  if (summary.community_reports_areas?.length) {
-    parts.push(`community reports: ${summary.community_reports_areas.join(", ")}`);
-  } else if (summary.community_reports_truncated) {
-    parts.push("community reports too large to include this time");
-  }
-  if (summary.included_report_narrative) {
-    parts.push("generated report narrative included");
-  }
-  if (!parts.length) return null;
-  return <div className="f2a-chat-context-summary">Grounded in: {parts.join(" · ")}</div>;
-}
-
 function getStarterQuestions(selectedPriorityArea) {
   const areaName = selectedPriorityArea?.area_name;
   const questions = [];
@@ -120,10 +92,16 @@ function IconSend() {
   );
 }
 
-function IconNewChat() {
+function IconClearChat() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M5 7h14M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0-.7 12.1a2 2 0 01-2 1.9H8.7a2 2 0 01-2-1.9L6 7h12z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -154,7 +132,7 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
     saveStoredMessages(messages);
   }, [messages]);
 
-  function startNewConversation() {
+  function clearChatHistory() {
     setMessages([]);
     setError("");
     window.localStorage.removeItem(STORAGE_KEY);
@@ -292,8 +270,8 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
             </div>
             <div className="f2a-chat-panel-head-actions">
               {messages.length > 0 && (
-                <button type="button" className="f2a-chat-icon-btn" onClick={startNewConversation} aria-label="Start new conversation" title="New conversation">
-                  <IconNewChat />
+                <button type="button" className="f2a-chat-icon-btn" onClick={clearChatHistory} aria-label="Clear chat history" title="Clear chat history">
+                  <IconClearChat />
                 </button>
               )}
               <button type="button" className="f2a-chat-icon-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
@@ -323,7 +301,6 @@ function ChatWidget({ forecastSelection, selectedPriorityArea, selectedLanguage,
                   renderInlineMarkdown(message.content)
                 )}
                 {message.streaming && message.content && <span className="f2a-chat-cursor" aria-hidden="true" />}
-                {message.role === "assistant" && !message.streaming && renderContextSummary(message.contextSummary)}
               </div>
             ))}
           </div>
