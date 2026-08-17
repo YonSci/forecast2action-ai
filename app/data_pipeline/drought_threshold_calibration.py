@@ -158,10 +158,23 @@ def load_glide_drought_event_records() -> List[Dict[str, object]]:
                 day = int(row.get("day") or 0)
             except ValueError:
                 day = 0
+            # Real GLIDE records with a blank location field were never
+            # geocoded to a specific real place -- their lat/lon is GLIDE's
+            # generic Ethiopia-country fallback centroid (confirmed: (9.15,
+            # 40.49) is used by 7 real drought records spanning 1997-2015,
+            # every one of them a national or multi-region event, never a
+            # single localized one). Sampling rainfall at that arbitrary
+            # highland pixel tells us nothing about where a real drought
+            # actually happened, so records without a real reported
+            # location are flagged here and excluded from pixel-level
+            # indicator scoring downstream, not silently treated as if
+            # their coordinate were real.
+            location_known = bool(row.get("location", "").strip())
             records.append({
                 "glidenumber": row.get("glidenumber", ""),
                 "region": region_name,
                 "location": row.get("location", ""),
+                "location_known": location_known,
                 "year": year,
                 "month": month,
                 "day": day,
@@ -380,7 +393,16 @@ def build_results() -> Dict[str, Any]:
     # during JJAS itself, deduplicated to unique (point, year) pairs -- a
     # real drought episode logged as 3 separate GLIDE records at the same
     # coordinate (e.g. 2022 South Ethiopia) is one real trial, not three.
-    jjas_records = [r for r in records if r["month"] in SEASON_MONTHS]
+    # Also requires a real reported location -- events geocoded only to
+    # GLIDE's generic Ethiopia fallback centroid (location_known=False)
+    # are excluded from the hit-rate/AUC event set, since their pixel
+    # doesn't correspond to any real reported drought location (see
+    # location_known's own comment above); they stay OUT of the no-event
+    # pool too (via all_point_year_events above, built before this
+    # filter), so they're not mistaken for a clean no-event case either.
+    jjas_records = [
+        r for r in records if r["month"] in SEASON_MONTHS and r["location_known"]
+    ]
     jjas_point_year_events = load_glide_drought_event_years_by_point(jjas_records)
 
     seasonal_totals = compute_seasonal_totals_by_point(point_rows)
@@ -405,9 +427,27 @@ def build_results() -> Dict[str, Any]:
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "affected": r["affected"],
-            "rainfall_total_anomaly": anomaly_values.get((_point_key(r["latitude"], r["longitude"]), r["year"])),
-            "spi": spi_values.get((_point_key(r["latitude"], r["longitude"]), r["year"])),
-            "rainfall_percentile": percentile_values.get((_point_key(r["latitude"], r["longitude"]), r["year"])),
+            "location_known": r["location_known"],
+            # Real indicator values withheld (None) for events geocoded
+            # only to GLIDE's generic fallback centroid -- showing a real
+            # computed SPI/anomaly there would misleadingly imply it
+            # reflects a real drought-affected pixel, when it doesn't (see
+            # location_known's own comment above). The frontend already
+            # treats a null SPI as "not scorable" (same real handling as
+            # the still-baseline-less 2026 event), so this needs no
+            # frontend change to take effect.
+            "rainfall_total_anomaly": (
+                anomaly_values.get((_point_key(r["latitude"], r["longitude"]), r["year"]))
+                if r["location_known"] else None
+            ),
+            "spi": (
+                spi_values.get((_point_key(r["latitude"], r["longitude"]), r["year"]))
+                if r["location_known"] else None
+            ),
+            "rainfall_percentile": (
+                percentile_values.get((_point_key(r["latitude"], r["longitude"]), r["year"]))
+                if r["location_known"] else None
+            ),
         }
         for r in sorted(records, key=lambda r: (r["year"], r["month"]))
     ]
@@ -429,8 +469,13 @@ def build_results() -> Dict[str, Any]:
                 "episode multiple times at the same pixel within one real month (e.g. three GLIDE "
                 "records in July 2022 for the same East Africa drought at one coordinate) are "
                 "collapsed to a single real record before any of this -- listing them separately "
-                "would inflate one real event into several. Three real indicators are compared on "
-                "the same real seasonal (JJAS) totals: "
+                "would inflate one real event into several. Real events reported with no specific "
+                "location (GLIDE's own location field left blank) are excluded from pixel-level "
+                "scoring entirely -- their coordinate is GLIDE's generic Ethiopia-country fallback "
+                "centroid, not a real drought-affected place, so a real SPI value computed there "
+                "would misleadingly imply precision that doesn't exist; they're still real droughts, "
+                "just not real events with a real testable location. Three real indicators are "
+                "compared on the same real seasonal (JJAS) totals: "
                 "Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. "
                 "1993 methodology), and Rainfall Percentile (real empirical rank at that exact "
                 "pixel). The reported hit rate counts only real GLIDE events actually registered "

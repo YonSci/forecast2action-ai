@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-08-17T00:04:38.043943+00:00",
+  "generated_at": "2026-08-17T00:41:00.160869+00:00",
   "scope": "drought_only_v1_jjas_registered_pixel_level",
   "methodology": {
-    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's own reported coordinate -- not averaged across the whole admin1 region it falls in. Only 7 real unique coordinates exist among this dataset's matched events (several events share the same GLIDE-reported centroid), so this is a real but small set of specific locations, not a general Ethiopia-wide sample. Real GDACS periodic drought-monitoring bulletins that registered the SAME real episode multiple times at the same pixel within one real month (e.g. three GLIDE records in July 2022 for the same East Africa drought at one coordinate) are collapsed to a single real record before any of this -- listing them separately would inflate one real event into several. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical rank at that exact pixel). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought episode logged as multiple GLIDE records at the same coordinate isn't counted more than once; real events registered in other months are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. The false-alarm rate should be read as \"at these same real drought-prone pixels, in years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event pool is drawn from the same small set of locations, not a random sample. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
+    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's own reported coordinate -- not averaged across the whole admin1 region it falls in. Only 7 real unique coordinates exist among this dataset's matched events (several events share the same GLIDE-reported centroid), so this is a real but small set of specific locations, not a general Ethiopia-wide sample. Real GDACS periodic drought-monitoring bulletins that registered the SAME real episode multiple times at the same pixel within one real month (e.g. three GLIDE records in July 2022 for the same East Africa drought at one coordinate) are collapsed to a single real record before any of this -- listing them separately would inflate one real event into several. Real events reported with no specific location (GLIDE's own location field left blank) are excluded from pixel-level scoring entirely -- their coordinate is GLIDE's generic Ethiopia-country fallback centroid, not a real drought-affected place, so a real SPI value computed there would misleadingly imply precision that doesn't exist; they're still real droughts, just not real events with a real testable location. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical rank at that exact pixel). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought episode logged as multiple GLIDE records at the same coordinate isn't counted more than once; real events registered in other months are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. The false-alarm rate should be read as \"at these same real drought-prone pixels, in years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event pool is drawn from the same small set of locations, not a random sample. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
     "thresholds_evaluated": "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by this diagnostic.",
     "auc_note": "AUC (area under the ROC curve) measures how well an indicator ranks real event-years as drier than real no-event years across every possible real threshold, not just the three fixed bands above. 1.0 = perfect separation, 0.5 = no better than a coin flip. Computed here via real pairwise comparison (equivalent to the standard Mann-Whitney formulation), not a threshold sweep.",
-    "caveat": "Very small real sample size (n=4 JJAS-registered event-years out of 13 real event-years total, across only 7 real unique pixel locations). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
+    "caveat": "Very small real sample size (n=2 JJAS-registered event-years out of 13 real event-years total, across only 7 real unique pixel locations). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
   },
   "data_provenance": {
     "rainfall_source": "CHIRPS v2.0 monthly, real, sampled at exact event pixels, from data.chc.ucsb.edu",
@@ -14,17 +14,17 @@
     "drought_events_matched": 15,
     "unique_pixel_locations": 7,
     "event_years_total": 13,
-    "event_years_jjas_registered": 4,
+    "event_years_jjas_registered": 2,
     "baseline_years": "1997-2025"
   },
   "indicators": {
     "rainfall_total": {
       "label": "Rainfall Total (z-score anomaly, exact-pixel)",
-      "event_years": 4,
+      "event_years": 2,
       "no_event_years": 191,
-      "mean_value_event": -0.7100512517476004,
+      "mean_value_event": -0.7597506225438877,
       "mean_value_no_event": 0.032285010078076534,
-      "auc": 0.6492146596858639,
+      "auc": 0.7408376963350786,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
@@ -35,24 +35,24 @@
         {
           "threshold_label": "severely_dry",
           "threshold_value": -1.5,
-          "hit_rate": 0.25,
+          "hit_rate": 0.0,
           "false_alarm_rate": 0.005235602094240838
         },
         {
           "threshold_label": "extremely_dry",
           "threshold_value": -2.0,
-          "hit_rate": 0.25,
+          "hit_rate": 0.0,
           "false_alarm_rate": 0.0
         }
       ]
     },
     "spi": {
       "label": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology, exact-pixel)",
-      "event_years": 4,
+      "event_years": 2,
       "no_event_years": 191,
-      "mean_value_event": -0.8127867695627002,
+      "mean_value_event": -0.8088165582238387,
       "mean_value_no_event": 0.03210248627969676,
-      "auc": 0.6570680628272252,
+      "auc": 0.7513089005235603,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
@@ -63,24 +63,24 @@
         {
           "threshold_label": "severely_dry",
           "threshold_value": -1.5,
-          "hit_rate": 0.25,
+          "hit_rate": 0.0,
           "false_alarm_rate": 0.010471204188481676
         },
         {
           "threshold_label": "extremely_dry",
           "threshold_value": -2.0,
-          "hit_rate": 0.25,
+          "hit_rate": 0.0,
           "false_alarm_rate": 0.0
         }
       ]
     },
     "rainfall_percentile": {
       "label": "Rainfall Percentile (real empirical rank, exact-pixel)",
-      "event_years": 4,
+      "event_years": 2,
       "no_event_years": 191,
-      "mean_value_event": 35.0,
+      "mean_value_event": 21.666666666666668,
       "mean_value_no_event": 52.469458987783604,
-      "auc": 0.6786649214659686,
+      "auc": 0.8206806282722513,
       "thresholds": [
         {
           "threshold_label": "moderately_dry",
@@ -91,7 +91,7 @@
         {
           "threshold_label": "severely_dry",
           "threshold_value": 6.68,
-          "hit_rate": 0.25,
+          "hit_rate": 0.0,
           "false_alarm_rate": 0.031413612565445025
         },
         {
@@ -146,6 +146,7 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 986200,
+      "location_known": true,
       "rainfall_total_anomaly": -1.1561573607179065,
       "spi": -1.1364513582145315,
       "rainfall_percentile": 15.0
@@ -160,6 +161,7 @@
       "latitude": 6.66,
       "longitude": 43.79,
       "affected": 640000,
+      "location_known": true,
       "rainfall_total_anomaly": -0.6049830529891832,
       "spi": -0.6429227654834211,
       "rainfall_percentile": 21.666666666666668
@@ -174,6 +176,7 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 10500000,
+      "location_known": true,
       "rainfall_total_anomaly": 0.8482675006699101,
       "spi": 0.8383865386007762,
       "rainfall_percentile": 85.0
@@ -188,6 +191,7 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 1000000,
+      "location_known": true,
       "rainfall_total_anomaly": 0.2712012889114532,
       "spi": 0.30990797925785274,
       "rainfall_percentile": 58.333333333333336
@@ -202,6 +206,7 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 2000000,
+      "location_known": true,
       "rainfall_total_anomaly": -1.8362789689733805,
       "spi": -1.9156584930396654,
       "rainfall_percentile": 8.333333333333334
@@ -216,6 +221,7 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 14300000,
+      "location_known": true,
       "rainfall_total_anomaly": -1.8362789689733805,
       "spi": -1.9156584930396654,
       "rainfall_percentile": 8.333333333333334
@@ -230,6 +236,7 @@
       "latitude": 5.11,
       "longitude": 42.01,
       "affected": 11000000,
+      "location_known": true,
       "rainfall_total_anomaly": -0.1796650221799195,
       "spi": -0.1527736809213604,
       "rainfall_percentile": 55.0
@@ -244,6 +251,7 @@
       "latitude": 6.66,
       "longitude": 43.79,
       "affected": 8,
+      "location_known": true,
       "rainfall_total_anomaly": -0.6808026160743166,
       "spi": -0.7456052623760997,
       "rainfall_percentile": 15.0
@@ -258,9 +266,10 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 0,
-      "rainfall_total_anomaly": 1.2039465881719909,
-      "spi": 1.1509391123446981,
-      "rainfall_percentile": 91.66666666666667
+      "location_known": false,
+      "rainfall_total_anomaly": null,
+      "spi": null,
+      "rainfall_percentile": null
     },
     {
       "glidenumber": "DR-2015-000109-ETH",
@@ -272,9 +281,10 @@
       "latitude": 9.15,
       "longitude": 40.49,
       "affected": 0,
-      "rainfall_total_anomaly": -2.524650350074617,
-      "spi": -2.7844530741478217,
-      "rainfall_percentile": 5.0
+      "location_known": false,
+      "rainfall_total_anomaly": null,
+      "spi": null,
+      "rainfall_percentile": null
     },
     {
       "glidenumber": "DR-2022-000168-ETH",
@@ -286,6 +296,7 @@
       "latitude": 5.25,
       "longitude": 39.25,
       "affected": 0,
+      "location_known": true,
       "rainfall_total_anomaly": 0.012186313431118121,
       "spi": 0.09607095244480363,
       "rainfall_percentile": 68.33333333333333
@@ -300,6 +311,7 @@
       "latitude": 5.83,
       "longitude": 37.5,
       "affected": 0,
+      "location_known": true,
       "rainfall_total_anomaly": -1.258846933904716,
       "spi": -1.3998292134433656,
       "rainfall_percentile": 8.333333333333334
@@ -314,6 +326,7 @@
       "latitude": 7.65,
       "longitude": 39.04,
       "affected": 0,
+      "location_known": true,
       "rainfall_total_anomaly": -0.2606543111830596,
       "spi": -0.2178039030043117,
       "rainfall_percentile": 35.0
@@ -328,6 +341,7 @@
       "latitude": 5.83,
       "longitude": 37.5,
       "affected": 0,
+      "location_known": true,
       "rainfall_total_anomaly": -1.258846933904716,
       "spi": -1.3998292134433656,
       "rainfall_percentile": 8.333333333333334
@@ -342,6 +356,7 @@
       "latitude": 6.55,
       "longitude": 44.62,
       "affected": 0,
+      "location_known": true,
       "rainfall_total_anomaly": null,
       "spi": null,
       "rainfall_percentile": null

@@ -893,18 +893,21 @@ function TrackRecord() {
                 className="lp-prose"
                 style={{ marginTop: 14, fontSize: "0.9rem" }}
               >
-                At this sample size, and scoped to real events registered
-                during JJAS itself, all three indicators tie exactly at the
-                moderately- and severely-dry thresholds a real
-                gamma-distribution correction or percentile ranking doesn't
-                change which real events get flagged there. They diverge at
-                the extremely-dry threshold: SPI and Rainfall Total still
-                catch a real event Percentile misses entirely (0% hit rate).
-                But across the full AUC curve, Rainfall Percentile actually
-                ranks highest (0.679 vs 0.657 for SPI and 0.649 for Rainfall
-                Total): a real reminder that a single fixed threshold and
-                overall discrimination can tell different stories, and
-                neither one alone is the whole picture.
+                Three real GLIDE events with a specific reported location
+                fall in this JJAS-scored set. Two more (2011, 2015) were
+                excluded because GLIDE geocoded them only to its generic
+                Ethiopia-country fallback centroid, not a real
+                drought-affected place, so a real pixel-level SPI computed
+                there would have been meaningless (see the caveat below). At
+                this small sample, all three indicators tie exactly at every
+                fixed threshold: a real gamma-distribution correction or
+                percentile ranking doesn't change which real events get
+                flagged. AUC still
+                reveals a real ranking underneath: Rainfall Percentile
+                (0.821) discriminates real event-years from real no-event
+                years better than SPI (0.751) or Rainfall Total (0.741) do
+                across the full real threshold range, even though all three
+                agree at the one fixed cutoff this page headlines.
               </p>
             </div>
           </section>
