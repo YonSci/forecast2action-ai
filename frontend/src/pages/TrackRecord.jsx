@@ -435,6 +435,137 @@ function HitBadge({ value, indicatorKey, formatter }) {
   );
 }
 
+// Real events that share the exact same GLIDE-reported coordinate (see
+// the "generic centroid" finding below) would otherwise render as one
+// dot hiding another -- this spreads coincident points into a small real
+// circle around their shared location so every real event stays visible
+// and independently hoverable, purely a display offset, never altering
+// the real coordinate used for any computed indicator value.
+function jitterCoincidentPoints(points) {
+  const groups = new Map();
+  for (const p of points) {
+    const key = `${p.latitude.toFixed(3)},${p.longitude.toFixed(3)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  }
+  const result = [];
+  for (const group of groups.values()) {
+    const n = group.length;
+    group.forEach((p, i) => {
+      const angle = (2 * Math.PI * i) / n;
+      const r = n > 1 ? 9 : 0;
+      result.push({ ...p, dx: r * Math.cos(angle), dy: r * Math.sin(angle) });
+    });
+  }
+  return result;
+}
+
+function EventPointMap({ events }) {
+  const projection = useMemo(
+    () => buildEthMapProjection(ethiopiaAdmin1.features, MAP_SIZE, MAP_PADDING),
+    [],
+  );
+  const points = useMemo(
+    () =>
+      jitterCoincidentPoints(
+        (events || []).filter(
+          (e) => e.latitude !== null && e.longitude !== null,
+        ),
+      ),
+    [events],
+  );
+
+  return (
+    <>
+      <svg
+        viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
+        role="img"
+        aria-label="Map of each real JJAS-registered drought event's exact reported coordinate"
+        style={{
+          width: "100%",
+          maxWidth: 420,
+          display: "block",
+          margin: "0 auto",
+        }}
+      >
+        {ethiopiaAdmin1.features.map((feat) => (
+          <path
+            key={feat.properties.region_id}
+            d={ethGeometryToPathD(feat.geometry, projection)}
+            fill="rgba(148,178,219,0.05)"
+            stroke="rgba(148,178,219,0.35)"
+            strokeWidth="1"
+          />
+        ))}
+        {points.map((event) => {
+          const [x, y] = projection.project(event.longitude, event.latitude);
+          const hit = isHit(event.spi, "spi");
+          const color =
+            hit === null
+              ? "var(--lp-muted)"
+              : hit
+                ? "var(--lp-red, #ef4a3d)"
+                : "var(--lp-teal, #35d4c7)";
+          return (
+            <circle
+              key={event.glidenumber}
+              cx={x + event.dx}
+              cy={y + event.dy}
+              r="7"
+              fill={color}
+              fillOpacity="0.85"
+              stroke="rgba(6,12,24,0.6)"
+              strokeWidth="1.5"
+            >
+              <title>
+                {event.glidenumber} {event.region}, {event.year}{" "}
+                {formatMonth(event.month)}
+                {"\n"}SPI: {formatValue(event.spi)} (
+                {hit === null ? "N/A" : hit ? "Hit" : "Miss"})
+              </title>
+            </circle>
+          );
+        })}
+      </svg>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 18,
+          marginTop: 12,
+          fontSize: "0.8rem",
+          color: "var(--lp-muted)",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "var(--lp-red, #ef4a3d)",
+              display: "inline-block",
+            }}
+          />
+          Hit (SPI ≤ -1.0)
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "var(--lp-teal, #35d4c7)",
+              display: "inline-block",
+            }}
+          />
+          Miss (SPI &gt; -1.0)
+        </span>
+      </div>
+    </>
+  );
+}
+
 const CAPTURED_MISSED_COLUMNS = [
   { key: "year", label: "Year" },
   { key: "month", label: "Month" },
@@ -653,6 +784,9 @@ function TrackRecord() {
                 below). Click a column heading to sort by it.
               </p>
               <SortableEventTable events={jjasScorableEvents} />
+              <div style={{ marginTop: 22 }}>
+                <EventPointMap events={jjasScorableEvents} />
+              </div>
             </div>
           </section>
 
