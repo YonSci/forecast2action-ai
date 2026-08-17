@@ -175,7 +175,27 @@ def load_glide_drought_event_records() -> List[Dict[str, object]]:
                 # backfilled or estimated.
                 "affected": affected,
             })
-    return records
+
+    # Real GDACS periodic drought monitoring can file the SAME real
+    # episode as multiple separate GLIDE records at the exact same
+    # coordinate within one real month -- e.g. DR-2022-000247/250/257-ETH
+    # are 3 records at (7.65, 39.04) in July 2022 (days 1/5/6), and
+    # DR-2022-000280/285-ETH are 2 more at (5.83, 37.5) in August 2022
+    # (days 4/11); each record's own GDACS comment field confirms they're
+    # periodic updates on the same ongoing "East Africa-2021" episode, not
+    # independent real droughts. Counting these separately would inflate
+    # one real event into two or three real trials, so they're collapsed
+    # here to one real record per (pixel, year, month) -- keeping the
+    # earliest-registered bulletin as canonical (its point/month is
+    # identical either way, so this only affects which glidenumber is
+    # displayed, never any computed indicator value).
+    deduped: Dict[Tuple[str, int, int], Dict[str, object]] = {}
+    for record in records:
+        key = (_point_key(record["latitude"], record["longitude"]), record["year"], record["month"])
+        existing = deduped.get(key)
+        if existing is None or record["day"] < existing["day"]:
+            deduped[key] = record
+    return list(deduped.values())
 
 
 def load_glide_drought_event_years_by_point(records: List[Dict[str, object]]) -> Set[Tuple[str, int]]:
@@ -405,7 +425,12 @@ def build_results() -> Dict[str, Any]:
                 f"in. Only {unique_points} real unique coordinates exist among this dataset's "
                 "matched events (several events share the same GLIDE-reported centroid), so this "
                 "is a real but small set of specific locations, not a general Ethiopia-wide sample. "
-                "Three real indicators are compared on the same real seasonal (JJAS) totals: "
+                "Real GDACS periodic drought-monitoring bulletins that registered the SAME real "
+                "episode multiple times at the same pixel within one real month (e.g. three GLIDE "
+                "records in July 2022 for the same East Africa drought at one coordinate) are "
+                "collapsed to a single real record before any of this -- listing them separately "
+                "would inflate one real event into several. Three real indicators are compared on "
+                "the same real seasonal (JJAS) totals: "
                 "Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. "
                 "1993 methodology), and Rainfall Percentile (real empirical rank at that exact "
                 "pixel). The reported hit rate counts only real GLIDE events actually registered "

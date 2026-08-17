@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-16T23:41:53.089364+00:00",
+  "generated_at": "2026-08-17T00:04:38.043943+00:00",
   "scope": "drought_only_v1_jjas_registered_pixel_level",
   "methodology": {
-    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's own reported coordinate -- not averaged across the whole admin1 region it falls in. Only 7 real unique coordinates exist among this dataset's matched events (several events share the same GLIDE-reported centroid), so this is a real but small set of specific locations, not a general Ethiopia-wide sample. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical rank at that exact pixel). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought episode logged as multiple GLIDE records at the same coordinate isn't counted more than once; real events registered in other months are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. The false-alarm rate should be read as \"at these same real drought-prone pixels, in years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event pool is drawn from the same small set of locations, not a random sample. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
+    "summary": "Real historical CHIRPS rainfall (1997-2025, June-September) compared against real GLIDE drought (DR) events, sampled at the EXACT real pixel of each event's own reported coordinate -- not averaged across the whole admin1 region it falls in. Only 7 real unique coordinates exist among this dataset's matched events (several events share the same GLIDE-reported centroid), so this is a real but small set of specific locations, not a general Ethiopia-wide sample. Real GDACS periodic drought-monitoring bulletins that registered the SAME real episode multiple times at the same pixel within one real month (e.g. three GLIDE records in July 2022 for the same East Africa drought at one coordinate) are collapsed to a single real record before any of this -- listing them separately would inflate one real event into several. Three real indicators are compared on the same real seasonal (JJAS) totals: Rainfall Total (z-score anomaly), SPI (real gamma-distribution fit, McKee et al. 1993 methodology), and Rainfall Percentile (real empirical rank at that exact pixel). The reported hit rate counts only real GLIDE events actually registered during JJAS itself, deduplicated to unique (pixel, year) pairs so one real drought episode logged as multiple GLIDE records at the same coordinate isn't counted more than once; real events registered in other months are real droughts too, so they're excluded from the false-alarm/no-event comparison pool rather than being treated as clean no-event cases, but they don't count toward the hit rate itself. The false-alarm rate should be read as \"at these same real drought-prone pixels, in years without a registered event\" -- not \"anywhere in Ethiopia\", since the no-event pool is drawn from the same small set of locations, not a random sample. CDD, CWD, Rx1day, and Rx5day are not included -- they need real daily rainfall, which this repo has not downloaded, and were scoped out of v1 rather than approximated from monthly totals.",
     "thresholds_evaluated": "Each indicator's own moderately/severely/extremely-dry threshold, chosen to carry the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by this diagnostic.",
     "auc_note": "AUC (area under the ROC curve) measures how well an indicator ranks real event-years as drier than real no-event years across every possible real threshold, not just the three fixed bands above. 1.0 = perfect separation, 0.5 = no better than a coin flip. Computed here via real pairwise comparison (equivalent to the standard Mann-Whitney formulation), not a threshold sweep.",
     "caveat": "Very small real sample size (n=4 JJAS-registered event-years out of 13 real event-years total, across only 7 real unique pixel locations). A directionally consistent but statistically limited signal, not a validated forecast-skill score."
@@ -11,7 +11,7 @@
     "rainfall_source": "CHIRPS v2.0 monthly, real, sampled at exact event pixels, from data.chc.ucsb.edu",
     "rainfall_rows": 812,
     "event_source": "GLIDE disaster events (via HDX), real, geocoded to admin1 by point-in-polygon",
-    "drought_events_matched": 18,
+    "drought_events_matched": 15,
     "unique_pixel_locations": 7,
     "event_years_total": 13,
     "event_years_jjas_registered": 4,
@@ -106,7 +106,7 @@
   "region_summary": [
     {
       "region": "Oromia",
-      "event_count": 11,
+      "event_count": 9,
       "years": [
         1997,
         2000,
@@ -129,7 +129,7 @@
     },
     {
       "region": "South Ethiopia",
-      "event_count": 3,
+      "event_count": 2,
       "years": [
         2022
       ]
@@ -305,34 +305,6 @@
       "rainfall_percentile": 8.333333333333334
     },
     {
-      "glidenumber": "DR-2022-000257-ETH",
-      "region": "Oromia",
-      "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
-      "year": 2022,
-      "month": 7,
-      "day": 6,
-      "latitude": 7.65,
-      "longitude": 39.04,
-      "affected": 0,
-      "rainfall_total_anomaly": -0.2606543111830596,
-      "spi": -0.2178039030043117,
-      "rainfall_percentile": 35.0
-    },
-    {
-      "glidenumber": "DR-2022-000250-ETH",
-      "region": "Oromia",
-      "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
-      "year": 2022,
-      "month": 7,
-      "day": 5,
-      "latitude": 7.65,
-      "longitude": 39.04,
-      "affected": 0,
-      "rainfall_total_anomaly": -0.2606543111830596,
-      "spi": -0.2178039030043117,
-      "rainfall_percentile": 35.0
-    },
-    {
       "glidenumber": "DR-2022-000247-ETH",
       "region": "Oromia",
       "location": "Ethiopia, Kenya, Somalia, Tanzania, Uganda",
@@ -345,20 +317,6 @@
       "rainfall_total_anomaly": -0.2606543111830596,
       "spi": -0.2178039030043117,
       "rainfall_percentile": 35.0
-    },
-    {
-      "glidenumber": "DR-2022-000285-ETH",
-      "region": "South Ethiopia",
-      "location": "Ethiopia, Kenya, Somalia, South Sudan, Tanzania, Uganda",
-      "year": 2022,
-      "month": 8,
-      "day": 11,
-      "latitude": 5.83,
-      "longitude": 37.5,
-      "affected": 0,
-      "rainfall_total_anomaly": -1.258846933904716,
-      "spi": -1.3998292134433656,
-      "rainfall_percentile": 8.333333333333334
     },
     {
       "glidenumber": "DR-2022-000280-ETH",
