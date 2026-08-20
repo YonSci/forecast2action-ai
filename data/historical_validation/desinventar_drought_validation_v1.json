@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T09:04:21.885990+00:00",
+  "generated_at": "2026-08-20T11:59:21.645687+00:00",
   "scope": "drought_only_desinventar_cross_validation",
   "methodology": {
     "summary": "Real cross-validation of the same 3 real indicators (Rainfall Total, SPI, Rainfall Percentile) against Ethiopia's own real DesInventar-format disaster-loss database (DPPA/NDRMC-sourced, archived on HDX), instead of GLIDE. Real sample: 2883 distinct real (pixel, year) drought episodes at 418 real distinct locations, geocoded from real woreda/zone names against this app's own real admin3 boundaries (exact or fuzzy name match; coarser region-centroid-only matches are excluded, since a region-wide centroid would reintroduce the exact real area-dilution problem already fixed for GLIDE's own pixel-level methodology). Real coverage is 1997-2013 only -- DesInventar's own real data stops there -- so this extends the validated window BACKWARD from GLIDE's 2015+ events, and is a complementary cross-check, not a replacement. Real date precision is YEAR ONLY (DesInventar's real month/day fields are mostly fake placeholder precision, not genuine reported dates), so every real matched drought year is scored directly against that point's real JJAS seasonal rainfall total, with no JJAS-registration-month filter the way GLIDE's own pipeline has one.",
@@ -20,18 +20,18 @@
       "zone_fuzzy": 112
     },
     "region_breakdown": {
-      "oromia": 859,
-      "amhara": 596,
-      "somali": 379,
-      "afar": 258,
-      "south ethiopia": 242,
-      "tigray": 203,
-      "central ethiopia": 122,
-      "sidama": 85,
-      "gambela": 71,
-      "benishangul-gumuz": 30,
-      "south west ethiopia": 27,
-      "harari": 11
+      "Oromia": 859,
+      "Amhara": 596,
+      "Somali": 379,
+      "Afar": 258,
+      "South Ethiopia": 242,
+      "Tigray": 203,
+      "Central Ethiopia": 122,
+      "Sidama": 85,
+      "Gambela": 71,
+      "Benishangul-Gumuz": 30,
+      "South West Ethiopia": 27,
+      "Harari": 11
     },
     "coverage_years": "1997-2013 (DesInventar's own real data ends in 2013)"
   },
@@ -121,6 +121,7489 @@
       ]
     }
   },
+  "locations": [
+    {
+      "latitude": 6.878656915151975,
+      "longitude": 40.047645812237384,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Dawe Kachen",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 8.531230780140591,
+      "longitude": 39.12556476091683,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "East Shewa",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 8.838408221863105,
+      "longitude": 40.775319173643474,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Kuni",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 9.27472051840829,
+      "longitude": 40.685338669748916,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Mieso",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 14.175319581892918,
+      "longitude": 38.932249585099015,
+      "region": "Tigray",
+      "zone": "Central Tigray",
+      "wereda": "Adwa",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 14.111917175412835,
+      "longitude": 38.733951630374726,
+      "region": "Tigray",
+      "zone": "Central Tigray",
+      "wereda": "Laelay Maychew",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 13.976627575244866,
+      "longitude": 39.38451216992751,
+      "region": "Tigray",
+      "zone": "East Tigray",
+      "wereda": "Hawzen",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 14
+    },
+    {
+      "latitude": 12.286451248592199,
+      "longitude": 41.741901831891155,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Elidar",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 13.961026573517978,
+      "longitude": 40.18073711529037,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Berahile",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 12.479730635495454,
+      "longitude": 40.29151486510987,
+      "region": "Afar",
+      "zone": "Zone 4",
+      "wereda": "Teru",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 12.42424319698712,
+      "longitude": 39.94162078002137,
+      "region": "Afar",
+      "zone": "Zone 4",
+      "wereda": "Yalo",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 13.192928015497127,
+      "longitude": 38.031183913786776,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Gonder /Town/",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 11.788954925949923,
+      "longitude": 39.51041684086645,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Gubalafto",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 11.671325404436418,
+      "longitude": 39.76181942760668,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Habru",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 11.856729349279227,
+      "longitude": 39.23558322730048,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Kobo",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 11.069037368757625,
+      "longitude": 38.775171944406495,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Sayint",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 12.672201560817115,
+      "longitude": 38.863472782203694,
+      "region": "Amhara",
+      "zone": "Wag Himra",
+      "wereda": "Abergele",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 4.413359269152063,
+      "longitude": 38.21602002889633,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Dugida Dawa",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 9.063957223852096,
+      "longitude": 41.638948025301566,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Bedeno",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 9.472172189358623,
+      "longitude": 42.15336357568619,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Kombolcha",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 8.613316974846935,
+      "longitude": 40.74787361686539,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Boke",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 8.465366059981305,
+      "longitude": 40.469141568613495,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Daro Lebu",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 9.299302453469227,
+      "longitude": 41.07968802388444,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Doba",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 5.410196241031651,
+      "longitude": 42.39808939691872,
+      "region": "Somali",
+      "zone": "Afder",
+      "wereda": "Afder",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 6.01562431376452,
+      "longitude": 43.700780768419925,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "Gode",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 6.766522011647254,
+      "longitude": 45.55711702837333,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "Wadera",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 6.731571127708173,
+      "longitude": 44.26182212242621,
+      "region": "Somali",
+      "zone": "Kebridehar  (Korahe)",
+      "wereda": "Kebridehar",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 14.285624298787187,
+      "longitude": 39.148479918534534,
+      "region": "Tigray",
+      "zone": "Central Tigray",
+      "wereda": "Ahieferom",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 13.641186393438689,
+      "longitude": 38.773602488317,
+      "region": "Tigray",
+      "zone": "Central Tigray",
+      "wereda": "Kola Temben",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 14.243130123140922,
+      "longitude": 39.43188272204238,
+      "region": "Tigray",
+      "zone": "East Tigray",
+      "wereda": "Ganta Afshum",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 12.755925360280767,
+      "longitude": 39.48908756112224,
+      "region": "Tigray",
+      "zone": "South Tigray",
+      "wereda": "Endamehoni",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 13.456375296593954,
+      "longitude": 39.497312722217195,
+      "region": "Tigray",
+      "zone": "South Tigray",
+      "wereda": "Enderta",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 12.779583817122687,
+      "longitude": 39.73864202874858,
+      "region": "Tigray",
+      "zone": "South Tigray",
+      "wereda": "Raya Azebo",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 13
+    },
+    {
+      "latitude": 13.22430254754633,
+      "longitude": 39.890308783064896,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Abala",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.873900602889714,
+      "longitude": 40.14481303236879,
+      "region": "Afar",
+      "zone": "Zone 5",
+      "wereda": "Semurobi",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2002,
+        2003,
+        2004,
+        2005,
+        2007,
+        2008,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.813592068511744,
+      "longitude": 40.981739631229416,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Dubti",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2007,
+        2008,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 13.546653674899606,
+      "longitude": 40.715799082146916,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Afdera",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 13.140978742782055,
+      "longitude": 40.148771850752695,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Erebti",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2000,
+        2002,
+        2003,
+        2004,
+        2006,
+        2007,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 12.802910119931209,
+      "longitude": 39.96425805866174,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Megale",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.816960528340152,
+      "longitude": 40.17925545060194,
+      "region": "Afar",
+      "zone": "Zone 4",
+      "wereda": "Ewa",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 12.180980522865308,
+      "longitude": 39.98217095602138,
+      "region": "Afar",
+      "zone": "Zone 4",
+      "wereda": "Golina",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 13.072348665873623,
+      "longitude": 38.21579772923829,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Janamora",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2008,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.866451695048436,
+      "longitude": 39.50638106330624,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Antsokiya Gemza",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.614762531752428,
+      "longitude": 39.22176015459612,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Delanta ",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 12.056013422786494,
+      "longitude": 39.32466385548664,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Gidan",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.825923693329674,
+      "longitude": 38.73481510664423,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Meket",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.161630780821243,
+      "longitude": 40.05626940519302,
+      "region": "Amhara",
+      "zone": "Oromiya Zone",
+      "wereda": "Bati",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.048473717908958,
+      "longitude": 39.48837308304276,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Desse Zuria",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.242772837472208,
+      "longitude": 38.93409878469096,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Mekdela",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.224608354134492,
+      "longitude": 39.22603026860443,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Tenta",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 11.447225459070607,
+      "longitude": 39.894115186888975,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Werebabu",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 12.437396783288909,
+      "longitude": 38.67347720149708,
+      "region": "Amhara",
+      "zone": "Wag Himra",
+      "wereda": "Dehana",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 12.63664236762704,
+      "longitude": 39.016540574295895,
+      "region": "Amhara",
+      "zone": "Wag Himra",
+      "wereda": "Sekota",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 12.807135147196817,
+      "longitude": 38.706170487482254,
+      "region": "Amhara",
+      "zone": "Wag Himra",
+      "wereda": "Ziquala",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 5.7225496674531575,
+      "longitude": 40.15149665190987,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Meda Welabu",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 3.961723669599293,
+      "longitude": 38.21655126608596,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Dire",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.214550026724542,
+      "longitude": 41.43697126833218,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Deder",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.064182204194381,
+      "longitude": 42.12719475931192,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Fedis",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.029087035015323,
+      "longitude": 41.8660394084081,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Girawa",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.407371281430374,
+      "longitude": 41.3388153511361,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Goro Gutu",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.229679773388,
+      "longitude": 41.87241311580874,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Kurfa Chele",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.070333152947034,
+      "longitude": 40.82823759162715,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Chiro Zuria",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 5.287720630652759,
+      "longitude": 36.395060705831284,
+      "region": "South Ethiopia",
+      "zone": "South Omo",
+      "wereda": "Bako Gazer (Debub Ari)",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2009,
+        2010
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 7.634553935164819,
+      "longitude": 42.302301796372454,
+      "region": "Somali",
+      "zone": "Fik",
+      "wereda": "Hamero",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.097551664598408,
+      "longitude": 43.25196497563271,
+      "region": "Somali",
+      "zone": "Jijiga",
+      "wereda": "Kebri Beyah",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 4.1625656962383,
+      "longitude": 41.65768123344826,
+      "region": "Somali",
+      "zone": "Liben",
+      "wereda": "Dolo Odo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 5.151060552422258,
+      "longitude": 41.05227234717969,
+      "region": "Somali",
+      "zone": "Liben",
+      "wereda": "Moyale ",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 4.378115102141407,
+      "longitude": 39.731274097917435,
+      "region": "Somali",
+      "zone": "Liben",
+      "wereda": "Udet",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 9.934520265984133,
+      "longitude": 41.88213974576656,
+      "region": "Somali",
+      "zone": "Shinile",
+      "wereda": "Shinile",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 7.711408016243209,
+      "longitude": 45.687502337630114,
+      "region": "Somali",
+      "zone": "Warder",
+      "wereda": "Danot",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 13.631919510911462,
+      "longitude": 39.17024216972019,
+      "region": "Tigray",
+      "zone": "Central Tigray",
+      "wereda": "Degua Temben",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 13.781023567784404,
+      "longitude": 39.590981252317086,
+      "region": "Tigray",
+      "zone": "East Tigray",
+      "wereda": "Wokro /Town/",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 14.396391907595106,
+      "longitude": 37.71880187823237,
+      "region": "Tigray",
+      "zone": "West Tigray",
+      "wereda": "Tahatay Adiabo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2004,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 12
+    },
+    {
+      "latitude": 10.97543058256454,
+      "longitude": 40.31540676026298,
+      "region": "Afar",
+      "zone": "Zone 5",
+      "wereda": "Telalak",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2002,
+        2003,
+        2004,
+        2007,
+        2008,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 14.28705732061014,
+      "longitude": 40.06580418879676,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Dalol",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 13.994795378474583,
+      "longitude": 39.8974206043636,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Kuneba",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 13.239784373200099,
+      "longitude": 38.45798870949387,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Beyeda",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 10.362838710910559,
+      "longitude": 39.637838898118716,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Menz Gera Midir",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 11.853894541736073,
+      "longitude": 38.43435714620556,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Lay Gayint",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 11.502018068416842,
+      "longitude": 39.49509656974419,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Ambasel",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 11.074406834373928,
+      "longitude": 39.835154992485634,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Kalu",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 10.8562446516012,
+      "longitude": 39.16222541526659,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Legambo",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 8.345928700751312,
+      "longitude": 33.631789406487734,
+      "region": "Gambela",
+      "zone": "Nuer",
+      "wereda": "Jikawo",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 9.31043809230977,
+      "longitude": 42.14267035967334,
+      "region": "Harari",
+      "zone": "Harar",
+      "wereda": "Hundene",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 4.8476865091278825,
+      "longitude": 38.86673973942139,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Arero",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 4.700140216010314,
+      "longitude": 37.17671196915597,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Teletele",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 4.829931509777343,
+      "longitude": 38.19793322171642,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Yabelo",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 8.713511606304778,
+      "longitude": 40.20201351657755,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Anchar",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 5.787574277054203,
+      "longitude": 37.81510175454977,
+      "region": "South Ethiopia",
+      "zone": "Amaro Sp. Wer.",
+      "wereda": "Amaro",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 7.042578382233768,
+      "longitude": 37.19172228635128,
+      "region": "South West Ethiopia",
+      "zone": "Dawuro",
+      "wereda": "Mareka",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 4.701756166433888,
+      "longitude": 42.698984581440804,
+      "region": "Somali",
+      "zone": "Afder",
+      "wereda": "Bare",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 4.488416889816957,
+      "longitude": 42.09860125089853,
+      "region": "Somali",
+      "zone": "Afder",
+      "wereda": "Dolo Bay",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 8.071024949947237,
+      "longitude": 44.16626181200243,
+      "region": "Somali",
+      "zone": "Degehabur",
+      "wereda": "Aware",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 8.057993982419225,
+      "longitude": 43.03171843007748,
+      "region": "Somali",
+      "zone": "Degehabur",
+      "wereda": "Degehamedo",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 7.1003028008248865,
+      "longitude": 42.69919656458273,
+      "region": "Somali",
+      "zone": "Fik",
+      "wereda": "Dihun",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 8.15639460989764,
+      "longitude": 42.30503998407614,
+      "region": "Somali",
+      "zone": "Fik",
+      "wereda": "Fik",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2012
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 7.317519626252495,
+      "longitude": 43.205501614254096,
+      "region": "Somali",
+      "zone": "Fik",
+      "wereda": "Gerbo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 6.5808494977427126,
+      "longitude": 43.48556434805225,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "Danan",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 5.215782001003118,
+      "longitude": 45.03516860431313,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "Ferfer",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 5.3623653648537175,
+      "longitude": 44.15156964944559,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "Kelafo",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 8.90495289369942,
+      "longitude": 43.77211586230501,
+      "region": "Somali",
+      "zone": "Jijiga",
+      "wereda": "Harshin",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 6.07129521638401,
+      "longitude": 44.3895465996461,
+      "region": "Somali",
+      "zone": "Kebridehar  (Korahe)",
+      "wereda": "Debewoin",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 5.9557397195920085,
+      "longitude": 45.21766214171837,
+      "region": "Somali",
+      "zone": "Kebridehar  (Korahe)",
+      "wereda": "Shilabo",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 10.689018160460108,
+      "longitude": 42.505370660350366,
+      "region": "Somali",
+      "zone": "Shinile",
+      "wereda": "Ayisha",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 9.916311579992701,
+      "longitude": 42.49573891358631,
+      "region": "Somali",
+      "zone": "Shinile",
+      "wereda": "Denbel",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 14.073795877578146,
+      "longitude": 38.56971987468319,
+      "region": "Tigray",
+      "zone": "Central Tigray",
+      "wereda": "Tahtay Maychew",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2008,
+        2010,
+        2012
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 14.414088842945999,
+      "longitude": 39.399700154683345,
+      "region": "Tigray",
+      "zone": "East Tigray",
+      "wereda": "Gulo Meheda",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 14.170251663356046,
+      "longitude": 38.33003423143467,
+      "region": "Tigray",
+      "zone": "West Tigray",
+      "wereda": "Tahtay Koraro",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2000,
+        2002,
+        2003,
+        2004,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 11
+    },
+    {
+      "latitude": 9.486336114963537,
+      "longitude": 40.058916358107595,
+      "region": "Afar",
+      "zone": "Zone 3",
+      "wereda": "Dulacha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2002,
+        2003,
+        2004,
+        2005,
+        2008,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 13.376595290497866,
+      "longitude": 37.97917994481424,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Adi Arkay",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2006,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 12.171375597568948,
+      "longitude": 38.717412500059005,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Bugna",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 11.66105035156256,
+      "longitude": 39.01722730575424,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Wadla",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 10.54485654285483,
+      "longitude": 40.01133764704976,
+      "region": "Amhara",
+      "zone": "Oromiya Zone",
+      "wereda": "Artuma Fursi",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 11.77803521966389,
+      "longitude": 38.0730832388335,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Ibinat",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 11.295711141880092,
+      "longitude": 38.302850526233144,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Simada",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 11.5639414182421,
+      "longitude": 38.5616658429983,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Tach Gayint",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 7.618948476489458,
+      "longitude": 34.282559553868055,
+      "region": "Gambela",
+      "zone": "Agnuak",
+      "wereda": "Gog",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2002,
+        2003,
+        2005,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 7.723862648920082,
+      "longitude": 40.34636149114391,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Seru",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.294201606539718,
+      "longitude": 40.57277628955765,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Gura Damole",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.410144499159487,
+      "longitude": 39.541821468595906,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Harena Buluk",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 7.258986945141672,
+      "longitude": 41.48100098152748,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Seweyna",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.3547225888910575,
+      "longitude": 38.01682861869891,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Abaya",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 9.404069090708694,
+      "longitude": 41.60988328827466,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Meta",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 5.649287807128743,
+      "longitude": 37.372102911890764,
+      "region": "South Ethiopia",
+      "zone": "Derashe",
+      "wereda": "Derashe Sp. Wer",
+      "match_level": "zone_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2009,
+        2010,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 7.500479943889597,
+      "longitude": 38.034424188105525,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Shashago",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.749434281657329,
+      "longitude": 38.40951667575128,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Dale",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 4.955245603850534,
+      "longitude": 36.502542661988564,
+      "region": "South Ethiopia",
+      "zone": "South Omo",
+      "wereda": "Hamer",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.991478064570354,
+      "longitude": 37.887686811436886,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Damot Gale",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.8801580490572025,
+      "longitude": 37.93360645033973,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Damot Woyide",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.92938206315696,
+      "longitude": 37.51664685530085,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Kindo Koyisha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.707174202627984,
+      "longitude": 37.545044032947274,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Ofa",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.835986231781417,
+      "longitude": 37.739489814694245,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Sodo Zuria",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 6.0905920059252905,
+      "longitude": 41.01360784023435,
+      "region": "Somali",
+      "zone": "Afder",
+      "wereda": "Guradamole",
+      "match_level": "wereda_exact",
+      "years": [
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 8.10629518517534,
+      "longitude": 43.592112466068535,
+      "region": "Somali",
+      "zone": "Degehabur",
+      "wereda": "Degehabur",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 5.1978698592193195,
+      "longitude": 44.65081200519046,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "Mustahil",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 9.768632728116124,
+      "longitude": 40.99990894093718,
+      "region": "Somali",
+      "zone": "Shinile",
+      "wereda": "Afdem",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 7.645054346570664,
+      "longitude": 46.65093371705772,
+      "region": "Somali",
+      "zone": "Warder",
+      "wereda": "Boh",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 10
+    },
+    {
+      "latitude": 11.258196224695702,
+      "longitude": 41.65487793758299,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Afambo",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2000,
+        2002,
+        2003,
+        2004,
+        2007,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 11.584529907883482,
+      "longitude": 40.22750459071367,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Chifra",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2002,
+        2003,
+        2004,
+        2005,
+        2007,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 11.491885253254166,
+      "longitude": 40.729928979310436,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Mile",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2002,
+        2003,
+        2004,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 13.231611161931367,
+      "longitude": 37.80308689254667,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Debark",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2011
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 11.280494397854302,
+      "longitude": 39.46064191253423,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Kutaber",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 10.696010323472313,
+      "longitude": 39.454241926868775,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Wore Ilu",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.862697611486049,
+      "longitude": 34.53327668402688,
+      "region": "Gambela",
+      "zone": "Agnuak",
+      "wereda": "Abobo",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2005,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.964378093482756,
+      "longitude": 33.2716245270419,
+      "region": "Gambela",
+      "zone": "Nuer",
+      "wereda": "Akobo",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2003,
+        2005,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 8.096660181095263,
+      "longitude": 39.40635492286099,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Lude Hitosa",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 8.011311457652102,
+      "longitude": 39.81035428617064,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Sude",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 8.009156146602189,
+      "longitude": 38.97518439823351,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Ziway Dugda",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.120846141102793,
+      "longitude": 40.713401964404234,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Ginir",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.799940519524339,
+      "longitude": 41.46259609643931,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Rayitu",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 5.648885488013782,
+      "longitude": 38.31578736016827,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Bule Hora",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2006,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 9.575990509993376,
+      "longitude": 38.784002700223475,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Abichu Gnaa",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 9.792019795975921,
+      "longitude": 38.73442511569568,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Girar Jarso",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 9.954232069277007,
+      "longitude": 38.21807098163906,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Wera Jarso",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2002,
+        2003,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 9.581702752043144,
+      "longitude": 38.915038402871765,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Wuchale",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 9.593006419997048,
+      "longitude": 38.62180095786047,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Yaya Gulele",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.452491825615104,
+      "longitude": 38.65238681633988,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Arsi Negele",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 8.753756117376012,
+      "longitude": 40.511820324789554,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Habro",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 9.427537979347424,
+      "longitude": 38.416990384568415,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Ada Berga",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2003,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 5.481538162337862,
+      "longitude": 37.77680689034358,
+      "region": "South Ethiopia",
+      "zone": "Burji Sp. Wer",
+      "wereda": "Burji",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2003,
+        2005,
+        2007,
+        2009,
+        2010,
+        2011
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.50187931174067,
+      "longitude": 38.71180727629625,
+      "region": "Sidama",
+      "zone": "Gamugofa",
+      "wereda": "Gofa Zuria",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.500816399439715,
+      "longitude": 37.4095104194486,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Kucha",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.0628738072306385,
+      "longitude": 36.87076845288707,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Uba Debre Tsehay",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 8.150568456318979,
+      "longitude": 38.358961523265044,
+      "region": "Central Ethiopia",
+      "zone": "Gurage",
+      "wereda": "Meskan",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.339928757817087,
+      "longitude": 37.66252844335737,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Duna",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.147442969192518,
+      "longitude": 37.8318524884696,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Mirab Badwocho",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.053866660251791,
+      "longitude": 38.35559414834919,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Hawasa Zuria",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2009,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.532060324097655,
+      "longitude": 38.84512024867947,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Bensa",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.860330342806971,
+      "longitude": 38.45188675217638,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Shebedino",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 7.764810676556053,
+      "longitude": 38.28049013214387,
+      "region": "Central Ethiopia",
+      "zone": "Silte ",
+      "wereda": "Dalocha",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.6896010543797555,
+      "longitude": 37.740845453705546,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Humbo",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 6.529359869483093,
+      "longitude": 37.65664339104495,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Boreda",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 8.151761166463615,
+      "longitude": 45.31853272472208,
+      "region": "Somali",
+      "zone": "Degehabur",
+      "wereda": "Gashamo",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 14.491155671539104,
+      "longitude": 39.67718694825744,
+      "region": "Tigray",
+      "zone": "East Tigray",
+      "wereda": "Erob",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2003,
+        2004,
+        2005,
+        2008,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 9
+    },
+    {
+      "latitude": 11.614708733727893,
+      "longitude": 41.44426750401089,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Asayita",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2002,
+        2003,
+        2004,
+        2006,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.223473609774768,
+      "longitude": 40.237336462897005,
+      "region": "Afar",
+      "zone": "Zone 3",
+      "wereda": "Amibara",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2002,
+        2003,
+        2004,
+        2005,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.558132938514282,
+      "longitude": 39.77663303410485,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Ankober",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2006,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.977585203922827,
+      "longitude": 39.90687004815175,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Kewet",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 10.050366667203859,
+      "longitude": 38.97636849037013,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Merhabete",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2006,
+        2007,
+        2010
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 11.82943812500218,
+      "longitude": 38.02213460387542,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Farta",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2011
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 10.964152474604754,
+      "longitude": 39.29550270342554,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Debresina",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 10.540614073842173,
+      "longitude": 38.98387663199924,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Kelela",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 8.34631482228165,
+      "longitude": 34.21956723547139,
+      "region": "Gambela",
+      "zone": "Agnuak",
+      "wereda": "Itang",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2001,
+        2002,
+        2003,
+        2007,
+        2010
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.897086343996176,
+      "longitude": 33.739484001263776,
+      "region": "Gambela",
+      "zone": "Agnuak",
+      "wereda": "Jor",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2002,
+        2003,
+        2007,
+        2010,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 8.21637916342096,
+      "longitude": 40.155859377051506,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Gololcha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2006,
+        2010,
+        2011,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 8.358573295988199,
+      "longitude": 39.65711274804115,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Jeju",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2006,
+        2011
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 8.529086755951823,
+      "longitude": 39.83948441595215,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Merti",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2011,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.691060082397158,
+      "longitude": 39.80098193055716,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Robe",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2003,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 8.456988276516451,
+      "longitude": 39.222302112848226,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Adama",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.807851602798028,
+      "longitude": 38.660039133406414,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Adamitulu Jido Kombolcha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2011
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 8.642082201396907,
+      "longitude": 39.54497619329028,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Boset",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2006,
+        2010
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 5.281746733644437,
+      "longitude": 39.63977775874653,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Liben",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2006,
+        2011,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.814955090351326,
+      "longitude": 38.6006933992506,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Degem",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 5.845618880083813,
+      "longitude": 39.28711355496539,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Dera",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.95933068694201,
+      "longitude": 38.5157432214243,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Hidabu Abote",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.402421257555337,
+      "longitude": 39.22946367412468,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Kimbibit",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2011,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.746393333627317,
+      "longitude": 38.302362087964006,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Kuyu",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2002,
+        2003,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.120363557006696,
+      "longitude": 38.83212941492514,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Shashemene Zuria",
+      "match_level": "zone_exact",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2006,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.128691774165923,
+      "longitude": 38.18963232142052,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Siraro",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.347244857266169,
+      "longitude": 38.234616027453086,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Meta Robi",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2003,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 6.039703299197817,
+      "longitude": 37.56300615751179,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Arba Minch Town Adm",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 6.289603997649622,
+      "longitude": 37.29725308798287,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Deramalo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.740668499192637,
+      "longitude": 37.66808745853988,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Gibe",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.35944207079793,
+      "longitude": 37.861224235153855,
+      "region": "Central Ethiopia",
+      "zone": "Kembata Timbaro",
+      "wereda": "Angacha",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.227404653267368,
+      "longitude": 37.77631384484551,
+      "region": "Central Ethiopia",
+      "zone": "Kembata Timbaro",
+      "wereda": "Kacha Bira",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.253502577487945,
+      "longitude": 37.902049677195485,
+      "region": "Central Ethiopia",
+      "zone": "Kembata Timbaro",
+      "wereda": "Kedida Gamela",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 6.6093546586711325,
+      "longitude": 38.43624825514075,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Aleta Wondo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010,
+        2011
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 6.355350824326792,
+      "longitude": 39.011846308767275,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Aroresa",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 6.441770939177195,
+      "longitude": 38.36015098143776,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Dara",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.975435552189779,
+      "longitude": 38.31649457700754,
+      "region": "Central Ethiopia",
+      "zone": "Silte ",
+      "wereda": "Silti",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 5.451279546186812,
+      "longitude": 36.66649262961361,
+      "region": "South Ethiopia",
+      "zone": "South Omo",
+      "wereda": "Bena Tsemai",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2007,
+        2010
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 7.074691504429701,
+      "longitude": 37.71012295837876,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Boloso Sore",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2011,
+        2012
+      ],
+      "episode_count": 8
+    },
+    {
+      "latitude": 9.10342809591545,
+      "longitude": 40.018505962736285,
+      "region": "Afar",
+      "zone": "Zone 3",
+      "wereda": "Awash Fentale",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2002,
+        2003,
+        2004,
+        2005,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.166156444454874,
+      "longitude": 40.62979831324867,
+      "region": "Afar",
+      "zone": "Zone 3",
+      "wereda": "Gewane",
+      "match_level": "wereda_exact",
+      "years": [
+        2002,
+        2003,
+        2004,
+        2005,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 13.052819849845838,
+      "longitude": 37.68378912052762,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Dabat",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2004
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.313108323305828,
+      "longitude": 39.886282931516966,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Efrata Gidim",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2003,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.131751560948652,
+      "longitude": 39.51497122725605,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Menz Lalo Midir",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.24640830693249,
+      "longitude": 39.008143391460244,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Mida Woremo",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010,
+        2012
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 11.904330716978041,
+      "longitude": 37.71991977333175,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Fogera",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2003,
+        2008,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.407610123407043,
+      "longitude": 39.26107644687162,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Jama",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 11.32505591945692,
+      "longitude": 39.693871509085255,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Tehuledere",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.177586142780761,
+      "longitude": 34.70434912434137,
+      "region": "Benishangul-Gumuz",
+      "zone": "Asosa",
+      "wereda": "Asosa",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        2000,
+        2002,
+        2003,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.567868580326712,
+      "longitude": 34.45907733138973,
+      "region": "Benishangul-Gumuz",
+      "zone": "Asosa",
+      "wereda": "Kurmuk",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2000,
+        2003,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 7.903227268107507,
+      "longitude": 40.17796683673182,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Amigna",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2003,
+        2006,
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 8.112515050831737,
+      "longitude": 39.9730082249632,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Chole",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2003,
+        2005,
+        2011,
+        2012
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 8.292550124146274,
+      "longitude": 39.242579986741184,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Dodota",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 7.524955176699591,
+      "longitude": 38.98267105065231,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Munesa",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2002,
+        2003,
+        2005,
+        2006,
+        2007,
+        2011
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 7.7910120486027745,
+      "longitude": 39.50459265760254,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Tena",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2003,
+        2006,
+        2007,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 7.319267413143688,
+      "longitude": 39.784396011058625,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Agarfa",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 6.711996698455461,
+      "longitude": 40.16450169352293,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Berbere",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2003,
+        2005,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 6.121936806989494,
+      "longitude": 37.33546995324158,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Bonke",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 6.868934888884036,
+      "longitude": 37.70556473389938,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Wolayita",
+      "match_level": "zone_exact",
+      "years": [
+        1999,
+        2003,
+        2004,
+        2005,
+        2006,
+        2008,
+        2009
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 5.029273363783564,
+      "longitude": 40.90141220889348,
+      "region": "Somali",
+      "zone": "Liben",
+      "wereda": "Filtu",
+      "match_level": "wereda_exact",
+      "years": [
+        2001,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 7
+    },
+    {
+      "latitude": 10.866094613615562,
+      "longitude": 38.39420859970489,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Enebse Sar Midir",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2010,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 9.865344474462683,
+      "longitude": 39.82005398682645,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Tarma Ber",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 7.981228775433563,
+      "longitude": 39.60080486189766,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Bale Gasegar",
+      "match_level": "zone_exact",
+      "years": [
+        2000,
+        2006,
+        2007,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 7.570987602080159,
+      "longitude": 39.577449097645626,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Shirka",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2002,
+        2003,
+        2006,
+        2010,
+        2012
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 7.382423618167927,
+      "longitude": 40.15337162705499,
+      "region": "Oromia",
+      "zone": "Bale",
+      "wereda": "Gasera",
+      "match_level": "wereda_exact",
+      "years": [
+        2006,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 8.176848630737888,
+      "longitude": 38.764874647481875,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Dugda",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2002,
+        2003,
+        2005,
+        2006,
+        2010
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 5.953324069994984,
+      "longitude": 38.99827187797174,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Adola",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2003,
+        2010,
+        2011
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 6.989499170383751,
+      "longitude": 39.52965245619819,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Adaba",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 7.183498149221965,
+      "longitude": 39.17249577302385,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Gedeb Asasa",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 8.926876636703025,
+      "longitude": 40.53112559312767,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Guba Koricha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2005,
+        2006,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 9.636566391821603,
+      "longitude": 37.7516821535782,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Ginde Beret",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 9.107609884449431,
+      "longitude": 37.857563804889445,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Dera",
+      "match_level": "zone_exact",
+      "years": [
+        1997,
+        2003,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 6.491624438985044,
+      "longitude": 39.060433649241084,
+      "region": "Sidama",
+      "zone": "Gedeo",
+      "wereda": "Kochire",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2001,
+        2002,
+        2003,
+        2005,
+        2008,
+        2012
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 6.288213867622678,
+      "longitude": 38.258113196864855,
+      "region": "South Ethiopia",
+      "zone": "Gedeo",
+      "wereda": "Wenago",
+      "match_level": "wereda_exact",
+      "years": [
+        2001,
+        2002,
+        2003,
+        2005,
+        2008,
+        2012
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 7.733604010806846,
+      "longitude": 38.12784274071029,
+      "region": "Central Ethiopia",
+      "zone": "Silte ",
+      "wereda": "Wilbareg",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2005,
+        2010
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 5.951219390826532,
+      "longitude": 36.165150411119974,
+      "region": "South Ethiopia",
+      "zone": "South Omo",
+      "wereda": "Selamago",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        2000,
+        2001,
+        2003,
+        2005,
+        2010
+      ],
+      "episode_count": 6
+    },
+    {
+      "latitude": 10.888073784858621,
+      "longitude": 38.13549880732579,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Goncha Siso Enese",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 9.743878519136759,
+      "longitude": 39.53154831353758,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Basona Werana",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 9.187796762507004,
+      "longitude": 39.685283031451874,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Berehet",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 9.928198722941522,
+      "longitude": 39.52970202072768,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Mojana Waderea",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 10.259992096501538,
+      "longitude": 40.05138011565019,
+      "region": "Amhara",
+      "zone": "Oromiya Zone",
+      "wereda": "Jile Timuga",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2003,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 12.336637206222361,
+      "longitude": 39.07041370698526,
+      "region": "Amhara",
+      "zone": "Wag Himra",
+      "wereda": "Gazgila",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 13.439098553731297,
+      "longitude": 38.44944312613922,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Tselemet",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2008,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 10.674971721521887,
+      "longitude": 34.82916033555028,
+      "region": "Benishangul-Gumuz",
+      "zone": "Asosa",
+      "wereda": "Sherkole",
+      "match_level": "wereda_exact",
+      "years": [
+        1997,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 8.328708143336453,
+      "longitude": 39.9128944419913,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Guna",
+      "match_level": "wereda_exact",
+      "years": [
+        2006,
+        2007,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 7.8904293010649384,
+      "longitude": 39.12689331237616,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Tiyo",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2003,
+        2006,
+        2011,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 8.88495280283828,
+      "longitude": 39.88639637077191,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Fientale",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2002,
+        2003,
+        2005,
+        2006
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 7.87815114066569,
+      "longitude": 36.83206345029057,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Mana",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 9.285948380735032,
+      "longitude": 38.57415393493669,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Mulo",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2002,
+        2003
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 7.351279733151005,
+      "longitude": 38.39848632030827,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Shala",
+      "match_level": "wereda_exact",
+      "years": [
+        2007,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 8.14680690539488,
+      "longitude": 37.82687129641489,
+      "region": "Central Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Chencha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2003,
+        2005,
+        2010
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 6.317979602528315,
+      "longitude": 37.73509625030867,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Mierab Abaya",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2002,
+        2003,
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 6.919152266461149,
+      "longitude": 38.33805864185809,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Borcha",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2005,
+        2006,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 7.107836619889078,
+      "longitude": 37.55273881217154,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Boloso Bonibe",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2005,
+        2008,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 5
+    },
+    {
+      "latitude": 10.346464619717668,
+      "longitude": 38.372338972010404,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Shebel Berenta",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        2000,
+        2002,
+        2003
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 9.459648745834853,
+      "longitude": 39.45770061542928,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Angolala Tera",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998,
+        1999,
+        2000,
+        2003
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 9.828918090054634,
+      "longitude": 38.906836349157345,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Ensaro",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2003,
+        2007
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.918154349326459,
+      "longitude": 39.49725833389458,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Minjar Shenkora",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2002,
+        2003,
+        2010
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 12.136019453301031,
+      "longitude": 37.74992281549198,
+      "region": "Amhara",
+      "zone": "South Gonder",
+      "wereda": "Libo Kemkem",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2001,
+        2003
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 7.245818835217643,
+      "longitude": 35.2560506955906,
+      "region": "Gambela",
+      "zone": "Mezhenger",
+      "wereda": "Godare",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2006,
+        2007,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.341706324456162,
+      "longitude": 33.94376960182575,
+      "region": "Gambela",
+      "zone": "Nuer",
+      "wereda": "Lare",
+      "match_level": "wereda_exact",
+      "years": [
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.319333160199289,
+      "longitude": 33.31939387215336,
+      "region": "Gambela",
+      "zone": "Nuer",
+      "wereda": "Wantawa",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2007,
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.531087285760863,
+      "longitude": 40.06005655870718,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Aseko",
+      "match_level": "wereda_exact",
+      "years": [
+        2002,
+        2003,
+        2010,
+        2011
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.071434218225107,
+      "longitude": 39.24281695500315,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Hitosa",
+      "match_level": "wereda_exact",
+      "years": [
+        2006,
+        2007,
+        2010,
+        2011
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.603752909423589,
+      "longitude": 38.200226853013085,
+      "region": "Oromia",
+      "zone": "South West Shoa",
+      "wereda": "Goro",
+      "match_level": "zone_fuzzy",
+      "years": [
+        1997,
+        1998,
+        2000,
+        2003
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 6.887088451599393,
+      "longitude": 39.15218705342104,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Dodola",
+      "match_level": "wereda_exact",
+      "years": [
+        2007,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 6.1628403964021965,
+      "longitude": 38.19297273441197,
+      "region": "South Ethiopia",
+      "zone": "Gedeo",
+      "wereda": "Yirgachefe",
+      "match_level": "wereda_exact",
+      "years": [
+        2001,
+        2002,
+        2003,
+        2005
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.314741523744893,
+      "longitude": 38.58104594718397,
+      "region": "Central Ethiopia",
+      "zone": "Gurage",
+      "wereda": "Sodo",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 7.463777802142032,
+      "longitude": 37.58926446080297,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Soro",
+      "match_level": "wereda_exact",
+      "years": [
+        2005,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 5.763218821577085,
+      "longitude": 36.88093849224368,
+      "region": "South Ethiopia",
+      "zone": "South Omo",
+      "wereda": "Male",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2002,
+        2004,
+        2010
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 6.947523957806293,
+      "longitude": 37.660142618223276,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Damot Sore",
+      "match_level": "wereda_exact",
+      "years": [
+        2007,
+        2008,
+        2010,
+        2012
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 6.921486444647242,
+      "longitude": 38.04990355600321,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Deguna Fanigo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2008,
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 12.441664032130879,
+      "longitude": 40.97990260680912,
+      "region": "Afar",
+      "zone": "Zone 1",
+      "wereda": "Kori",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 12.062905994884408,
+      "longitude": 39.04784436379748,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Lasta",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.857616602220796,
+      "longitude": 40.98447386343659,
+      "region": "Oromia",
+      "zone": "West Hararge",
+      "wereda": "Gemchis",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 9.668009364061877,
+      "longitude": 37.981605718712785,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Abuna Gende Beret",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 6.6574566151482895,
+      "longitude": 42.30758225321305,
+      "region": "Somali",
+      "zone": "Gode",
+      "wereda": "East Imey",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 8.264999326387963,
+      "longitude": 42.05998012096131,
+      "region": "Somali",
+      "zone": "Degehabur",
+      "wereda": "Meyumuluka",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 4
+    },
+    {
+      "latitude": 10.202269614361871,
+      "longitude": 38.17809719721871,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Dejen",
+      "match_level": "wereda_exact",
+      "years": [
+        2002,
+        2003,
+        2007
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 10.687330589204453,
+      "longitude": 38.218104800420164,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Enarj Enawga",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        2002,
+        2003
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 9.188550293572451,
+      "longitude": 39.396905121680696,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Hagere Mariam Kesem",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2002,
+        2003
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 11.473612575310677,
+      "longitude": 38.839016933228415,
+      "region": "Amhara",
+      "zone": "North  Welo ",
+      "wereda": "Dawnt",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2006,
+        2010,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 10.814272184130008,
+      "longitude": 39.61299790098089,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Albuko",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2005,
+        2013
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 9.787064708855187,
+      "longitude": 34.70216776966771,
+      "region": "Benishangul-Gumuz",
+      "zone": "Asosa",
+      "wereda": "Bambasi",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2003,
+        2011
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.743367495407678,
+      "longitude": 39.229182452514806,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Digluna Tijo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2002,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.696766099487743,
+      "longitude": 36.24226645978959,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Gera",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 8.011367241039649,
+      "longitude": 37.46286104040505,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Sokoru",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000,
+        2003
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.960155284664824,
+      "longitude": 37.253705788971054,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Tiro Afeta",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000,
+        2003
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 9.140295362790251,
+      "longitude": 38.97442579473222,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Bereh",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 8.557799278554501,
+      "longitude": 37.69502444409469,
+      "region": "Oromia",
+      "zone": "South West Shoa",
+      "wereda": "Ameya",
+      "match_level": "wereda_exact",
+      "years": [
+        1998,
+        1999,
+        2000
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 6.845115316463379,
+      "longitude": 36.88959531323477,
+      "region": "South West Ethiopia",
+      "zone": "Dawuro",
+      "wereda": "Isara",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1997,
+        2003,
+        2006
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 6.932322262933192,
+      "longitude": 37.284539815806305,
+      "region": "South West Ethiopia",
+      "zone": "Dawuro",
+      "wereda": "Loma",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2003,
+        2005
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 6.291004264275724,
+      "longitude": 37.08350880626746,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Zala",
+      "match_level": "wereda_exact",
+      "years": [
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 6.486914814064753,
+      "longitude": 38.54885326369145,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Hula",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2003,
+        2010,
+        2011
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.5470013894457395,
+      "longitude": 38.16869878938133,
+      "region": "Central Ethiopia",
+      "zone": "Silte ",
+      "wereda": "Sankura",
+      "match_level": "wereda_exact",
+      "years": [
+        2005,
+        2010,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.454084839784045,
+      "longitude": 37.78868199367625,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Hadiya",
+      "match_level": "zone_exact",
+      "years": [
+        2009,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 10.76580731019207,
+      "longitude": 40.04609631030551,
+      "region": "Amhara",
+      "zone": "Oromiya Zone",
+      "wereda": "Dewe Harewa",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012,
+        2013
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 5.7605162423877765,
+      "longitude": 38.81776402230193,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Ado Shakiso",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.2250739878886225,
+      "longitude": 38.93025786041345,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Kore",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.079409139584184,
+      "longitude": 38.67283334873024,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Wendo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 6.240246314072897,
+      "longitude": 42.285971259121084,
+      "region": "Somali",
+      "zone": "Afder",
+      "wereda": "West Imi",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 6.780435362908163,
+      "longitude": 37.329170527004045,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Kindo Didaye",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 12.785108126910588,
+      "longitude": 39.54227475848753,
+      "region": "Tigray",
+      "zone": "South Tigray",
+      "wereda": "Mychew /Town/",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2011,
+        2012
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 7.7032362328107835,
+      "longitude": 40.057782250064555,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Bele Gasgar ",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 9.213323107056901,
+      "longitude": 39.130536373668114,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Aleltu",
+      "match_level": "wereda_exact",
+      "years": [
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 9.048872967618797,
+      "longitude": 36.318089226047256,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Diga",
+      "match_level": "wereda_exact",
+      "years": [
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 9.228210622590233,
+      "longitude": 36.38175211130185,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Sasiga",
+      "match_level": "wereda_exact",
+      "years": [
+        2011,
+        2012,
+        2013
+      ],
+      "episode_count": 3
+    },
+    {
+      "latitude": 11.496542873674919,
+      "longitude": 35.45588012069281,
+      "region": "Benishangul-Gumuz",
+      "zone": "Metekel",
+      "wereda": "Guba",
+      "match_level": "wereda_exact",
+      "years": [
+        2002,
+        2006
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.121672111847392,
+      "longitude": 35.51822734109824,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Ale",
+      "match_level": "wereda_exact",
+      "years": [
+        2000,
+        2007
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.132324537430819,
+      "longitude": 36.53945868167455,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Dedesa",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.307011367009252,
+      "longitude": 35.57925601619824,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Metu Town",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.6367939218536165,
+      "longitude": 37.20162073344381,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Omonada",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000,
+        2003
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.567555699293586,
+      "longitude": 36.65142243105847,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Seka Chekorsa",
+      "match_level": "wereda_exact",
+      "years": [
+        1999,
+        2000
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.548208923254967,
+      "longitude": 38.04061517054813,
+      "region": "Oromia",
+      "zone": "South West Shoa",
+      "wereda": "Woliso",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1999,
+        2000
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 9.095934074440864,
+      "longitude": 37.15408967519882,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Bako Tibe",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2006
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 5.926704220311852,
+      "longitude": 35.69826168313923,
+      "region": "South West Ethiopia",
+      "zone": "Bench Maji",
+      "wereda": "Maji",
+      "match_level": "wereda_exact",
+      "years": [
+        2003,
+        2005
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.0327644161929515,
+      "longitude": 37.144124319609325,
+      "region": "South West Ethiopia",
+      "zone": "Dawuro",
+      "wereda": "Genabosa",
+      "match_level": "zone_exact",
+      "years": [
+        2005,
+        2009
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 6.283904805348997,
+      "longitude": 37.454654205935825,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Dita",
+      "match_level": "wereda_exact",
+      "years": [
+        2005,
+        2010
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 6.354117260393532,
+      "longitude": 38.34202864236486,
+      "region": "South Ethiopia",
+      "zone": "Gedeo",
+      "wereda": "Dila Zuria",
+      "match_level": "wereda_exact",
+      "years": [
+        2007,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.675876976841169,
+      "longitude": 37.812515429580124,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Misha",
+      "match_level": "wereda_exact",
+      "years": [
+        2005,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 6.15973867637258,
+      "longitude": 38.262966521070425,
+      "region": "South Ethiopia",
+      "zone": "Gedeo",
+      "wereda": "Gedeo",
+      "match_level": "zone_exact",
+      "years": [
+        2008,
+        2009
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 10.988849487958522,
+      "longitude": 37.9004867545357,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Hulet Eju Enese",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.297879477437352,
+      "longitude": 39.50229937858373,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Sire",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 5.412622693451039,
+      "longitude": 38.61846417162126,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Melka Soda",
+      "match_level": "wereda_exact",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.075014653747724,
+      "longitude": 35.46634175742419,
+      "region": "South West Ethiopia",
+      "zone": "Sidama",
+      "wereda": "Cheko",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.8470034994201905,
+      "longitude": 38.422560167517915,
+      "region": "Central Ethiopia",
+      "zone": "Silte ",
+      "wereda": "Lanfuro",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.172883079547211,
+      "longitude": 38.00053452892819,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Misrak Badawocho",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 6.464107626390293,
+      "longitude": 37.01208108725198,
+      "region": "South Ethiopia",
+      "zone": "Gamugofa",
+      "wereda": "Denibu Gofa",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.047099522109116,
+      "longitude": 37.85987396656566,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Damot Pulasa",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.437108922418569,
+      "longitude": 35.079825077008465,
+      "region": "Gambela",
+      "zone": "Agnuak",
+      "wereda": "Mengashi",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 13.003282667772906,
+      "longitude": 41.37954191103033,
+      "region": "Afar",
+      "zone": "Zone 2",
+      "wereda": "Bidu",
+      "match_level": "wereda_exact",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 10.518792506182187,
+      "longitude": 40.36551256119774,
+      "region": "Afar",
+      "zone": "Zone 5",
+      "wereda": "Dalifage",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 10.272880515635931,
+      "longitude": 40.28303785638947,
+      "region": "Afar",
+      "zone": "Zone 5",
+      "wereda": "HadiEla",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 10.93568627351161,
+      "longitude": 38.64226291301249,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Mehal Sayint",
+      "match_level": "wereda_exact",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 3.843026095415057,
+      "longitude": 38.56403973612836,
+      "region": "Oromia",
+      "zone": "Borena",
+      "wereda": "Mio ",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.219480439579599,
+      "longitude": 38.60916705180155,
+      "region": "Oromia",
+      "zone": "Adama Spe. Zone",
+      "wereda": "Shashemene ",
+      "match_level": "wereda_exact",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 6.582819829718674,
+      "longitude": 39.20575906866007,
+      "region": "Oromia",
+      "zone": "Adama Spe. Zone",
+      "wereda": "Nansebo ",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 5.953718494392779,
+      "longitude": 38.847431451968,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Genji",
+      "match_level": "zone_exact",
+      "years": [
+        2011,
+        2012
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 10.108808221637524,
+      "longitude": 39.648012893626685,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Menz Mama Midir",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 9.6599452219427,
+      "longitude": 38.85304449809988,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Debere Libanos",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 7.185288575357821,
+      "longitude": 38.544404088343924,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Shashemene Town",
+      "match_level": "wereda_exact",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.238010338061045,
+      "longitude": 33.57590498706513,
+      "region": "Gambela",
+      "zone": "Nuer",
+      "wereda": "Dima",
+      "match_level": "zone_fuzzy",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 13.837278428297328,
+      "longitude": 39.53159514721935,
+      "region": "Tigray",
+      "zone": "East Tigray",
+      "wereda": "Kilte Awlalo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.930806098139687,
+      "longitude": 35.20097493638249,
+      "region": "Oromia",
+      "zone": "Kelem Welega",
+      "wereda": "Dale Sadi ",
+      "match_level": "wereda_exact",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 9.148060372109812,
+      "longitude": 34.93410593115439,
+      "region": "Oromia",
+      "zone": "Kelem Welega",
+      "wereda": "Gawo Kebe",
+      "match_level": "wereda_exact",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 9.01501994022849,
+      "longitude": 34.75805449383445,
+      "region": "Oromia",
+      "zone": "Kelem Welega",
+      "wereda": "Jimma Horo",
+      "match_level": "wereda_exact",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 8.62676293283744,
+      "longitude": 34.992099743221715,
+      "region": "Oromia",
+      "zone": "Kelem Welega",
+      "wereda": "Hawa Gelan",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 9.6283491651791,
+      "longitude": 37.20989524730501,
+      "region": "Oromia",
+      "zone": "Horo Gudru Welega",
+      "wereda": "Jardega Jarte",
+      "match_level": "zone_fuzzy",
+      "years": [
+        2012,
+        2013
+      ],
+      "episode_count": 2
+    },
+    {
+      "latitude": 10.833861519892858,
+      "longitude": 37.75379270322368,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Bibugn",
+      "match_level": "wereda_exact",
+      "years": [
+        2000
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.543835424977313,
+      "longitude": 37.993294922076856,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Debay Tilatgen",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2000
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.506119316576012,
+      "longitude": 38.177051077966894,
+      "region": "Amhara",
+      "zone": "East Gojam",
+      "wereda": "Enemay",
+      "match_level": "wereda_exact",
+      "years": [
+        2000
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.784590318481088,
+      "longitude": 39.21140402590946,
+      "region": "Amhara",
+      "zone": "North Shewa",
+      "wereda": "Saya Debirna Wayu",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        1998
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.393482754637349,
+      "longitude": 34.84244425523651,
+      "region": "Benishangul-Gumuz",
+      "zone": "Asosa",
+      "wereda": "Menge",
+      "match_level": "wereda_exact",
+      "years": [
+        1997
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.477261372761177,
+      "longitude": 35.91080183762196,
+      "region": "Benishangul-Gumuz",
+      "zone": "Kamashi",
+      "wereda": "Kamashi",
+      "match_level": "wereda_exact",
+      "years": [
+        2002
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.605715878022464,
+      "longitude": 35.5520607004836,
+      "region": "Benishangul-Gumuz",
+      "zone": "Metekel",
+      "wereda": "Wenbera",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2002
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.718400501036259,
+      "longitude": 36.54746154050318,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Jima Arjo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2003
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.901912726841994,
+      "longitude": 36.46484997805761,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Leka Dulecha",
+      "match_level": "wereda_exact",
+      "years": [
+        2003
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.712923255383133,
+      "longitude": 36.72002703838674,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Nunu Kumba",
+      "match_level": "wereda_exact",
+      "years": [
+        2003
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.475243888279735,
+      "longitude": 37.464112997654915,
+      "region": "Oromia",
+      "zone": "Horo Gudru Welega",
+      "wereda": "Guduru",
+      "match_level": "wereda_exact",
+      "years": [
+        2003
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.252164678135486,
+      "longitude": 37.34088260339964,
+      "region": "Oromia",
+      "zone": "Horo Gudru Welega",
+      "wereda": "Jima Rare",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2003
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.594308621924155,
+      "longitude": 35.780136657053085,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Alge Sachi",
+      "match_level": "wereda_exact",
+      "years": [
+        2007
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.451591031365536,
+      "longitude": 36.348746048666904,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Bedele Town",
+      "match_level": "wereda_exact",
+      "years": [
+        2000
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.30701396810514,
+      "longitude": 36.65196271278739,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Borecha",
+      "match_level": "wereda_exact",
+      "years": [
+        2007
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.619184556122429,
+      "longitude": 35.37784421497732,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Darimu",
+      "match_level": "wereda_exact",
+      "years": [
+        1997
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.363623599523326,
+      "longitude": 36.481281406143424,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Gechi",
+      "match_level": "wereda_exact",
+      "years": [
+        2000
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.272425016699348,
+      "longitude": 35.93943751336254,
+      "region": "Oromia",
+      "zone": "Illubabur",
+      "wereda": "Yayu",
+      "match_level": "wereda_exact",
+      "years": [
+        2000
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.02773753103579,
+      "longitude": 36.95658359437566,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Limu Kosa",
+      "match_level": "wereda_exact",
+      "years": [
+        1999
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.064108892398567,
+      "longitude": 36.21512304925595,
+      "region": "Oromia",
+      "zone": "Jima",
+      "wereda": "Setema",
+      "match_level": "wereda_exact",
+      "years": [
+        1999
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 5.900909252360779,
+      "longitude": 35.25958988796951,
+      "region": "South West Ethiopia",
+      "zone": "Bench Maji",
+      "wereda": "Surma",
+      "match_level": "wereda_exact",
+      "years": [
+        1997
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.147597857659866,
+      "longitude": 36.99252088655943,
+      "region": "South West Ethiopia",
+      "zone": "Dawuro",
+      "wereda": "Tocha",
+      "match_level": "wereda_exact",
+      "years": [
+        2007
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.5425604211167006,
+      "longitude": 37.860042442338795,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Lemo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2005
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.105678091521787,
+      "longitude": 37.906324521901844,
+      "region": "Central Ethiopia",
+      "zone": "Gurage",
+      "wereda": "Gurage",
+      "match_level": "zone_fuzzy",
+      "years": [
+        2009
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.282709979408954,
+      "longitude": 36.03865141361243,
+      "region": "South West Ethiopia",
+      "zone": "Kefa",
+      "wereda": "Kefa",
+      "match_level": "zone_exact",
+      "years": [
+        2009
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.494058684515696,
+      "longitude": 35.43409323681393,
+      "region": "South West Ethiopia",
+      "zone": "Sheka",
+      "wereda": "Sheka",
+      "match_level": "zone_exact",
+      "years": [
+        2009
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.832574793568378,
+      "longitude": 38.24371082788678,
+      "region": "Central Ethiopia",
+      "zone": "Silte ",
+      "wereda": "Silte ",
+      "match_level": "zone_fuzzy",
+      "years": [
+        2009
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.941479049548393,
+      "longitude": 39.96998714703439,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Argoba",
+      "match_level": "wereda_exact",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.684579777848004,
+      "longitude": 39.25842510058491,
+      "region": "Amhara",
+      "zone": "South Welo",
+      "wereda": "Legahida",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.426721408591465,
+      "longitude": 39.27215051577725,
+      "region": "Oromia",
+      "zone": "Arsi",
+      "wereda": "Limuna Bilbilo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.821945951428374,
+      "longitude": 38.33534451345672,
+      "region": "Oromia",
+      "zone": "South West Shoa",
+      "wereda": "Ilu",
+      "match_level": "wereda_exact",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 6.6458012937300595,
+      "longitude": 38.16755768760853,
+      "region": "Sidama",
+      "zone": "Sidama",
+      "wereda": "Loko Abeya",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 5.240837434037778,
+      "longitude": 35.973667066968225,
+      "region": "South Ethiopia",
+      "zone": "South Omo",
+      "wereda": "Nyanigatom",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.0552253926413,
+      "longitude": 37.4082511081695,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Cheliya",
+      "match_level": "wereda_exact",
+      "years": [
+        2010
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.978824136427813,
+      "longitude": 37.86098896463728,
+      "region": "Oromia",
+      "zone": "West Shewa",
+      "wereda": "Ambo /Town/",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.399018701983877,
+      "longitude": 39.00310073260757,
+      "region": "Oromia",
+      "zone": "North Shewa",
+      "wereda": "Jidah ",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.278212175638256,
+      "longitude": 36.595377742621096,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Guto Gida",
+      "match_level": "wereda_exact",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 5.770245047551878,
+      "longitude": 38.43593078648517,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Kercha",
+      "match_level": "wereda_exact",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.542753455917503,
+      "longitude": 37.84636110418377,
+      "region": "Central Ethiopia",
+      "zone": "Hadiya",
+      "wereda": "Hosaena Town",
+      "match_level": "wereda_exact",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 6.856507623849001,
+      "longitude": 37.758645196610715,
+      "region": "South Ethiopia",
+      "zone": "Wolayita",
+      "wereda": "Sodo /Town/",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.788124848040335,
+      "longitude": 35.8260453341068,
+      "region": "Benishangul-Gumuz",
+      "zone": "Kamashi",
+      "wereda": "Sirbaabay",
+      "match_level": "zone_exact",
+      "years": [
+        2011
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 13.330128170250427,
+      "longitude": 36.51944667981309,
+      "region": "Amhara",
+      "zone": "North Gondar",
+      "wereda": "Mirab Armacho ",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.904986175400513,
+      "longitude": 40.77533694183523,
+      "region": "Oromia",
+      "zone": "East Shewa",
+      "wereda": "Bedesa Town",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.07099483808352,
+      "longitude": 36.44456482911992,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Ibantu",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.797006977123084,
+      "longitude": 36.89209525898083,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Wama Hagelo",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 6.284237040700072,
+      "longitude": 38.39391274102327,
+      "region": "South Ethiopia",
+      "zone": "Gedeo",
+      "wereda": "Bule",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 11.371907932940235,
+      "longitude": 36.02500498782813,
+      "region": "Benishangul-Gumuz",
+      "zone": "Metekel",
+      "wereda": "Dangur",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 10.994690077670477,
+      "longitude": 36.029119357409456,
+      "region": "Benishangul-Gumuz",
+      "zone": "Metekel",
+      "wereda": "Sirbaabay",
+      "match_level": "zone_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 6.058414757044195,
+      "longitude": 38.62249141060795,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Uraga",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 5.8832490894414935,
+      "longitude": 38.98363430357606,
+      "region": "Oromia",
+      "zone": "Guji",
+      "wereda": "Adola /Town/",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.0176828686051325,
+      "longitude": 38.84178151600965,
+      "region": "Oromia",
+      "zone": "West Arsi",
+      "wereda": "Kofele",
+      "match_level": "wereda_exact",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.23564812616229,
+      "longitude": 37.6556816376349,
+      "region": "Central Ethiopia",
+      "zone": "Kembata Timbaro",
+      "wereda": "Hadero Tunito",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2012
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.274506774042784,
+      "longitude": 36.64170450265991,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Gida Kiremu",
+      "match_level": "zone_fuzzy",
+      "years": [
+        2013
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 8.810139531591165,
+      "longitude": 34.90069564845535,
+      "region": "Oromia",
+      "zone": "Kelem Welega",
+      "wereda": "Jardega Jarte",
+      "match_level": "zone_fuzzy",
+      "years": [
+        2013
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 5.246724477341646,
+      "longitude": 37.348050064950975,
+      "region": "South Ethiopia",
+      "zone": "Gurage",
+      "wereda": "Kebena",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2013
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 9.90600261350694,
+      "longitude": 36.64649078707201,
+      "region": "Oromia",
+      "zone": "East Welega",
+      "wereda": "Gida Ayena ",
+      "match_level": "wereda_fuzzy",
+      "years": [
+        2013
+      ],
+      "episode_count": 1
+    },
+    {
+      "latitude": 7.653402207776117,
+      "longitude": 44.14582973616492,
+      "region": "Somali",
+      "zone": "Degehabur",
+      "wereda": "Gunagado",
+      "match_level": "wereda_exact",
+      "years": [
+        2013
+      ],
+      "episode_count": 1
+    }
+  ],
   "lag_sensitivity": {
     "note": "Real sensitivity check, not the headline result: same 3 indicators, same real episodes, but each scored against the PRIOR year's real JJAS rainfall instead of the same year (see methodology.finding above).",
     "indicators": {

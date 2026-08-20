@@ -200,6 +200,7 @@ class Admin3Index:
         self.wereda_point: Dict[Tuple[str, str], Tuple[float, float]] = {}
         self.zone_weredas: Dict[Tuple[str, str], List[Tuple[str, float, float]]] = {}
         self.region_points: Dict[str, List[Tuple[float, float]]] = {}
+        self.region_display_name: Dict[str, str] = {}
 
         for feat in admin3["features"]:
             p = feat["properties"]
@@ -212,6 +213,7 @@ class Admin3Index:
             self.wereda_point[(region, wereda)] = point
             self.zone_weredas.setdefault((region, zone), []).append((wereda, *point))
             self.region_points.setdefault(region, []).append(point)
+            self.region_display_name.setdefault(region, p["region"])
 
         self.zone_centroid: Dict[Tuple[str, str], Tuple[float, float]] = {
             key: (
@@ -248,7 +250,7 @@ class Admin3Index:
             for cand in candidates:
                 point = self.wereda_point.get((cand, wereda_n))
                 if point:
-                    return {"lat": point[0], "lon": point[1], "match_level": "wereda_exact", "matched_region": cand}
+                    return {"lat": point[0], "lon": point[1], "match_level": "wereda_exact", "matched_region": self.region_display_name.get(cand, cand)}
 
             for cand in candidates:
                 names = [w for w, _, _ in self.zone_weredas.get((cand, zone_n), [])] or [
@@ -258,13 +260,13 @@ class Admin3Index:
                 if close:
                     point = self.wereda_point.get((cand, close[0]))
                     if point:
-                        return {"lat": point[0], "lon": point[1], "match_level": "wereda_fuzzy", "matched_region": cand}
+                        return {"lat": point[0], "lon": point[1], "match_level": "wereda_fuzzy", "matched_region": self.region_display_name.get(cand, cand)}
 
         if zone_n:
             for cand in candidates:
                 point = self.zone_centroid.get((cand, zone_n))
                 if point:
-                    return {"lat": point[0], "lon": point[1], "match_level": "zone_exact", "matched_region": cand}
+                    return {"lat": point[0], "lon": point[1], "match_level": "zone_exact", "matched_region": self.region_display_name.get(cand, cand)}
 
             for cand in candidates:
                 zone_names = [z for (r, z) in self.zone_centroid if r == cand]
@@ -272,12 +274,12 @@ class Admin3Index:
                 if close:
                     point = self.zone_centroid.get((cand, close[0]))
                     if point:
-                        return {"lat": point[0], "lon": point[1], "match_level": "zone_fuzzy", "matched_region": cand}
+                        return {"lat": point[0], "lon": point[1], "match_level": "zone_fuzzy", "matched_region": self.region_display_name.get(cand, cand)}
 
         if len(candidates) == 1:
             point = self.region_centroid.get(candidates[0])
             if point:
-                return {"lat": point[0], "lon": point[1], "match_level": "region_centroid", "matched_region": candidates[0]}
+                return {"lat": point[0], "lon": point[1], "match_level": "region_centroid", "matched_region": self.region_display_name.get(candidates[0], candidates[0])}
 
         return None
 

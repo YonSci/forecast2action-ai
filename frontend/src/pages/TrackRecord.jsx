@@ -636,6 +636,153 @@ function CapturedVsMissedTable({ events }) {
   );
 }
 
+const MATCH_LEVEL_LABELS = {
+  wereda_exact: "Woreda (exact)",
+  wereda_fuzzy: "Woreda (fuzzy)",
+  zone_exact: "Zone (exact)",
+  zone_fuzzy: "Zone (fuzzy)",
+};
+
+const DESINVENTAR_LOCATION_COLUMNS = [
+  { key: "region", label: "Region", type: "string" },
+  { key: "wereda", label: "Woreda / zone", type: "string" },
+  { key: "episode_count", label: "Real drought-years reported", type: "number" },
+  { key: "latitude", label: "Latitude", type: "number" },
+  { key: "longitude", label: "Longitude", type: "number" },
+  { key: "match_level", label: "Geocode precision", type: "string" },
+];
+
+function sortLocations(locations, sortKey, sortDir) {
+  const column = DESINVENTAR_LOCATION_COLUMNS.find((c) => c.key === sortKey);
+  const dirMultiplier = sortDir === "asc" ? 1 : -1;
+  return [...locations].sort((a, b) => {
+    const av = a[sortKey];
+    const bv = b[sortKey];
+    if (column?.type === "string") return av.localeCompare(bv) * dirMultiplier;
+    return (av - bv) * dirMultiplier;
+  });
+}
+
+function DesinventarLocationTable({ locations }) {
+  const [sortKey, setSortKey] = useState("episode_count");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const sortedLocations = useMemo(
+    () => sortLocations(locations, sortKey, sortDir),
+    [locations, sortKey, sortDir],
+  );
+
+  function handleSort(key) {
+    if (key === sortKey) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  return (
+    <div className="lp-data-table-wrap" style={{ maxHeight: 480, overflowY: "auto" }}>
+      <table className="lp-data-table">
+        <thead>
+          <tr>
+            {DESINVENTAR_LOCATION_COLUMNS.map((column) => (
+              <th
+                key={column.key}
+                onClick={() => handleSort(column.key)}
+                style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+                aria-sort={
+                  sortKey === column.key ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+                }
+              >
+                {column.label}
+                {sortKey === column.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedLocations.map((loc) => (
+            <tr key={`${loc.latitude},${loc.longitude}`}>
+              <td className="lp-td-strong">{loc.region}</td>
+              <td>{loc.wereda}</td>
+              <td>{loc.episode_count}</td>
+              <td>{formatCoord(loc.latitude)}</td>
+              <td>{formatCoord(loc.longitude)}</td>
+              <td>{MATCH_LEVEL_LABELS[loc.match_level] || loc.match_level}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Real per-location dot radius scaled by real reported drought-year count --
+// a real, honest signal (how often DPPA/NDRMC reported a drought at this
+// exact real place), not decoration. sqrt-scaled so a location reported 10x
+// more often isn't drawn 10x the AREA, which would visually overwhelm the
+// real map.
+function desinventarDotRadius(episodeCount, maxCount) {
+  const minR = 2.5;
+  const maxR = 11;
+  const t = maxCount > 1 ? Math.sqrt(episodeCount / maxCount) : 1;
+  return minR + t * (maxR - minR);
+}
+
+function DesinventarLocationMap({ locations }) {
+  const projection = useMemo(
+    () => buildEthMapProjection(ethiopiaAdmin1.features, MAP_SIZE, MAP_PADDING),
+    [],
+  );
+  const maxCount = Math.max(1, ...locations.map((l) => l.episode_count));
+
+  return (
+    <svg
+      viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
+      role="img"
+      aria-label="Map of each real DesInventar-reported drought location, sized by how many real years a drought was reported there"
+      style={{
+        width: "100%",
+        maxWidth: 420,
+        display: "block",
+        margin: "0 auto",
+      }}
+    >
+      {ethiopiaAdmin1.features.map((feat) => (
+        <path
+          key={feat.properties.region_id}
+          d={ethGeometryToPathD(feat.geometry, projection)}
+          fill="rgba(148,178,219,0.05)"
+          stroke="rgba(148,178,219,0.35)"
+          strokeWidth="1"
+        />
+      ))}
+      {locations.map((loc) => {
+        const [x, y] = projection.project(loc.longitude, loc.latitude);
+        return (
+          <circle
+            key={`${loc.latitude},${loc.longitude}`}
+            cx={x}
+            cy={y}
+            r={desinventarDotRadius(loc.episode_count, maxCount)}
+            fill="var(--lp-teal, #35d4c7)"
+            fillOpacity="0.55"
+            stroke="rgba(6,12,24,0.5)"
+            strokeWidth="1"
+          >
+            <title>
+              {loc.wereda}, {loc.region}
+              {"\n"}Real drought-years reported: {loc.episode_count} (
+              {loc.years[0]}-{loc.years[loc.years.length - 1]})
+            </title>
+          </circle>
+        );
+      })}
+    </svg>
+  );
+}
+
 function TrackRecord() {
   const [data, setData] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -978,6 +1125,26 @@ function TrackRecord() {
                     real, valuable filtering work that a bigger, broader
                     label doesn't.
                   </p>
+                </div>
+              </section>
+
+              <section className="lp-article-section">
+                <div className="lp-wrap">
+                  <h3 style={{ marginBottom: 10 }}>
+                    Every real DesInventar location, mapped and listed
+                  </h3>
+                  <p className="lp-prose" style={{ marginBottom: 18 }}>
+                    All {desinventarData.locations?.length ?? 0} real
+                    distinct locations behind the table above, sized by how
+                    many real years DPPA/NDRMC reported a drought there
+                    (bigger dot = reported more often), not by SPI or hit
+                    rate: this map is about real reporting frequency and
+                    geographic spread, not indicator skill.
+                  </p>
+                  <DesinventarLocationMap locations={desinventarData.locations || []} />
+                  <div style={{ marginTop: 22 }}>
+                    <DesinventarLocationTable locations={desinventarData.locations || []} />
+                  </div>
                 </div>
               </section>
             </>

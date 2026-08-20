@@ -127,6 +127,33 @@ def load_or_build_point_rainfall(points: List[Tuple[float, float]]) -> List[Dict
     return table
 
 
+def build_locations_summary(deduped_events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Real per-distinct-location summary (418 real points, not 2,883 real
+    rows) -- for the frontend's map/table, which needs one real real-world
+    place per marker/row, not one row per real (point, year) episode.
+    """
+    by_point: Dict[Tuple[float, float], Dict[str, Any]] = {}
+    for r in deduped_events:
+        key = (r["latitude"], r["longitude"])
+        entry = by_point.setdefault(key, {
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "region": r["matched_region"],
+            "zone": r["zone"],
+            "wereda": r["wereda"] or r["zone"] or r["region"],
+            "match_level": r["match_level"],
+            "years": [],
+        })
+        entry["years"].append(r["year"])
+
+    locations = []
+    for entry in by_point.values():
+        entry["years"] = sorted(entry["years"])
+        entry["episode_count"] = len(entry["years"])
+        locations.append(entry)
+    return sorted(locations, key=lambda e: -e["episode_count"])
+
+
 def build_results() -> Dict[str, Any]:
     precise_events = load_precise_events()
     deduped_events = dedupe_to_point_years(precise_events)
@@ -238,6 +265,7 @@ def build_results() -> Dict[str, Any]:
             "coverage_years": f"{YEARS[0]}-2013 (DesInventar's own real data ends in 2013)",
         },
         "indicators": indicators,
+        "locations": build_locations_summary(deduped_events),
         "lag_sensitivity": {
             "note": (
                 "Real sensitivity check, not the headline result: same 3 indicators, same real "
