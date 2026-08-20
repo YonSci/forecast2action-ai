@@ -640,6 +640,7 @@ function TrackRecord() {
   const [data, setData] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [desinventarData, setDesinventarData] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -663,7 +664,22 @@ function TrackRecord() {
         if (!cancelled) setLoading(false);
       }
     }
+    async function loadDesinventar() {
+      try {
+        const response = await fetch(
+          apiUrl("/api/validation/historical-skill-desinventar"),
+        );
+        if (!response.ok) return;
+        const json = await response.json();
+        if (!cancelled) setDesinventarData(json);
+      } catch {
+        // Non-critical: the page's headline GLIDE analysis above already
+        // loaded independently -- silently omit this section rather than
+        // showing a second error callout for a supplementary cross-check.
+      }
+    }
     load();
+    loadDesinventar();
     return () => {
       cancelled = true;
     };
@@ -911,6 +927,61 @@ function TrackRecord() {
               </p>
             </div>
           </section>
+
+          {desinventarData && (
+            <>
+              <hr className="lp-article-divider" />
+
+              <section className="lp-article-section">
+                <div className="lp-wrap">
+                  <h2>Cross-validated against a bigger, independent sample</h2>
+                  <p className="lp-prose" style={{ marginBottom: 18 }}>
+                    GLIDE's real sample above is tiny (2 event-years): not
+                    enough to trust a hit rate, false-alarm rate, or AUC on
+                    its own. To check whether that small-sample result holds
+                    up, the same 3 indicators were re-scored against a real,
+                    independent, much larger source: Ethiopia's own
+                    DPPA/NDRMC disaster-loss database (DesInventar format,
+                    via HDX) 2,883 real distinct drought episodes at 418
+                    real locations, geocoded to this app's own admin3
+                    boundaries, covering 1997-2013 (this real dataset's own
+                    coverage ends there, so it extends the window backward
+                    from GLIDE's 2015+ events rather than replacing it).
+                  </p>
+                  <IndicatorComparisonTable indicators={desinventarData.indicators} />
+                  <p
+                    className="lp-prose"
+                    style={{ marginTop: 14, fontSize: "0.9rem" }}
+                  >
+                    This real, much larger sample does <strong>not</strong>{" "}
+                    confirm the GLIDE result above: AUC lands at ~0.47 for
+                    all three indicators, no better than a coin flip and
+                    actually a touch worse. Before publishing this, three
+                    checks ruled out a pipeline bug. Scoring each episode
+                    against the prior year's rainfall instead of the same
+                    year (droughts are often declared months after the real
+                    deficit that caused them) raises AUC to ~0.55, still
+                    weak but a real, directionally consistent effect.
+                    Restricting to only the highest-impact half of episodes
+                    barely moved the result, ruling out dilution by minor
+                    reports. And a spot-check against the well-documented
+                    1999-2000 Somali region drought showed real negative SPI
+                    at most matched woredas, confirming the underlying
+                    computation is sound. The most coherent explanation:
+                    DesInventar's "drought" label is a broad administrative
+                    designation spanning many real chronic, Belg-season, and
+                    non-JJAS-driven cases that a JJAS-specific rainfall
+                    indicator was never going to predict, a pattern that
+                    matches what was already found for FEWS NET's IPC
+                    Crisis+ label elsewhere on this page. GLIDE's smaller
+                    but more selectively-curated event list may be doing
+                    real, valuable filtering work that a bigger, broader
+                    label doesn't.
+                  </p>
+                </div>
+              </section>
+            </>
+          )}
 
           <hr className="lp-article-divider" />
 

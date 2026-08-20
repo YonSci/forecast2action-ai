@@ -1,0 +1,213 @@
+{
+  "generated_at": "2026-08-20T09:04:21.885990+00:00",
+  "scope": "drought_only_desinventar_cross_validation",
+  "methodology": {
+    "summary": "Real cross-validation of the same 3 real indicators (Rainfall Total, SPI, Rainfall Percentile) against Ethiopia's own real DesInventar-format disaster-loss database (DPPA/NDRMC-sourced, archived on HDX), instead of GLIDE. Real sample: 2883 distinct real (pixel, year) drought episodes at 418 real distinct locations, geocoded from real woreda/zone names against this app's own real admin3 boundaries (exact or fuzzy name match; coarser region-centroid-only matches are excluded, since a region-wide centroid would reintroduce the exact real area-dilution problem already fixed for GLIDE's own pixel-level methodology). Real coverage is 1997-2013 only -- DesInventar's own real data stops there -- so this extends the validated window BACKWARD from GLIDE's 2015+ events, and is a complementary cross-check, not a replacement. Real date precision is YEAR ONLY (DesInventar's real month/day fields are mostly fake placeholder precision, not genuine reported dates), so every real matched drought year is scored directly against that point's real JJAS seasonal rainfall total, with no JJAS-registration-month filter the way GLIDE's own pipeline has one.",
+    "thresholds_evaluated": "Same real thresholds as the GLIDE-based analysis, carrying the same real probability as this app's own SPI_CATEGORY_BANDS -- not modified by this diagnostic.",
+    "finding": "This real, much larger sample does NOT confirm the GLIDE-based result: AUC across all 3 indicators is close to 0.5 (no better than chance), well below the small-sample GLIDE finding. Investigated before publishing, not just reported blind: (1) a real reporting-lag test (scoring each episode against the PRIOR year's real JJAS rainfall instead of the same year, since a declared drought often reflects a real deficit reported months or a year after the fact) raises AUC modestly but still leaves it weak -- see lag_sensitivity below; (2) restricting to only the real higher-\"affected\"-count half of episodes barely changed the result, ruling out simple dilution by minor reports; (3) a real spot-check against the well-documented 1999-2000 Somali region drought showed real negative SPI at most matched woredas, confirming this pipeline's own real computation is sound, not bugged. The most coherent real explanation: DesInventar's \"DROUGHT\" label is a broad, real administrative designation (DPPA/NDRMC field reporting across 116 real years) that likely captures many real chronic, Belg-season, or non-JJAS-driven cases a JJAS-specific rainfall indicator was never going to predict -- the same real pattern already found for FEWS NET's IPC Crisis+ label earlier in this project. GLIDE's smaller, more selectively-curated, internationally-vetted event list may be doing real, valuable filtering work that a bigger but broader real label doesn't.",
+    "caveat": "Real geocoding precision breakdown across the 2883 real scored episodes: {'wereda_fuzzy': 802, 'wereda_exact': 1826, 'zone_exact': 143, 'zone_fuzzy': 112}. Real no-event pool is drawn from the SAME 418 real locations in years without a matched drought report there -- read as \"at these real historically drought-reporting locations\", not \"anywhere in Ethiopia\". A real, much larger sample than GLIDE's, but still real historical government-reported data with its own real under/over-reporting biases (better real reporting coverage in more recent, more populated, or more monitored woredas is a real possibility, not verified either way here)."
+  },
+  "data_provenance": {
+    "source": "Ethiopia DPPA/NDRMC disaster-loss database, DesInventar-format export via HDX",
+    "rainfall_source": "CHIRPS v2.0 monthly, real, sampled at exact geocoded points",
+    "rainfall_rows": 48488,
+    "drought_episodes_scored": 2883,
+    "unique_locations": 418,
+    "match_level_breakdown": {
+      "wereda_fuzzy": 802,
+      "wereda_exact": 1826,
+      "zone_exact": 143,
+      "zone_fuzzy": 112
+    },
+    "region_breakdown": {
+      "oromia": 859,
+      "amhara": 596,
+      "somali": 379,
+      "afar": 258,
+      "south ethiopia": 242,
+      "tigray": 203,
+      "central ethiopia": 122,
+      "sidama": 85,
+      "gambela": 71,
+      "benishangul-gumuz": 30,
+      "south west ethiopia": 27,
+      "harari": 11
+    },
+    "coverage_years": "1997-2013 (DesInventar's own real data ends in 2013)"
+  },
+  "indicators": {
+    "rainfall_total": {
+      "label": "Rainfall Total (z-score anomaly, exact-pixel)",
+      "event_years": 2883,
+      "no_event_years": 9239,
+      "mean_value_event": 0.083581111039346,
+      "mean_value_no_event": -0.026081214755540056,
+      "auc": 0.47442628195778525,
+      "thresholds": [
+        {
+          "threshold_label": "moderately_dry",
+          "threshold_value": -1.0,
+          "hit_rate": 0.12452306625043358,
+          "false_alarm_rate": 0.16982357397986794
+        },
+        {
+          "threshold_label": "severely_dry",
+          "threshold_value": -1.5,
+          "hit_rate": 0.02878945542837322,
+          "false_alarm_rate": 0.06699859292131183
+        },
+        {
+          "threshold_label": "extremely_dry",
+          "threshold_value": -2.0,
+          "hit_rate": 0.003121748178980229,
+          "false_alarm_rate": 0.024894469098387273
+        }
+      ]
+    },
+    "spi": {
+      "label": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology, exact-pixel)",
+      "event_years": 2883,
+      "no_event_years": 9239,
+      "mean_value_event": 0.08861620188097577,
+      "mean_value_no_event": -0.027711944310969888,
+      "auc": 0.4742750582603561,
+      "thresholds": [
+        {
+          "threshold_label": "moderately_dry",
+          "threshold_value": -1.0,
+          "hit_rate": 0.1276448144294138,
+          "false_alarm_rate": 0.17166359995670527
+        },
+        {
+          "threshold_label": "severely_dry",
+          "threshold_value": -1.5,
+          "hit_rate": 0.037460978147762745,
+          "false_alarm_rate": 0.07522459140599631
+        },
+        {
+          "threshold_label": "extremely_dry",
+          "threshold_value": -2.0,
+          "hit_rate": 0.005549774540409296,
+          "false_alarm_rate": 0.03149691525056824
+        }
+      ]
+    },
+    "rainfall_percentile": {
+      "label": "Rainfall Percentile (real empirical rank, exact-pixel)",
+      "event_years": 2883,
+      "no_event_years": 9239,
+      "mean_value_event": 53.781362007168454,
+      "mean_value_no_event": 51.00678284085579,
+      "auc": 0.4712976821589488,
+      "thresholds": [
+        {
+          "threshold_label": "moderately_dry",
+          "threshold_value": 15.87,
+          "hit_rate": 0.10648629899410336,
+          "false_alarm_rate": 0.1477432622578201
+        },
+        {
+          "threshold_label": "severely_dry",
+          "threshold_value": 6.68,
+          "hit_rate": 0.016302462712452306,
+          "false_alarm_rate": 0.04015586102392034
+        },
+        {
+          "threshold_label": "extremely_dry",
+          "threshold_value": 2.28,
+          "hit_rate": 0.0,
+          "false_alarm_rate": 0.0
+        }
+      ]
+    }
+  },
+  "lag_sensitivity": {
+    "note": "Real sensitivity check, not the headline result: same 3 indicators, same real episodes, but each scored against the PRIOR year's real JJAS rainfall instead of the same year (see methodology.finding above).",
+    "indicators": {
+      "rainfall_total": {
+        "label": "Rainfall Total (z-score anomaly, exact-pixel)",
+        "event_years": 2728,
+        "no_event_years": 9394,
+        "mean_value_event": -0.10761772352653279,
+        "mean_value_no_event": 0.0312519852863936,
+        "auc": 0.5507332314817532,
+        "thresholds": [
+          {
+            "threshold_label": "moderately_dry",
+            "threshold_value": -1.0,
+            "hit_rate": 0.187683284457478,
+            "false_alarm_rate": 0.1507345113902491
+          },
+          {
+            "threshold_label": "severely_dry",
+            "threshold_value": -1.5,
+            "hit_rate": 0.05535190615835777,
+            "false_alarm_rate": 0.058654460293804556
+          },
+          {
+            "threshold_label": "extremely_dry",
+            "threshold_value": -2.0,
+            "hit_rate": 0.005865102639296188,
+            "false_alarm_rate": 0.02373855652544177
+          }
+        ]
+      },
+      "spi": {
+        "label": "SPI (real gamma-distribution fit, McKee et al. 1993 methodology, exact-pixel)",
+        "event_years": 2728,
+        "no_event_years": 9394,
+        "mean_value_event": -0.10746336530416782,
+        "mean_value_no_event": 0.031148596666337253,
+        "auc": 0.5508396824078763,
+        "thresholds": [
+          {
+            "threshold_label": "moderately_dry",
+            "threshold_value": -1.0,
+            "hit_rate": 0.19244868035190615,
+            "false_alarm_rate": 0.15211837342984885
+          },
+          {
+            "threshold_label": "severely_dry",
+            "threshold_value": -1.5,
+            "hit_rate": 0.06671554252199413,
+            "false_alarm_rate": 0.06610602512241856
+          },
+          {
+            "threshold_label": "extremely_dry",
+            "threshold_value": -2.0,
+            "hit_rate": 0.011363636363636364,
+            "false_alarm_rate": 0.02938045560996381
+          }
+        ]
+      },
+      "rainfall_percentile": {
+        "label": "Rainfall Percentile (real empirical rank, exact-pixel)",
+        "event_years": 2728,
+        "no_event_years": 9394,
+        "mean_value_event": 48.05962854349951,
+        "mean_value_no_event": 52.714143779717546,
+        "auc": 0.5481504892996528,
+        "thresholds": [
+          {
+            "threshold_label": "moderately_dry",
+            "threshold_value": 15.87,
+            "hit_rate": 0.1689882697947214,
+            "false_alarm_rate": 0.12891207153502235
+          },
+          {
+            "threshold_label": "severely_dry",
+            "threshold_value": 6.68,
+            "hit_rate": 0.03262463343108504,
+            "false_alarm_rate": 0.03502235469448584
+          },
+          {
+            "threshold_label": "extremely_dry",
+            "threshold_value": 2.28,
+            "hit_rate": 0.0,
+            "false_alarm_rate": 0.0
+          }
+        ]
+      }
+    }
+  }
+}

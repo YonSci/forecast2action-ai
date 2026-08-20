@@ -25,3 +25,8 @@ scipy
 # Context engineering (app/context, app/decision, app/retrieval)
 pytest
 pyyaml
+
+# Historical validation (app/data_pipeline/desinventar_drought_pipeline.py) --
+# reads the legacy .xls (BIFF/OLE2) format Ethiopia's DesInventar-derived
+# HDX export ships in, which openpyxl can't parse.
+xlrd
